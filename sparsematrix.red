@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-05 17:10:14 franc>
+% Time-stamp: <2026-04-05 18:14:14 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -145,6 +145,23 @@ symbolic procedure sparsematsm!*(u,v);
             and eqcar(x := cadr x, 'sparsemat) then
                return x
       else typerr(u, "sparse matrix");
+   end;
+
+% %%%%%%%%
+% Printing
+% %%%%%%%%
+
+put('sparsemat, 'prifn, 'sparsematpri);
+
+symbolic procedure sparsematpri u;
+   % Print a sparse matrix u = (sparsemat <hash> <m> <n>)
+   begin scalar alist;
+      if null cdr u then rederr "Empty matrix"; % impossible?
+      alist := hashcontents cadr u;
+      % print alist;
+      for each el in alist do eval formwrite(
+         'write . {"spm(", caar el, ",", cadar el, ") = ", mkquote cdr el},
+         nil, 'algebraic)
    end;
 
 endmodule;
