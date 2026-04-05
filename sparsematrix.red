@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-04 17:11:10 franc>
+% Time-stamp: <2026-04-05 17:10:14 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -33,10 +33,6 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % This file is a reworking of "matrix/matrix.red" to use hash tables
 % to represent sparse matrices.
-
-fluid '(!*sub2 subfg!*);
-
-global '(nxtsym!*);
 
 % The representation of a sparse matrix is
 %   (sparsemat <hash> <m> <n>),
@@ -75,7 +71,9 @@ put('sparsemat, 'rtypefn, 'quotesparsematrix);
 
 symbolic procedure quotesparsematrix u; 'sparsematrix;
 
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Dimensions access / length interface
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 symbolic inline procedure sparsematdims u;
    % Return dimensions (m n) of sparse matrix u.
@@ -91,7 +89,9 @@ symbolic procedure sparsematlength u;
       rerror(sparsematrix,2,{"Sparse matrix",u,"not set"})
    else 'list . sparsematdims u;
 
+% %%%%%%%%%%%%%%
 % Element access
+% %%%%%%%%%%%%%%
 
 symbolic procedure accesssparsematelem u;
    % Access an element of a sparse matrix u = (id i j ...).
@@ -128,6 +128,24 @@ symbolic procedure setsparsematelem(u,v);
    % Assign v to an element of a sparse matrix u = (id i j)
    % and return v, cf. setmatelem.
    puthash(cdr x, car x, v) where x = accesssparsematelem u;
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Evaluation and simplification
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+put('sparsematrix, 'evfn, 'sparsematsm!*);
+
+symbolic procedure sparsematsm!*(u,v);
+   % Matrix expression simplification function.
+   % cf. matsm!*
+   % TEMPORARY HACK TO CHECK SIMPLER FACILITIES!
+   begin scalar x;
+      if idp u and (x := get(u, 'avalue))
+         and eqcar(x, 'sparsematrix)
+            and eqcar(x := cadr x, 'sparsemat) then
+               return x
+      else typerr(u, "sparse matrix");
+   end;
 
 endmodule;
 
