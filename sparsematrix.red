@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-05 18:14:14 franc>
+% Time-stamp: <2026-04-06 18:20:45 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -158,10 +158,34 @@ symbolic procedure sparsematpri u;
    begin scalar alist;
       if null cdr u then rederr "Empty matrix"; % impossible?
       alist := hashcontents cadr u;
-      % print alist;
+      % Each element has the form ((i j) value).
+      % Sort matrix elements by row index and then by column index:
+      alist := sort(alist,
+         lambda(x,y);
+      caar x < caar y or
+         (caar x = caar y and cadar x < cadar y));
       for each el in alist do eval formwrite(
          'write . {"spm(", caar el, ",", cadar el, ") = ", mkquote cdr el},
          nil, 'algebraic)
+   end;
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Generate random sparse matrices (for testing)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+operator randomsparsematrix;
+
+symbolic procedure randomsparsematrix s;
+   % s must be an identifier.  Generate a 10*10 sparse matrix s
+   % containing 10 random positive integers.
+   begin scalar m := 10, n := 10, i, j;
+      if not idp s then rederr({s, "invalid as identifier"});
+      sparsematrix s(m,n);
+      for count := 1:10 do <<
+         i := random(m) + 1;
+         j := random(n) + 1;
+         s(i,j) := random(1000);
+      >>;
    end;
 
 endmodule;
