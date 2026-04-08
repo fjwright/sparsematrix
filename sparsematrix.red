@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-06 18:20:45 franc>
+% Time-stamp: <2026-04-08 16:16:32 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,11 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % to represent sparse matrices.
 
 % The representation of a sparse matrix is
-%   (sparsemat <hash> <m> <n>),
-% where <hash> is a hash table, <m> is the maximum row index and <n>
-% is the maximum column index.
+%   (sparsemat <hash> <m> <n> . <name>),
+% where <hash> is a hash table, <m> is the maximum row index, <n> is
+% the maximum column index, and <name> is either the name of the
+% sparse matrix (an identifier) to be used by the print routine or nil
+% if it has no name.
 
 % The rtype of a sparse matrix is sparsematrix.
 
@@ -142,8 +144,11 @@ symbolic procedure sparsematsm!*(u,v);
    begin scalar x;
       if idp u and (x := get(u, 'avalue))
          and eqcar(x, 'sparsematrix)
-            and eqcar(x := cadr x, 'sparsemat) then
+            and eqcar(x := cadr x, 'sparsemat) then <<
+               % Set name to u:
+               rplacd(cdddr x, u);
                return x
+            >>
       else typerr(u, "sparse matrix");
    end;
 
@@ -154,18 +159,21 @@ symbolic procedure sparsematsm!*(u,v);
 put('sparsemat, 'prifn, 'sparsematpri);
 
 symbolic procedure sparsematpri u;
-   % Print a sparse matrix u = (sparsemat <hash> <m> <n>)
-   begin scalar alist;
-      if null cdr u then rederr "Empty matrix"; % impossible?
+   % Print a sparse matrix u = (sparsemat <hash> <m> <n> . <name>)
+   % If no (null) name then display name as "?".
+   begin scalar alist, name;
       alist := hashcontents cadr u;
+      if null alist then return write "Empty matrix";
       % Each element has the form ((i j) value).
       % Sort matrix elements by row index and then by column index:
       alist := sort(alist,
          lambda(x,y);
       caar x < caar y or
          (caar x = caar y and cadar x < cadar y));
+      name := cddddr u;
+      name := if name then concat2(id2string name, "(") else "?(";
       for each el in alist do eval formwrite(
-         'write . {"spm(", caar el, ",", cadar el, ") = ", mkquote cdr el},
+         'write . {name, caar el, ",", cadar el, ") := ", mkquote cdr el},
          nil, 'algebraic)
    end;
 
