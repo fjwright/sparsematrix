@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-08 16:16:32 franc>
+% Time-stamp: <2026-04-09 15:15:34 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -138,8 +138,9 @@ symbolic procedure setsparsematelem(u,v);
 put('sparsematrix, 'evfn, 'sparsematsm!*);
 
 symbolic procedure sparsematsm!*(u,v);
-   % Matrix expression simplification function.
-   % cf. matsm!*
+   % Matrix expression simplification function, cf. matsm!*.
+   % If u is a variable assigned a sparse matrix then return
+   % (sparsemat <hash> <m> <n> . u)
    % TEMPORARY HACK TO CHECK SIMPLER FACILITIES!
    begin scalar x;
       if idp u and (x := get(u, 'avalue))
@@ -183,10 +184,10 @@ symbolic procedure sparsematpri u;
 
 operator randomsparsematrix;
 
-symbolic procedure randomsparsematrix s;
-   % s must be an identifier.  Generate a 10*10 sparse matrix s
+symbolic procedure randomsparsematrix(s, m, n);
+   % s must be an identifier.  Generate an m*n sparse matrix s
    % containing 10 random positive integers.
-   begin scalar m := 10, n := 10, i, j;
+   begin scalar i, j;
       if not idp s then rederr({s, "invalid as identifier"});
       sparsematrix s(m,n);
       for count := 1:10 do <<
