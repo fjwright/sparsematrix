@@ -1,10 +1,10 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
-symbolic procedure simpsparsetrace u;
+symbolic procedure simpsparse!-trace u;
    % Return trace of sparse matrix s, where u = (s) and s is a
    % variable assigned a sparse matrix, cf. trace.
    begin scalar m, hash, el, z;
-      u := sparsematsm!*(carx(u,'trace),nil); % (sparsemat <hash> <m> <n>)
+      u := sparse!-matsm!*(carx(u,'trace),nil); % (sparse-mat <hash> <m> <n>)
       if (m := caddr u) neq cadddr u then rederr "Non square matrix";
       hash := cadr u;
       z := nil ./ 1;
@@ -15,7 +15,7 @@ symbolic procedure simpsparsetrace u;
       return z
    end;
 
-put('sparsetrace, 'simpfn, 'simpsparsetrace);
+put('sparsetrace, 'simpfn, 'simpsparse!-trace);
 
 endmodule;
 
