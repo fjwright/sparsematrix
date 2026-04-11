@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-10 16:34:03 franc>
+% Time-stamp: <2026-04-11 17:46:56 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -46,35 +46,48 @@ symbolic procedure sparse!-matsm!*(u,v);
 
 symbolic procedure sparse!-matsm!*1 u;
    % Assume u evaluates to a sparse matrix internal form
-   %   (<hash> <m> <n>).
-   % Simplify each element to an algebraic expression and return
-   %   (sparse!-mat <hash> <m> <n>).
+   %   (<hash> <m> <n> . <name>).
+   % Convert each element to an ALGEBRAIC EXPRESSION and return
+   %   (sparse!-mat <hash> <m> <n> . <name>).
    % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   'sparse!-mat . u;
+   begin scalar hash := car u;
+      for each el in hashcontents hash do
+         puthash(car el, hash, !*q2a cdr el);
+      return 'sparse!-mat . u;
+   end;
 
 symbolic procedure sparse!-matsm u;
-   % If u evaluates to a variable assigned a sparse matrix
-   % then return a sparse matrix internal form
+   % Return a sparse matrix internal form
+   %   (<hash> <m> <n> . <name>)
+   % where <name> is either an identifier or nil, and the hash table
+   % elements are STANDARD QUOTIENT FORMS.
+
+   % If U evaluates to a variable assigned a sparse matrix then return
    %   (<hash> <m> <n> . u).
-   % If u evaluates to the form
+   % If U evaluates to the form
    %   (sparse!-mat <hash> <m> <n>)
-   % then return a sparse matrix internal form
+   % then return
    %   (<hash> <m> <n>).
-   % The elements are SQs.  If u evaluates to an operator expression
-   % (op s) then apply op to (<hash> <m> <n>) and return (<hash> <m>
-   % <n>) where the elements are SQs.
+   % If U evaluates to an operator expression of the form (op s) then
+   % simplify s to the form (<hash> <m> <n>) and apply op it.
    % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
    begin scalar x;
       if idp u and (x := get(u, 'avalue))
          and eqcar(x, 'sparse!-matrix)
             and eqcar(x := cadr x, 'sparse!-mat) then <<
+               x := cdr x;
                % Set name to u:
-               rplacd(cdddr x, u);
-               return cdr x
+               rplacd(cddr x, u);
             >>
       else if eqcar(u, 'sparse!-mat) then
-         return cdr u
+         x := cdr u
       else return apply(car u, {sparse!-matsm(cadr u)});
+      % Convert hash table elements to standard quotients:
+      begin scalar hash := car x;
+         for each el in hashcontents hash do
+            puthash(car el, hash, simp cdr el);
+      end;
+      return x
    end;
 
 % %%%%%%%%%
@@ -94,7 +107,7 @@ symbolic procedure sparse!-tp1 u;
       % Each alist element has the form ((i j) value).
       newhash := mk!-sparse!-matrix!-hash();
       for each el in alist do           % write transposed element
-         puthash({cadar el,caar el}, newhash, cadr el);
+         puthash({cadar el,caar el}, newhash, cdr el);
       return {newhash, caddr u, cadr u}
    end;
 
