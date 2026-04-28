@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-28 17:14:37 franc>
+% Time-stamp: <2026-04-28 17:51:21 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -156,17 +156,20 @@ symbolic procedure sparse!-tp1 u;
 % Conversion
 % %%%%%%%%%%
 
-symbolic procedure sparsify u; sparsify!-matrix matsm u;
+% NB: s := sparsify m; does not display correctly!
 
-put('sparsify, 'rtypefn, 'getrtypecar); % ???
+symbolic operator sparsify;
+
+symbolic procedure sparsify u;
+   sparse!-matsm!*1 sparsify!-matrix matsm u;
 
 symbolic procedure sparsify!-matrix u;
    % Convert matrix canonical form U to a sparse matrix canonical
-   % form.  U = ((a b ... c) ...).
+   % form.
    begin scalar hash := mk!-sparse!-matrix!-hash();
       integer i, j;
       for each row in u do <<
-         i := i + 1;
+         i := i + 1;  j := 0;
          for each el in row do <<
             j := j + 1;
             puthash({i,j}, hash, el);
