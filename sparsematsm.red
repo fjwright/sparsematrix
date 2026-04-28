@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-11 17:46:56 franc>
+% Time-stamp: <2026-04-28 17:14:37 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,18 @@ module sparsematsm;               % Simplification of sparse matrices.
 % This file is a reworking of "matrix/matsm.red" to use hash tables to
 % represent sparse matrices.
 
+% The canonical form of an <m>*<n> matrix is
+%   ((el_11 el_12 ... el_1n)
+%    (el_21 el_22 ... el_2n)
+%    ...
+%    (el_m1 el_m2 ... el_mn))
+% where el_ij is the ij matrix element in SQ form.
+
+% The canonical form of an <m>*<n> sparse matrix is
+%   (<hash> <m> <n>)
+% where <hash> is a hash table and the ij matrix element is stored in
+% SQ form in the hash table with key (i j).
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Evaluation and simplification
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -45,7 +57,7 @@ symbolic procedure sparse!-matsm!*(u,v);
    sparse!-matsm!*1 sparse!-matsm u;
 
 symbolic procedure sparse!-matsm!*1 u;
-   % Assume u evaluates to a sparse matrix internal form
+   % Assume u evaluates to a sparse matrix canonical form
    %   (<hash> <m> <n> . <name>).
    % Convert each element to an ALGEBRAIC EXPRESSION and return
    %   (sparse!-mat <hash> <m> <n> . <name>).
@@ -57,7 +69,7 @@ symbolic procedure sparse!-matsm!*1 u;
    end;
 
 symbolic procedure sparse!-matsm u;
-   % Return a sparse matrix internal form
+   % Return a sparse matrix canonical form
    %   (<hash> <m> <n> . <name>)
    % where <name> is either an identifier or nil, and the hash table
    % elements are STANDARD QUOTIENT FORMS.
@@ -90,6 +102,35 @@ symbolic procedure sparse!-matsm u;
       return x
    end;
 
+% %%%%%%%%
+% Addition
+% %%%%%%%%
+
+% This procedure would benefit from an efficient hash table copy
+% function.
+
+symbolic procedure sparse!-addm(u,v);
+   % Return the sum of two sparse matrix canonical forms U and V as a
+   % sparse matrix canonical form.  Return U + 0 as U and 0 + V as V.
+   % U & V have the form (<hash> <m> <n>).
+   if v = '(((nil . 1))) then u
+   else if u = '(((nil . 1))) then v
+   else if not(cadr u = cadr v and caddr u = caddr v) then
+      rerror(sparse!-matrix,8,"Sparse matrix mismatch")
+   else
+   begin scalar hash := mk!-sparse!-matrix!-hash(), val;
+      % Each element of hashcontents list has the form
+      % ((i j) . value).
+      for each el in hashcontents car u do
+         puthash(car el, hash, cdr el);
+      for each el in hashcontents car v do
+         puthash(car el, hash,
+            if val := gethash(car el, hash) then
+               addsq(val, cdr el)
+            else cdr el);
+      return {hash, cadr u, caddr u}
+   end;
+
 % %%%%%%%%%
 % Transpose
 % %%%%%%%%%
@@ -109,6 +150,29 @@ symbolic procedure sparse!-tp1 u;
       for each el in alist do           % write transposed element
          puthash({cadar el,caar el}, newhash, cdr el);
       return {newhash, caddr u, cadr u}
+   end;
+
+% %%%%%%%%%%
+% Conversion
+% %%%%%%%%%%
+
+symbolic procedure sparsify u; sparsify!-matrix matsm u;
+
+put('sparsify, 'rtypefn, 'getrtypecar); % ???
+
+symbolic procedure sparsify!-matrix u;
+   % Convert matrix canonical form U to a sparse matrix canonical
+   % form.  U = ((a b ... c) ...).
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      integer i, j;
+      for each row in u do <<
+         i := i + 1;
+         for each el in row do <<
+            j := j + 1;
+            puthash({i,j}, hash, el);
+         >>;
+      >>;
+      return {hash, i, j}
    end;
 
 endmodule;

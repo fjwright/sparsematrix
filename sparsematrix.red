@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-10 16:47:36 franc>
+% Time-stamp: <2026-04-28 17:04:40 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -154,7 +154,7 @@ symbolic procedure sparse!-matpri u;
    begin scalar alist, name;
       alist := hashcontents cadr u;
       if null alist then return write "Empty matrix";
-      % Each element has the form ((i j) value).
+      % Each element has the form ((i j) . value).
       % Sort matrix elements by row index and then by column index:
       alist := sort(alist,
          lambda(x,y);
