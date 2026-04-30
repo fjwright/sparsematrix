@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-28 17:51:21 franc>
+% Time-stamp: <2026-04-30 17:45:30 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -58,14 +58,16 @@ symbolic procedure sparse!-matsm!*(u,v);
 
 symbolic procedure sparse!-matsm!*1 u;
    % Assume u evaluates to a sparse matrix canonical form
-   %   (<hash> <m> <n> . <name>).
-   % Convert each element to an ALGEBRAIC EXPRESSION and return
+   %   (<hash> <m> <n> . <name>)
+   % where the matrix elements are in SQ form.
+   % Return a COPY in which each element is converted to an ALGEBRAIC
+   % EXPRESSION in the form
    %   (sparse!-mat <hash> <m> <n> . <name>).
    % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   begin scalar hash := car u;
-      for each el in hashcontents hash do
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      for each el in hashcontents car u do
          puthash(car el, hash, !*q2a cdr el);
-      return 'sparse!-mat . u;
+      return 'sparse!-mat . hash . cdr u;
    end;
 
 symbolic procedure sparse!-matsm u;
@@ -83,23 +85,23 @@ symbolic procedure sparse!-matsm u;
    % If U evaluates to an operator expression of the form (op s) then
    % simplify s to the form (<hash> <m> <n>) and apply op it.
    % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   begin scalar x;
+   begin scalar x, name;
       if idp u and (x := get(u, 'avalue))
          and eqcar(x, 'sparse!-matrix)
             and eqcar(x := cadr x, 'sparse!-mat) then <<
                x := cdr x;
-               % Set name to u:
-               rplacd(cddr x, u);
+               name := u;
             >>
       else if eqcar(u, 'sparse!-mat) then
          x := cdr u
       else return apply(car u, {sparse!-matsm(cadr u)});
-      % Convert hash table elements to standard quotients:
-      begin scalar hash := car x;
-         for each el in hashcontents hash do
+      % Convert matrix elements to standard quotients in a NEW hash
+      % table:
+      begin scalar hash := mk!-sparse!-matrix!-hash();
+         for each el in hashcontents car x do
             puthash(car el, hash, simp cdr el);
       end;
-      return x
+      return hash . cadr x . caddr x . name
    end;
 
 % %%%%%%%%
@@ -161,21 +163,40 @@ symbolic procedure sparse!-tp1 u;
 symbolic operator sparsify;
 
 symbolic procedure sparsify u;
+   % Convert dense matrix algebraic form U to a sparse matrix
+   % algebraic form.
    sparse!-matsm!*1 sparsify!-matrix matsm u;
 
 symbolic procedure sparsify!-matrix u;
-   % Convert matrix canonical form U to a sparse matrix canonical
-   % form.
+   % Convert dense matrix canonical form U to a sparse matrix
+   % canonical form.
    begin scalar hash := mk!-sparse!-matrix!-hash();
       integer i, j;
       for each row in u do <<
          i := i + 1;  j := 0;
          for each el in row do <<
             j := j + 1;
-            puthash({i,j}, hash, el);
+            if el neq '(((nil . 1))) then puthash({i,j}, hash, el);
          >>;
       >>;
       return {hash, i, j}
+   end;
+
+symbolic operator densify;
+
+symbolic procedure densify u;
+   % Convert sparse matrix algebraic form U to a dense matrix
+   % algebraic form.
+   matsm!*1 densify!-matrix sparse!-matsm u;
+
+symbolic procedure densify!-matrix u;
+   % Convert sparse matrix canonical form U to a dense matrix
+   % canonical form.
+   begin scalar hash := car u, m := cadr u, n := caddr u, el;
+      return
+         for i := 1 : m collect
+            for j := 1 : n collect
+               if el := gethash({i,j}, hash) then el else '(((nil . 1)))
    end;
 
 endmodule;
