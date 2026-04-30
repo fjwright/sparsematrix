@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-30 17:45:30 franc>
+% Time-stamp: <2026-04-30 17:57:32 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -97,11 +97,11 @@ symbolic procedure sparse!-matsm u;
       else return apply(car u, {sparse!-matsm(cadr u)});
       % Convert matrix elements to standard quotients in a NEW hash
       % table:
-      begin scalar hash := mk!-sparse!-matrix!-hash();
+      return begin scalar hash := mk!-sparse!-matrix!-hash();
          for each el in hashcontents car x do
             puthash(car el, hash, simp cdr el);
+         return hash . cadr x . caddr x . name
       end;
-      return hash . cadr x . caddr x . name
    end;
 
 % %%%%%%%%
