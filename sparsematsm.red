@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-30 17:57:32 franc>
+% Time-stamp: <2026-05-01 17:45:20 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -158,28 +158,26 @@ symbolic procedure sparse!-tp1 u;
 % Conversion
 % %%%%%%%%%%
 
-% NB: s := sparsify m; does not display correctly!
-
 symbolic operator sparsify;
 
 symbolic procedure sparsify u;
    % Convert dense matrix algebraic form U to a sparse matrix
    % algebraic form.
-   sparse!-matsm!*1 sparsify!-matrix matsm u;
+   sparsify!-matrix matsm u;
 
 symbolic procedure sparsify!-matrix u;
    % Convert dense matrix canonical form U to a sparse matrix
-   % canonical form.
+   % algebraic form (cf. matsm!*1).
    begin scalar hash := mk!-sparse!-matrix!-hash();
       integer i, j;
       for each row in u do <<
          i := i + 1;  j := 0;
          for each el in row do <<
             j := j + 1;
-            if el neq '(((nil . 1))) then puthash({i,j}, hash, el);
+            if el neq '(((nil . 1))) then puthash({i,j}, hash, !*q2a el);
          >>;
       >>;
-      return {hash, i, j}
+      return {'sparse!-mat, hash, i, j}
    end;
 
 symbolic operator densify;
@@ -187,16 +185,16 @@ symbolic operator densify;
 symbolic procedure densify u;
    % Convert sparse matrix algebraic form U to a dense matrix
    % algebraic form.
-   matsm!*1 densify!-matrix sparse!-matsm u;
+   densify!-matrix sparse!-matsm u;
 
 symbolic procedure densify!-matrix u;
    % Convert sparse matrix canonical form U to a dense matrix
-   % canonical form.
+   % algebraic form (cf. matsm!*1).
    begin scalar hash := car u, m := cadr u, n := caddr u, el;
-      return
+      return 'mat .
          for i := 1 : m collect
             for j := 1 : n collect
-               if el := gethash({i,j}, hash) then el else '(((nil . 1)))
+               if el := gethash({i,j}, hash) then !*q2a el else 0
    end;
 
 endmodule;
