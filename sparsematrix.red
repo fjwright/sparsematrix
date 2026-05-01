@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-04-28 17:04:40 franc>
+% Time-stamp: <2026-05-01 17:20:42 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -146,7 +146,28 @@ symbolic procedure set!-sparse!-matelem(u,v);
 % Printing
 % %%%%%%%%
 
-put('sparse!-mat, 'prifn, 'sparse!-matpri);
+% The following code is used by assgnpri.
+
+flag('(sparse!-matrix), 'sprifn);
+put('sparse!-mat, 'assgnpri, 'sparse!-assgnpri);
+
+% The two procedures below can probably be merged!
+
+symbolic procedure sparse!-assgnpri uvw;
+   % Called by assgnpri to print a sparse matrix
+   % or an assignment of the form
+   %   <variable> := <sparse matrix>
+   % UVW = (u v w), where
+   % U = (sparse!-mat <hash> <m> <n> . <name>)
+   % V = (<variable>) or null if not an assignment
+   % W = only
+   begin scalar u := car uvw, v := cadr uvw;
+      if v then
+         u := 'sparse!-mat . cadr u . caddr u . cadddr u . car v;
+      sparse!-matpri u;
+   end;
+
+% put('sparse!-mat, 'prifn, 'sparse!-matpri);
 
 symbolic procedure sparse!-matpri u;
    % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
