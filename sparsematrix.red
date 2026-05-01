@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-01 17:20:42 franc>
+% Time-stamp: <2026-05-01 18:31:00 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -46,7 +46,7 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(10, 1);
 
-symbolic procedure sparsematrix u;
+symbolic procedure sparse_matrix u;
    % Declare list U as sparse matrices (represented as hash tables).
    % cf. matrix.
    begin scalar x, y;
@@ -70,7 +70,7 @@ symbolic procedure sparsematrix u;
             else typerr({x,car j},"sparse matrix")
    end;
 
-rlistat '(sparsematrix);
+rlistat '(sparse_matrix);
 
 put('sparse!-mat, 'rtypefn, 'quotesparse!-matrix);
 
@@ -192,14 +192,14 @@ symbolic procedure sparse!-matpri u;
 % Generate random sparse matrices (for testing)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-operator randomsparsematrix;
+operator random_sparse_matrix;
 
-symbolic procedure randomsparsematrix(s, m, n);
+symbolic procedure random_sparse_matrix(s, m, n);
    % s must be an identifier.  Generate an m*n sparse matrix s
    % containing 10 random positive integers.
    begin scalar i, j;
       if not idp s then rederr({s, "invalid as identifier"});
-      sparsematrix s(m,n);
+      sparse_matrix s(m,n);
       for count := 1:10 do <<
          i := random(m) + 1;
          j := random(n) + 1;
@@ -209,7 +209,6 @@ symbolic procedure randomsparsematrix(s, m, n);
 
 endmodule;
 
-in "sparsematsm.red";
-in "sparsedet.red";
+in "sparsematsm.red", "sparsedet.red"$
 
 end;

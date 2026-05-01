@@ -15,9 +15,9 @@ symbolic procedure simpsparse!-det u;
    % variable assigned a sparse matrix, cf. det.
    sparse!-detq sparse!-matsm carx(u, 'det);
 
-put('sparsedet, 'simpfn, 'simpsparse!-det);
+put('sparse_det, 'simpfn, 'simpsparse!-det);
 
-flag('(sparsedet), 'immediate);
+flag('(sparse_det), 'immediate);
 
 symbolic procedure sparse!-detq u;
    % Top level determinant function.
@@ -73,6 +73,8 @@ symbolic procedure sparse!-detq1(hash, len, ignnum, i);
 % Trace
 % %%%%%
 
+put('sparse_trace, 'simpfn, 'simpsparse!-trace);
+
 symbolic procedure simpsparse!-trace u;
    % Return trace of sparse matrix s, where u = (s) and s is a
    % variable assigned a sparse matrix, cf. trace.
@@ -87,8 +89,6 @@ symbolic procedure simpsparse!-trace u;
          if (el := gethash({i,i}, hash)) then z := addsq(simp el, z);
       return z
    end;
-
-put('sparsetrace, 'simpfn, 'simpsparse!-trace);
 
 endmodule;
 

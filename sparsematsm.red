@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-01 17:45:20 franc>
+% Time-stamp: <2026-05-01 18:26:52 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -137,10 +137,10 @@ symbolic procedure sparse!-addm(u,v);
 % Transpose
 % %%%%%%%%%
 
-symbolic procedure sparsetp u; sparse!-tp1 sparse!-matsm u;
+symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
 
-flag('(sparsetp), 'sparse!-matflg);
-put('sparsetp, 'rtypefn, 'getrtypecar); % declares algebraic operator
+flag('(sparse_tp), 'sparse!-matflg);
+put('sparse_tp, 'rtypefn, 'getrtypecar); % declares algebraic operator
 
 symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix internal form U =
