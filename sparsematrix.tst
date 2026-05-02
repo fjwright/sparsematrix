@@ -21,15 +21,15 @@ sparsify m;
 
 s := ws;
 
-random_sparse_matrix(sr, 10, 10);
-
-sr;
+random_sparse_matrix(sr, 5, 5);
 
 %Trace:
 sparse_trace sr;
 
+densify sr;
+
 % Transpose:
-sparse_tp sr;                           % FAILS!
+densify sparse_tp sr;
 
 
 ;end;

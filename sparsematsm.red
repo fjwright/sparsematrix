@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-01 18:26:52 franc>
+% Time-stamp: <2026-05-02 15:35:23 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -137,21 +137,17 @@ symbolic procedure sparse!-addm(u,v);
 % Transpose
 % %%%%%%%%%
 
-symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
-
-flag('(sparse_tp), 'sparse!-matflg);
+% flag('(sparse_tp), 'sparse!-matflg);
 put('sparse_tp, 'rtypefn, 'getrtypecar); % declares algebraic operator
 
-symbolic procedure sparse!-tp1 u;
-   % Return the transpose of the sparse matrix internal form U =
-   % (<hash> <m> <n>) as a new sparse matrix internal form.
-   begin scalar
-      alist := hashcontents(car u),
-      % Each alist element has the form ((i j) value).
-      newhash := mk!-sparse!-matrix!-hash();
-      for each el in alist do           % write transposed element
-         puthash({cadar el,caar el}, newhash, cdr el);
-      return {newhash, caddr u, cadr u}
+symbolic procedure sparse_tp u;
+   % Return the transpose of the sparse matrix canonical form U =
+   % (<hash> <m> <n>) as a new sparse matrix canonical form.
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      % Each alist element has the form ((i j) . value).
+      for each el in hashcontents car u do
+         puthash({cadar el,caar el}, hash, cdr el);
+      return {hash, caddr u, cadr u}
    end;
 
 % %%%%%%%%%%
