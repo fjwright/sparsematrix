@@ -31,5 +31,10 @@ densify sr;
 % Transpose:
 densify sparse_tp sr;
 
+% Determinant:
+m := mat((a,b,c),(d,e,f),(g,h,i));
+det m;
+s := sparsify m;
+sparse_det s;
 
 ;end;

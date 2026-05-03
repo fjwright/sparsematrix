@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-03 10:24:55 franc>
+% Time-stamp: <2026-05-03 16:42:21 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -33,6 +33,8 @@ module sparsematsm;               % Simplification of sparse matrices.
 
 % This file is a reworking of "matrix/matsm.red" to use hash tables to
 % represent sparse matrices.
+
+load_package matrix;                    % needed for densify
 
 % The canonical form of an <m>*<n> matrix is
 %   ((el_11 el_12 ... el_1n)
