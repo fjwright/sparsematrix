@@ -21,7 +21,7 @@ sparsify m;
 
 s := ws;
 
-random_sparse_matrix(sr, 5, 5);
+sparse_random_matrix(sr, 5, 5);
 
 %Trace:
 sparse_trace sr;

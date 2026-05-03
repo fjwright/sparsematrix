@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-01 18:31:00 franc>
+% Time-stamp: <2026-05-03 12:31:04 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -172,29 +172,25 @@ symbolic procedure sparse!-assgnpri uvw;
 symbolic procedure sparse!-matpri u;
    % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
    % If no (null) name then display name as "?".
-   begin scalar alist, name;
-      alist := hashcontents cadr u;
-      if null alist then return write "Empty matrix";
-      % Each element has the form ((i j) . value).
-      % Sort matrix elements by row index and then by column index:
+   begin scalar alist := hashcontents cadr u;
+      if null alist then return writepri("Sparse zero matrix", 'only);
+      % Each alist element has the form ((i j) . value).
+      % Sort by row index and then by column index:
       alist := sort(alist,
          lambda(x,y);
       caar x < caar y or
          (caar x = caar y and cadar x < cadar y));
-      name := cddddr u;
-      name := if name then concat2(id2string name, "(") else "?(";
-      for each el in alist do eval formwrite(
-         'write . {name, caar el, ",", cadar el, ") := ", mkquote cdr el},
-         nil, 'algebraic)
+      for each el in alist do
+         assgnpri(cdr el, {{cddddr u or '!?, caar el, cadar el}}, 'only);
    end;
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Generate random sparse matrices (for testing)
+% Generate sparse random matrices (for testing)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-operator random_sparse_matrix;
+symbolic operator sparse_random_matrix;
 
-symbolic procedure random_sparse_matrix(s, m, n);
+symbolic procedure sparse_random_matrix(s, m, n);
    % s must be an identifier.  Generate an m*n sparse matrix s
    % containing 10 random positive integers.
    begin scalar i, j;

@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-02 15:35:23 franc>
+% Time-stamp: <2026-05-03 10:24:55 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -116,6 +116,7 @@ symbolic procedure sparse!-addm(u,v);
    % sparse matrix canonical form.  Return U + 0 as U and 0 + V as V.
    % U & V have the form (<hash> <m> <n>).
    if v = '(((nil . 1))) then u
+      % *** WRONG: '(((nil . 1))) is a canonical dense zero matrix! ***
    else if u = '(((nil . 1))) then v
    else if not(cadr u = cadr v and caddr u = caddr v) then
       rerror(sparse!-matrix,8,"Sparse matrix mismatch")
@@ -170,7 +171,8 @@ symbolic procedure sparsify!-matrix u;
          i := i + 1;  j := 0;
          for each el in row do <<
             j := j + 1;
-            if el neq '(((nil . 1))) then puthash({i,j}, hash, !*q2a el);
+            if numr el then             % nonzero standard quotient
+               puthash({i,j}, hash, !*q2a el);
          >>;
       >>;
       return {'sparse!-mat, hash, i, j}
