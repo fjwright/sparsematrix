@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-03 16:42:21 franc>
+% Time-stamp: <2026-05-04 09:57:38 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -56,6 +56,8 @@ put('sparse!-matrix, 'evfn, 'sparse!-matsm!*);
 
 symbolic procedure sparse!-matsm!*(u,v);
    % Sparse matrix expression simplification function.
+   % U is an arbitrary sparse matrix expression in algebraic form.
+   % Return a sparse matrix expression in tagged algebraic form.
    sparse!-matsm!*1 sparse!-matsm u;
 
 symbolic procedure sparse!-matsm!*1 u;
@@ -73,6 +75,27 @@ symbolic procedure sparse!-matsm!*1 u;
    end;
 
 symbolic procedure sparse!-matsm u;
+   % Simplify an arbitrary sparse matrix expression U in algebraic
+   % form and return a sparse matrix canonical form
+   %   (<hash> <m> <n> . <name>)
+   % where <name> is U if U is an identifier or nil, and the hash
+   % table elements are STANDARD QUOTIENT FORMS.
+
+   % nssimp returns a sparse matrix expression as a list of summands,
+   % where each summand is a list of the form (c m1 m2 ...), c is a
+   % scalar in standard quotient form and mi are tagged algebraic
+   % sparse matrix forms.
+
+   % This version only to test sparse!-addm.
+   begin scalar n,x,y;
+      n := nssimp(u, 'sparse!-matrix);
+      for each j in n do
+         <<y := sparse!-matsm1 cadr j; % multsm(car j,matsm1 cdr j);
+           x := if null x then y else sparse!-addm(x,y)>>;
+      return x
+   end;
+
+symbolic procedure sparse!-matsm1 u;
    % Return a sparse matrix canonical form
    %   (<hash> <m> <n> . <name>)
    % where <name> is either an identifier or nil, and the hash table
@@ -96,7 +119,8 @@ symbolic procedure sparse!-matsm u;
             >>
       else if eqcar(u, 'sparse!-mat) then
          x := cdr u
-      else return apply(car u, {sparse!-matsm(cadr u)});
+            % else return apply(car u, {sparse!-matsm(cadr u)});
+      else rederr "Invalid sparse matrix form";
       % Convert matrix elements to standard quotients in a NEW hash
       % table:
       return begin scalar hash := mk!-sparse!-matrix!-hash();
