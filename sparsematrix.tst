@@ -40,7 +40,6 @@ sparse_det s;
 % Addition:
 m1 := mat((a,b),(c,d));
 m2 := mat((e,f),(g,h));
-m1 + m2;
 s1 := sparsify m1;
 s2 := sparsify m2;
 % symbolic;
@@ -49,7 +48,9 @@ s2 := sparsify m2;
 % ss2 := sparse!-matsm 's2;
 % ss := sparse!-addm(ss1,ss2);
 % sparse!-matpri sparse!-matsm!*1 ss;
+m1 + m2;
 s1 + s2;
-
+2m1 + 3m2;
+2s1 + 3s2;
 
 ;end;

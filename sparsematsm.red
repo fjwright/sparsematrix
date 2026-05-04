@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-04 09:57:38 franc>
+% Time-stamp: <2026-05-04 17:16:58 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -78,20 +78,21 @@ symbolic procedure sparse!-matsm u;
    % Simplify an arbitrary sparse matrix expression U in algebraic
    % form and return a sparse matrix canonical form
    %   (<hash> <m> <n> . <name>)
-   % where <name> is U if U is an identifier or nil, and the hash
-   % table elements are STANDARD QUOTIENT FORMS.
+   % where <name> is U if U is an identifier or nil, and the matrix
+   % elements are STANDARD QUOTIENT FORMS.
 
-   % nssimp returns a sparse matrix expression as a list of summands,
-   % where each summand is a list of the form (c m1 m2 ...), c is a
-   % scalar in standard quotient form and mi are tagged algebraic
-   % sparse matrix forms.
-
-   % This version only to test sparse!-addm.
+   % nssimp returns a sparse matrix expression as a list represent a
+   % sum, where each summand is a list of the form (c m1 m2 ...)
+   % representing a product, where c is a scalar in standard quotient
+   % form and mi are tagged algebraic sparse matrix forms.
    begin scalar n,x,y;
-      n := nssimp(u, 'sparse!-matrix);
-      for each j in n do
-         <<y := sparse!-matsm1 cadr j; % multsm(car j,matsm1 cdr j);
-           x := if null x then y else sparse!-addm(x,y)>>;
+      n := nssimp(u, 'sparse!-matrix); % TEMPORARY VARIABLE FOR DEBUGGING!!!
+      for each j in n do <<
+         % multiply out each product...
+         y := sparse!-multsm(car j, sparse!-matsm1 cadr j); % single matrix only!!!
+         % and add them...
+         x := if null x then y else sparse!-addm(x,y)
+      >>;
       return x
    end;
 
@@ -119,8 +120,9 @@ symbolic procedure sparse!-matsm1 u;
             >>
       else if eqcar(u, 'sparse!-mat) then
          x := cdr u
+      else return apply(car u, cdr u);
             % else return apply(car u, {sparse!-matsm(cadr u)});
-      else rederr "Invalid sparse matrix form";
+      % else rederr "Invalid sparse matrix form";
       % Convert matrix elements to standard quotients in a NEW hash
       % table:
       return begin scalar hash := mk!-sparse!-matrix!-hash();
@@ -164,10 +166,15 @@ symbolic procedure sparse!-addm(u,v);
 % Transpose
 % %%%%%%%%%
 
-% flag('(sparse_tp), 'sparse!-matflg);
-put('sparse_tp, 'rtypefn, 'getrtypecar); % declares algebraic operator
+% This code currently works but seems a bit convoluted, in that it
+% appears to end up calling sparse!-matsm multiple time!
 
-symbolic procedure sparse_tp u;
+symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
+
+put('sparse_tp, 'rtypefn, 'getrtypecar); % declares algebraic operator
+% flag('(sparse_tp), 'sparse!-matflg);
+
+symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix canonical form U =
    % (<hash> <m> <n>) as a new sparse matrix canonical form.
    begin scalar hash := mk!-sparse!-matrix!-hash();
@@ -175,6 +182,23 @@ symbolic procedure sparse_tp u;
       for each el in hashcontents car u do
          puthash({cadar el,caar el}, hash, cdr el);
       return {hash, caddr u, cadr u}
+   end;
+
+% %%%%%%%%%%%%%%
+% Multiplication
+% %%%%%%%%%%%%%%
+
+symbolic procedure sparse!-multsm(u,v);
+   % Return the product of standard quotient U and sparse matrix
+   % canonical form V as a new sparse matrix canonical form.
+   if u = (1 ./ 1) then v else
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      % Each alist element has the form ((i j) . value).
+      for each el in hashcontents car v do
+         % Ordering of multsq arguments to preserve the ordering of
+         % noncom scalars in matrix elements!
+         puthash({cadar el,caar el}, hash, multsq(cdr el,u));
+      return {hash, caddr v, cadr v}
    end;
 
 % %%%%%%%%%%
