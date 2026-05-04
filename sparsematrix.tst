@@ -37,7 +37,7 @@ det m;
 s := sparsify m;
 sparse_det s;
 
-% Addition:
+% Addition and scalar multiplication:
 m1 := mat((a,b),(c,d));
 m2 := mat((e,f),(g,h));
 s1 := sparsify m1;
@@ -52,5 +52,15 @@ m1 + m2;
 s1 + s2;
 2m1 + 3m2;
 2s1 + 3s2;
+
+% Matrix multiplication:
+symbolic;
+global '(ss1 ss2 ss);
+ss1 := sparse!-matsm 's1;
+ss2 := sparse!-matsm 's2;
+ss := sparse!-multm(ss1,ss2);
+sparse!-matpri sparse!-matsm!*1 ss;
+algebraic;
+m1*m2;
 
 ;end;

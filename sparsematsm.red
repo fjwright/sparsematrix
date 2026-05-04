@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-04 17:16:58 franc>
+% Time-stamp: <2026-05-04 18:05:07 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -187,6 +187,27 @@ symbolic procedure sparse!-tp1 u;
 % %%%%%%%%%%%%%%
 % Multiplication
 % %%%%%%%%%%%%%%
+
+symbolic procedure sparse!-multm(u,v);
+   % Return the product of two sparse matrix canonical forms U and V
+   % as a new sparse matrix canonical form.  Assume they are
+   % conformable, i.e. caddr u = cadr v
+   begin scalar
+      hashu := car u, hashv := car v,
+      m := cadr u, n := caddr v,
+      hash := mk!-sparse!-matrix!-hash();
+      for i := 1 : m do for j := 1 : n do
+         % Compute i,j element of product matrix as scalar product of
+         % row i of u with column j of v:
+         begin scalar elu, elv, scalprod := (nil ./ 1);
+            for k := 1 : caddr u do
+               if (elu := gethash({i,k}, hashu))
+                  and (elv := gethash({k,j}, hashv)) then
+                     scalprod := addsq(scalprod, multsq(elu, elv));
+            puthash({i,j}, hash, scalprod);
+         end;
+      return {hash, m, n}
+   end;
 
 symbolic procedure sparse!-multsm(u,v);
    % Return the product of standard quotient U and sparse matrix
