@@ -1,2 +1,25 @@
-# sparsematrix
-REDUCE sparse matrices
+# SPARSEMATRIX: A REDUCE sparse matrix package
+
+**[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
+Time-stamp: <2026-05-05 18:09:10 franc>
+
+A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  By contrast, if most of the elements are non-zero, the matrix is considered *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix fewer than half the elements are nonzero.
+
+The REDUCE MATRIX package implicitly assumes dense matrices.  SPARSEMATRIX is a re-implementation of the MATRIX package that assumes sparse matrices.  It uses hash tables as the primary data structures to store matrix elements, and the canonical form for a sparse matrix is a LISP list of the form `(<hash> <m> <n>)`, where `<hash>` is a hash table, `<m>` is the number of rows (row dimension), and `<n>` is the number of columns (column dimension).  Only nonzero elements are ever stored in the has table; missing elements are implicitly zero.  By contrast, the canonical form for a dense matrix is a LISP list of rows of the form `(<row_1> <row_2> ... <row_m>)`, where each `<row_i>` is a list of the matrix elements in the *i-th* row.  The algorithms used to manipulate sparse matrices avoid accessing implicitly-zero (i.e. non-stored) matrix elements as much as possible, whereas the algorithms used to manipulate dense matrices always run through all matrix elements, regardless of their values.
+
+Currently, sparse and dense matrices cannot be mixed, but I plan to implement full and automatic interoperability in future.  However, a sparse matrix can be explicitly converted to a dense matrix, and vice versa.
+
+## An alternative: the SPARSE package
+
+There is already a REDUCE package called SPARSE to support sparse matrices, written by Stephen Scowcroft in 1995 at the Konrad-Zuse-Zentrum für Informationstechnik Berlin.  It uses a different data structure to represent a sparse matrix, namely a LISP list of the form `(<vector> (spm <m> <n>))`, where `<vector>` is a vector of rows of the form `[nil <row_1> <row_2> ... <row_m>]` and each `<row_i>` is a list of the matrix elements in the *i-th* row, each represented as a dotted pair, of the form `((nil) (j_1 . val_1) (j_2 . val_2) ...)`.  The `nil` elements are to allow for the fact that REDUCE indexes for vectors and lists start from 0, whereas matrix indices start from 1.  Note that the SPARSEMATRIX and SPARSE packages are completely incompatible: use one of the other!
+
+A combination of adding support for hash tables to REDUCE on Common Lisp and the SPARSE package inspired me to try to write a new package to support sparse matrices.  I developed the SPARSEMATRIX package entirely using REDUCE on Steel Bank Common Lisp (on Windows), and used other version of REDUCE and other platforms to test portability.
+
+When using the SPARSE package, if sparse and dense matrices are both used in an expression then the result appears always to be a sparse matrix.  I think that the result should usually be a dense matrix [BUT THIS NEEDS CHECKING]!
+
+<!-- Local Variables: -->
+<!-- fill-column: 1000 -->
+<!-- eval: (auto-fill-mode -1) -->
+<!-- eval: (visual-line-mode 1) -->
+<!-- eval: (visual-wrap-prefix-mode 1) -->
+<!-- End: -->
