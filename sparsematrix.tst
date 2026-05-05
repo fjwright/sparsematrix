@@ -54,6 +54,10 @@ s1 + s2;
 2s1 + 3s2;
 
 % Matrix multiplication:
+m1 := mat((a,b,c),(d,e,f));
+m2 := mat((g,h),(i,j),(k,l));
+s1 := sparsify m1;
+s2 := sparsify m2;
 symbolic;
 global '(ss1 ss2 ss);
 ss1 := sparse!-matsm 's1;

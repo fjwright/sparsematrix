@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-04 18:05:07 franc>
+% Time-stamp: <2026-05-05 16:10:28 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -192,21 +192,25 @@ symbolic procedure sparse!-multm(u,v);
    % Return the product of two sparse matrix canonical forms U and V
    % as a new sparse matrix canonical form.  Assume they are
    % conformable, i.e. caddr u = cadr v
-   begin scalar
-      hashu := car u, hashv := car v,
-      m := cadr u, n := caddr v,
-      hash := mk!-sparse!-matrix!-hash();
-      for i := 1 : m do for j := 1 : n do
-         % Compute i,j element of product matrix as scalar product of
-         % row i of u with column j of v:
-         begin scalar elu, elv, scalprod := (nil ./ 1);
-            for k := 1 : caddr u do
-               if (elu := gethash({i,k}, hashu))
-                  and (elv := gethash({k,j}, hashv)) then
-                     scalprod := addsq(scalprod, multsq(elu, elv));
-            puthash({i,j}, hash, scalprod);
-         end;
-      return {hash, m, n}
+   begin scalar alistu := hashcontents car u,
+         alistv := hashcontents car v,
+         hash := mk!-sparse!-matrix!-hash();
+      % Each alist element has the form ((i j) . value).
+      for each elu in alistu do
+      begin scalar i := caar elu, k := cadar elu;
+         for each elv in alistv do
+            if caar elv = k then
+               % The product of this pair of matrix elements is a
+               % summand of the scalar product forming the i,j element
+               % of the product matrix.
+               begin scalar j := cadar elv,
+                     scalprod := gethash({i,j}, hash),
+                     prod := multsq(cdr elu, cdr elv);
+                  puthash({i,j}, hash,
+                     if scalprod then addsq(scalprod, prod) else prod);
+               end;
+      end;
+      return {hash, cadr u, caddr v}
    end;
 
 symbolic procedure sparse!-multsm(u,v);
@@ -218,8 +222,8 @@ symbolic procedure sparse!-multsm(u,v);
       for each el in hashcontents car v do
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         puthash({cadar el,caar el}, hash, multsq(cdr el,u));
-      return {hash, caddr v, cadr v}
+         puthash({caar el,cadar el}, hash, multsq(cdr el,u));
+      return {hash, cadr v, caddr v}
    end;
 
 % %%%%%%%%%%
