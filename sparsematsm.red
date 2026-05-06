@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-05 16:10:28 franc>
+% Time-stamp: <2026-05-06 14:49:48 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -81,55 +81,92 @@ symbolic procedure sparse!-matsm u;
    % where <name> is U if U is an identifier or nil, and the matrix
    % elements are STANDARD QUOTIENT FORMS.
 
-   % nssimp returns a sparse matrix expression as a list represent a
-   % sum, where each summand is a list of the form (c m1 m2 ...)
-   % representing a product, where c is a scalar in standard quotient
-   % form and mi are tagged algebraic sparse matrix forms.
-   begin scalar n,x,y;
-      n := nssimp(u, 'sparse!-matrix); % TEMPORARY VARIABLE FOR DEBUGGING!!!
-      for each j in n do <<
+   % nssimp returns a sparse matrix expression as a list representing
+   % a sum, where each summand is a list of the form (c m1 m2 ...)
+   % representing a product, c is a scalar in standard quotient form,
+   % and the mi are tagged algebraic sparse matrix forms.
+   begin scalar x, y, name := idp u and u;
+      for each j in nssimp(u, 'sparse!-matrix) do <<
          % multiply out each product...
-         y := sparse!-multsm(car j, sparse!-matsm1 cadr j); % single matrix only!!!
+         y := sparse!-multsm(car j, sparse!-matsm1(cdr j, name));
          % and add them...
          x := if null x then y else sparse!-addm(x,y)
       >>;
       return x
    end;
 
-symbolic procedure sparse!-matsm1 u;
+symbolic procedure sparse!-matsm1(u, name);
+   % U is a sparse matrix symbol product, i.e. a general sparse matrix
+   % expression; NAME is an identifier (for a single sparse matrix) or
+   % nil.
+
    % Return a sparse matrix canonical form
    %   (<hash> <m> <n> . <name>)
    % where <name> is either an identifier or nil, and the hash table
    % elements are STANDARD QUOTIENT FORMS.
-
-   % If U evaluates to a variable assigned a sparse matrix then return
-   %   (<hash> <m> <n> . u).
-   % If U evaluates to the form
-   %   (sparse!-mat <hash> <m> <n>)
-   % then return
-   %   (<hash> <m> <n>).
-   % If U evaluates to an operator expression of the form (op s) then
-   % simplify s to the form (<hash> <m> <n>) and apply op it.
-   % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   begin scalar x, name;
-      if idp u and (x := get(u, 'avalue))
-         and eqcar(x, 'sparse!-matrix)
-            and eqcar(x := cadr x, 'sparse!-mat) then <<
-               x := cdr x;
-               name := u;
-            >>
-      else if eqcar(u, 'sparse!-mat) then
-         x := cdr u
-      else return apply(car u, cdr u);
-            % else return apply(car u, {sparse!-matsm(cadr u)});
-      % else rederr "Invalid sparse matrix form";
-      % Convert matrix elements to standard quotients in a NEW hash
-      % table:
-      return begin scalar hash := mk!-sparse!-matrix!-hash();
-         for each el in hashcontents car x do
-            puthash(car el, hash, simp cdr el);
-         return hash . cadr x . caddr x . name
+   begin scalar x,y,z; integer n;
+   a:
+      if null u then return z
+      else if eqcar(car u, '!*div) then go to d % inverse
+      else if atom car u then go to er          % not set
+      else if caar u eq 'sparse!-mat then go to c1 % tagged alg form
+      else if flagp(caar u, 'matmapfn) and cdar u  % map applied
+         and getrtype cadar u eq 'sparse!-matrix
+      then % x := sparse!-matsm sparse!-matrixmap(car u,nil)
+         rederr("Sparse matrix map not yet implemented!")
+      else if (x := get(caar u, 'psopfn)) % psopfn function call
+      then << x := lispapply(x, list cdar u);
+         if eqcar(x,'sparse!-mat) then x := sparse!-matsm x >>
+      else <<x := lispapply(caar u,cdar u); % other function call
+         if eqcar(x,'sparse!-mat) then x := sparse!-matsm x>>;
+   b:                              % multiplication (scalar or matrix)
+      z := if null z then x
+      else if null cdr z and null cdar z then sparse!-multsm(caar z,x)
+      else sparse!-multm(x,z);
+   c:                                   % loop through elements of u
+      u := cdr u;
+      go to a;
+      %% End of main loop, followed by special cases.
+   c1:                        % tagged algebraic form
+      %%   car u = (sparse!-mat <hash> <m> <n>)
+      %% Return a sparse matrix canonical form
+      %%   (<hash> <m> <n> . <name>)
+      x := begin scalar hash := mk!-sparse!-matrix!-hash(), cdaru := cdar u;
+         for each el in hashcontents car cdaru do
+            puthash(car el, hash, xsimp cdr el);
+         return hash . cadr cdaru . caddr cdaru . name
       end;
+      go to b;
+   d:                                   % inverse -- not yet implemented!
+      rederr("Sparse matrix inverse not yet implemented!");
+      y := sparse!-matsm cadar u;
+      if (n := length car y) neq length y
+      then rerror(sparse!-matrix,4,"Non square sparse matrix")
+      else if (z and n neq length z)
+      then rerror(sparse!-matrix,5,"Sparse matrix mismatch")
+      else if cddar u then go to h
+      else if null cdr y and null cdar y then go to e;
+      x := subfg!*;
+      subfg!* := nil;
+      if null z then z := apply1(get('sparse!-mat,'inversefn),y)
+      else if null(x := get('sparse!-mat,'lnrsolvefn))
+      then z := multm(apply1(get('sparse!-mat,'inversefn),y),z)
+      else z := apply2(get('sparse!-mat,'lnrsolvefn),y,z);
+      subfg!* := x;
+      % Make sure there are no power substitutions.
+      z := for each j in z collect for each k in j collect
+         <<!*sub2 := t; subs2 k>>;
+      go to c;
+   e:
+      if null caaar y then rerror(sparse!-matrix,6,"Zero divisor");
+      y := revpr caar y;
+      z := if null z then list list y else sparse!-multsm(y,z);
+      go to c;
+   h:
+      if null z then z := generateident n;
+      go to c;
+   er:
+      rerror(sparse!-matrix,7,list("Sparse matrix",car u,"not set"))
    end;
 
 % %%%%%%%%

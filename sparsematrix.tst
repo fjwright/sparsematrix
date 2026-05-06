@@ -1,6 +1,3 @@
-in "sparsematrix.red"$
-
-
 sparse_matrix sd(5,5);
 
 length sd;
@@ -54,17 +51,21 @@ s1 + s2;
 2s1 + 3s2;
 
 % Matrix multiplication:
-m1 := mat((a,b,c),(d,e,f));
-m2 := mat((g,h),(i,j),(k,l));
-s1 := sparsify m1;
-s2 := sparsify m2;
-symbolic;
-global '(ss1 ss2 ss);
-ss1 := sparse!-matsm 's1;
-ss2 := sparse!-matsm 's2;
-ss := sparse!-multm(ss1,ss2);
-sparse!-matpri sparse!-matsm!*1 ss;
-algebraic;
-m1*m2;
+m3 := mat((a,b,c),(d,e,f));
+m4 := mat((g,h),(i,j),(k,l));
+s3 := sparsify m1;
+s4 := sparsify m2;
+m3*m4;
+s3*s4;
+
+m4*m3;
+s4*s3;
+
+2m1*m3*m4;
+2s1*s3*s4;
+
+m3*m4*m1*3;
+s3*s4*s1*3;
+
 
 ;end;
