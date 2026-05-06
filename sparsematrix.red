@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-03 16:35:27 franc>
+% Time-stamp: <2026-05-06 15:38:35 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -36,10 +36,14 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % The representation of a sparse matrix is
 %   (sparse-mat <hash> <m> <n> . <name>),
-% where <hash> is a hash table, <m> is the maximum row index, <n> is
-% the maximum column index, and <name> is either the name of the
-% sparse matrix (an identifier) to be used by the print routine or nil
-% if it has no name.
+% where <hash> is a hash table, <m> is the maximum row index (row
+% dimension), <n> is the maximum column index (column dimension), and
+% <name> is either the name of the sparse matrix (an identifier) to be
+% used by the print routine or nil if it has no name.
+
+% Matrix elements are stored in the hash table under the key
+%   (<i> . <j>),
+% where <i> is the row index and <j> is the column index.
 
 % The rtype of a sparse matrix is sparse-matrix.
 
@@ -98,8 +102,8 @@ put('sparse!-matrix, 'lengthfn, 'sparse!-matlength);
 symbolic procedure sparse!-matlength u;
    % Return dimensions {m,n} of sparse matrix u.
    % cf. matlength.
-   if not eqcar(u,'sparse!-mat) then
-      rerror(sparse!-matrix,2,{"Sparse matrix",u,"not set"})
+   if not eqcar(u, 'sparse!-mat) then
+      rerror(sparse!-matrix, 2, {"Sparse matrix",u,"not set"})
    else 'list . sparse!-matdims u;
 
 % %%%%%%%%%%%%%%
@@ -107,25 +111,25 @@ symbolic procedure sparse!-matlength u;
 % %%%%%%%%%%%%%%
 
 symbolic procedure access!-sparse!-matelem u;
-   % Access an element of a sparse matrix u = (id i j ...).
-   % Return (hash i j).
+   % Access an element of a sparse matrix, where U = (id i j).
+   % Return ((i . j) . hash).
    begin scalar x, i, j, dims;
-      if length u neq 3 then typerr(u,"sparse matrix element");
-      x := get(car u,'avalue);
+      if length u neq 3 then typerr(u, "sparse matrix element");
+      x := get(car u, 'avalue);
       if null x or not(car x eq 'sparse!-matrix) then
-         typerr(car u,"sparse matrix")
-      else if not eqcar(x := cadr x,'sparse!-mat) then
-         rerror(sparse!-matrix,1,{"Sparse matrix",car u,"not set"});
+         typerr(car u, "sparse matrix")
+      else if not eqcar(x := cadr x, 'sparse!-mat) then
+         rerror(sparse!-matrix, 1, {"Sparse matrix",car u,"not set"});
       i := reval_without_mod cadr u;
-      if not fixp i or i<=0 then typerr(i,"positive integer");
-      dims := sparse!-matdims x;          % dims = (m n)
+      if not fixp i or i <= 0 then typerr(i, "positive integer");
+      dims := sparse!-matdims x;        % dims = (m n)
       if i > car dims then
-         rerror(sparse!-matrix,23,{"Sparse matrix row number",i,"out of range"});
+         rerror(sparse!-matrix, 23, {"Sparse matrix row number",i,"out of range"});
       j := reval_without_mod caddr u;
-      if not fixp j or j<=0 then typerr(j,"positive integer");
+      if not fixp j or j <= 0 then typerr(j, "positive integer");
       if j > cadr dims then
-         rerror(sparse!-matrix,24,{"Sparse matrix column number",j,"out of range"});
-      return {cadr x, i, j}
+         rerror(sparse!-matrix, 24, {"Sparse matrix column number",j,"out of range"});
+      return ((i . j) . cadr x)
    end;
 
 put('sparse!-matrix, 'getelemfn, 'get!-sparse!-matelem);
@@ -133,14 +137,14 @@ put('sparse!-matrix, 'getelemfn, 'get!-sparse!-matelem);
 symbolic procedure get!-sparse!-matelem u;
    % Return an element of a sparse matrix u = (id i j).
    % cf. getmatelem.
-   (gethash(cdr x, car x) or 0) where x = access!-sparse!-matelem u;
+   (gethash(car x, cdr x) or 0) where x = access!-sparse!-matelem u;
 
 put('sparse!-matrix, 'setelemfn, 'set!-sparse!-matelem);
 
 symbolic procedure set!-sparse!-matelem(u,v);
    % Assign v to an element of a sparse matrix u = (id i j)
    % and return v, cf. setmatelem.
-   puthash(cdr x, car x, v) where x = access!-sparse!-matelem u;
+   puthash(car x, cdr x, v) where x = access!-sparse!-matelem u;
 
 % %%%%%%%%
 % Printing
@@ -174,14 +178,14 @@ symbolic procedure sparse!-matpri u;
    % If no (null) name then display name as "?".
    begin scalar alist := hashcontents cadr u;
       if null alist then return lprim "Sparse zero matrix";
-      % Each alist element has the form ((i j) . value).
+      % Each alist element has the form ((i . j) . value).
       % Sort by row index and then by column index:
       alist := sort(alist,
          lambda(x,y);
       caar x < caar y or
-         (caar x = caar y and cadar x < cadar y));
+         (caar x = caar y and cdar x < cdar y));
       for each el in alist do
-         assgnpri(cdr el, {{cddddr u or '!?, caar el, cadar el}}, 'only);
+         assgnpri(cdr el, {{cddddr u or '!?, caar el, cdar el}}, 'only);
    end;
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -192,11 +196,11 @@ symbolic operator sparse_random_matrix;
 
 symbolic procedure sparse_random_matrix(s, m, n);
    % s must be an identifier.  Generate an m*n sparse matrix s
-   % containing 10 random positive integers.
+   % containing (m+n)/2 random positive integers.
    begin scalar i, j;
       if not idp s then rederr({s, "invalid as identifier"});
       sparse_matrix s(m,n);
-      for count := 1:10 do <<
+      for count := 1 : fix((m+n)/2) do <<
          i := random(m) + 1;
          j := random(n) + 1;
          s(i,j) := random(1000);

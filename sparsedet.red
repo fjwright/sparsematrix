@@ -1,7 +1,7 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-03 16:41:06 franc>
+% Time-stamp: <2026-05-06 15:50:30 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -54,7 +54,7 @@ symbolic procedure sparse!-detq u;
    begin scalar len := cadr u;          % number of rows <m>
       if caddr u neq len then rederr "Non square sparse matrix";
       return if len = 1 then
-         gethash({1,1}, car u) or 0
+         gethash(1 . 1, car u) or 0
       else sparse!-detq1(car u, len, 1, for j := 1:len collect j)
    end;
 
@@ -68,11 +68,11 @@ symbolic procedure sparse!-detq1(hash, len, i, jlist);
    % initially {1,...,LEN}.
    begin scalar i1, result, neg;
       % Base case: last (or single) row, single element.
-      if i = len then return gethash({i, car jlist}, hash);
+      if i = len then return gethash(i . car jlist, hash);
       i1 := i + 1;
       result := nil ./ 1;               % zero standard quotient
       for each j in jlist do
-      begin scalar el := gethash({i,j}, hash);
+      begin scalar el := gethash(i.j, hash);
          if el then <<
             if neg then el := negsq el;
             result := addsq(result, multsq(el,
@@ -100,7 +100,7 @@ symbolic procedure simpsparse!-trace u;
       % The matrix elements are standard quotients.
       z := nil ./ 1;                    % zero standard quotient
       for i := 1 : m do
-         if (el := gethash({i,i}, hash)) then z := addsq(el, z);
+         if (el := gethash(i.i, hash)) then z := addsq(el, z);
       return z
    end;
 

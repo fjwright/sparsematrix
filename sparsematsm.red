@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-06 14:49:48 franc>
+% Time-stamp: <2026-05-06 15:47:18 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -215,9 +215,9 @@ symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix canonical form U =
    % (<hash> <m> <n>) as a new sparse matrix canonical form.
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      % Each alist element has the form ((i j) . value).
+      % Each alist element has the form ((i . j) . value).
       for each el in hashcontents car u do
-         puthash({cadar el,caar el}, hash, cdr el);
+         puthash({cdar el,caar el}, hash, cdr el);
       return {hash, caddr u, cadr u}
    end;
 
@@ -234,16 +234,16 @@ symbolic procedure sparse!-multm(u,v);
          hash := mk!-sparse!-matrix!-hash();
       % Each alist element has the form ((i j) . value).
       for each elu in alistu do
-      begin scalar i := caar elu, k := cadar elu;
+      begin scalar i := caar elu, k := cdar elu;
          for each elv in alistv do
             if caar elv = k then
                % The product of this pair of matrix elements is a
                % summand of the scalar product forming the i,j element
                % of the product matrix.
-               begin scalar j := cadar elv,
-                     scalprod := gethash({i,j}, hash),
+               begin scalar j := cdar elv,
+                     scalprod := gethash(i.j, hash),
                      prod := multsq(cdr elu, cdr elv);
-                  puthash({i,j}, hash,
+                  puthash(i.j, hash,
                      if scalprod then addsq(scalprod, prod) else prod);
                end;
       end;
@@ -255,11 +255,11 @@ symbolic procedure sparse!-multsm(u,v);
    % canonical form V as a new sparse matrix canonical form.
    if u = (1 ./ 1) then v else
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      % Each alist element has the form ((i j) . value).
+      % Each alist element has the form ((i . j) . value).
       for each el in hashcontents car v do
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         puthash({caar el,cadar el}, hash, multsq(cdr el,u));
+         puthash(car el, hash, multsq(cdr el,u));
       return {hash, cadr v, caddr v}
    end;
 
@@ -284,7 +284,7 @@ symbolic procedure sparsify!-matrix u;
          for each el in row do <<
             j := j + 1;
             if numr el then             % nonzero standard quotient
-               puthash({i,j}, hash, !*q2a el);
+               puthash(i.j, hash, !*q2a el);
          >>;
       >>;
       return {'sparse!-mat, hash, i, j}
@@ -304,7 +304,7 @@ symbolic procedure densify!-matrix u;
       return 'mat .
          for i := 1 : m collect
             for j := 1 : n collect
-               if el := gethash({i,j}, hash) then !*q2a el else 0
+               if el := gethash(i.j, hash) then !*q2a el else 0
    end;
 
 endmodule;
