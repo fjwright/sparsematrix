@@ -18,9 +18,14 @@ sparsify m;
 
 s := ws;
 
+% Aggregate property:
+abs s;
+depend {a,b,c,d}, x;
+df(s,x);
+
 sparse_random_matrix(sr, 5, 5);
 
-%Trace:
+% Trace:
 sparse_trace sr;
 
 densify sr;

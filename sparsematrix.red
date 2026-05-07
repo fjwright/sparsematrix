@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-06 15:38:35 franc>
+% Time-stamp: <2026-05-07 17:40:48 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -145,6 +145,28 @@ symbolic procedure set!-sparse!-matelem(u,v);
    % Assign v to an element of a sparse matrix u = (id i j)
    % and return v, cf. setmatelem.
    puthash(car x, cdr x, v) where x = access!-sparse!-matelem u;
+
+% %%%%%%%%%%%%%%%%%%
+% Aggregate property
+% %%%%%%%%%%%%%%%%%%
+
+% Automatically map an operator over the elements of a matrix.
+
+put('sparse!-matrix, 'aggregatefn, 'sparse!-matrixmap);
+
+symbolic procedure sparse!-matrixmap(u,v);
+   % U = (<function> <sparse matrix>).
+   % Apply <function> to each element of <sparse matrix>, cf. matrixmap.
+   % The sparse matrix is input and output in tagged algebraic form.
+   if flagp(car u, 'matmapfn)
+   then sparse!-matsm!*1
+   begin scalar hash := mk!-sparse!-matrix!-hash(),
+         smcf := sparse!-matsm cadr u;   % sparse matrix canonical form
+      for each el in hashcontents car smcf do
+         puthash(car el, hash, simp!*(car u . mk!*sq cdr el . cddr u));
+      return {hash, cadr smcf, caddr smcf}
+   end
+   else typerr(car u, "sparse matrix operator");
 
 % %%%%%%%%
 % Printing
