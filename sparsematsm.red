@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-07 14:51:10 franc>
+% Time-stamp: <2026-05-08 15:52:43 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -261,6 +261,24 @@ symbolic procedure sparse!-multsm(u,v);
          % noncom scalars in matrix elements!
          puthash(car el, hash, multsq(cdr el,u));
       return {hash, cadr v, caddr v}
+   end;
+
+% %%%%%%%%%%%%
+% Substitution
+% %%%%%%%%%%%%
+
+put('sparse!-matrix, 'subfn, 'sparse!-matsub);
+
+symbolic procedure sparse!-matsub(u,v);
+   % V is a tagged algebraic sparse matrix form;
+   % U is a substitution equation represented as a dotted pair.
+   % Return a new tagged algebraic sparse matrix form with
+   % substitution U applied to every element, cf. matsub.
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      % Each alist element has the form ((i . j) . value).
+      for each el in hashcontents cadr v do
+         puthash(car el, hash, subeval1(u, cdr el));
+      return {'sparse!-mat, hash, cadr v, caddr v}
    end;
 
 % %%%%%%%%%%

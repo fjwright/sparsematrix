@@ -23,6 +23,9 @@ abs s;
 depend {a,b,c,d}, x;
 df(s,x);
 
+% Substitution:
+sub(a=aa,s);
+
 sparse_random_matrix(sr, 5, 5);
 
 % Trace:
@@ -72,5 +75,11 @@ s4*s3;
 m3*m4*m1*3;
 s3*s4*s1*3;
 
+% Positive integer powers:
+m := mat((1,2),(3,4));
+s := sparsify m;
+m^10;
+s^10;
+% Zero and negative powers currently fail!
 
 ;end;
