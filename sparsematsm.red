@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-08 15:52:43 franc>
+% Time-stamp: <2026-05-08 17:48:34 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -287,6 +287,8 @@ symbolic procedure sparse!-matsub(u,v);
 
 symbolic operator sparsify;
 
+put('sparsify, 'rtypefn, 'quotesparse!-matrix);
+
 symbolic procedure sparsify u;
    % Convert dense matrix algebraic form U to a sparse matrix
    % algebraic form.
@@ -309,6 +311,8 @@ symbolic procedure sparsify!-matrix u;
    end;
 
 symbolic operator densify;
+
+put('densify, 'rtypefn, 'quotematrix);
 
 symbolic procedure densify u;
    % Convert sparse matrix algebraic form U to a dense matrix

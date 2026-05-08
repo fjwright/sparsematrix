@@ -82,4 +82,18 @@ m^10;
 s^10;
 % Zero and negative powers currently fail!
 
+% Rank:
+m := mat((a,b,c),(d,e,f));              % REDUCE manual
+rank m;
+sparse_rank sparsify m;
+
+m := mat((1,0,1),(0,1,1),(0,1,1));      % Wikipedia
+rank m;
+sparse_rank sparsify m;
+
+m := mat((1,1,0,2),(-1,-1,0,-2));       % Wikipedia
+rank m;
+sparse_rank sparsify m;
+
+
 ;end;
