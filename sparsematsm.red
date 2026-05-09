@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-08 17:48:34 franc>
+% Time-stamp: <2026-05-09 15:43:57 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -278,7 +278,7 @@ symbolic procedure sparse!-matsub(u,v);
       % Each alist element has the form ((i . j) . value).
       for each el in hashcontents cadr v do
          puthash(car el, hash, subeval1(u, cdr el));
-      return {'sparse!-mat, hash, cadr v, caddr v}
+      return {'sparse!-mat, hash, caddr v, cadddr v}
    end;
 
 % %%%%%%%%%%

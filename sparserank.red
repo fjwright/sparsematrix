@@ -1,7 +1,7 @@
-module sparserank;                      % Rank of a sparse matrix
+module sparserank;                      % Sparse matrix rank
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-08 17:02:52 franc>
+% Time-stamp: <2026-05-09 16:08:37 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,11 @@ module sparserank;                      % Rank of a sparse matrix
 
 % $Id$
 
-% Based on "matrix/rank.red" by Eberhard Schruefer.
+% %%%%
+% Rank
+% %%%%
+
+% The rank code is based on "matrix/rank.red" by Eberhard Schruefer.
 
 put('sparse_rank, 'psopfn, 'sparse!-rank!-eval);
 
@@ -64,6 +68,44 @@ symbolic procedure sparse!-rank!-matrix u;
          then <<z := y; n := n + 1>>
       >>;
       return n
+   end;
+
+% %%%%%%%%%%%%%%
+% Cofactors, etc
+% %%%%%%%%%%%%%%
+
+symbolic operator sparse_submatrix;
+
+put('sparse_submatrix, 'rtypefn, 'quotesparse!-matrix);
+
+symbolic procedure sparse_submatrix(u, i, j);
+   % Return the submatrix of sparse matrix u excluding row i and
+   % column j.  Sparse matrices are represented as tagged algebraic
+   % forms.
+   if not eqcar(u, 'sparse!-mat) then typerr(u, "sparse matrix")
+   else if not fixp i or i <= 0 then typerr(i, "positive integer")
+   else if not fixp j or j <= 0 then typerr(j, "positive integer")
+   else if i > caddr u then
+      rerror(sparse!-matrix, 23, {"Sparse matrix row number",i,"out of range"})
+   else if j > cadddr u then
+      rerror(sparse!-matrix, 24, {"Sparse matrix column number",j,"out of range"})
+   else begin scalar hash := mk!-sparse!-matrix!-hash();
+      % Each alist element has the form ((i . j) . value).
+      for each el in hashcontents cadr u do
+      begin scalar ii := caar el, jj := cdar el;
+         if ii < i then <<
+            if jj < j then
+               puthash(car el, hash, cdr el)
+            else if jj > j then
+               puthash(ii.(jj-1), hash, cdr el)
+         >> else if ii > i then <<
+            if jj < j then
+               puthash((ii-1).jj, hash, cdr el)
+            else if jj > j then
+               puthash((ii-1).(jj-1), hash, cdr el)
+         >>;
+      end;
+      return {'sparse!-mat, hash, caddr u - 1, cadddr u - 1}
    end;
 
 endmodule;

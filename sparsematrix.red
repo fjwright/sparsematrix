@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-08 16:13:41 franc>
+% Time-stamp: <2026-05-09 15:50:24 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -234,6 +234,6 @@ symbolic procedure sparse_random_matrix(s, m, n);
 
 endmodule;
 
-in "sparsematsm.red", "sparsedet.red"$
+in "sparsematsm.red", "sparsedet.red", "sparserank.red"$
 
 end;
