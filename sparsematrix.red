@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-09 16:20:49 franc>
+% Time-stamp: <2026-05-09 17:31:46 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -47,8 +47,40 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % The rtype of a sparse matrix is sparse-matrix.
 
+% %%%%%%%%%%%%%%%%%
+% Utility functions
+% %%%%%%%%%%%%%%%%%
+
+% Proposed new Standard Lisp function:
+
+symbolic procedure maphash(hash, fn);
+   % Iterate over all entries in the hash-table HASH and return nil.
+   % For each entry, the function FN is called with two arguments --
+   % the key and the value of that entry.
+   % This function is the Common Lisp function maphash but with
+   % argument ordering like Standard Lisp map functions.
+   % The Standard Lisp function hashcontents returns a list of pairs
+   % of the form (key . value).
+   for each el in hashcontents hash do apply2(fn, car el, cdr el);
+
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(10, 1);
+
+symbolic procedure sparse!-matrix!-map(sm, fn);
+   % Iterate over all entries in the canonical sparse matrix form SM
+   % and return the result as a new canonical sparse matrix form (with
+   % the same dimensions as SM).  The function FN takes one argument
+   % and is applied to the value of each matrix element.
+   begin scalar hash := mk!-sparse!-matrix!-hash(),
+         mapfn := lambda(key, value);
+      puthash(key, hash, apply1(fn, value));
+      maphash(car sm, mapfn);
+      return {hash, cadr sm, caddr sm}
+   end;
+
+% %%%%%%%%%%%
+% Declaration
+% %%%%%%%%%%%
 
 symbolic procedure sparse_matrix u;
    % Declare list U as sparse matrices (represented as hash tables).
@@ -162,12 +194,8 @@ symbolic procedure sparse!-matrixmap(u,v);
    % The sparse matrix is input and output in tagged algebraic form.
    if flagp(car u, 'matmapfn)
    then sparse!-matsm!*1
-   begin scalar hash := mk!-sparse!-matrix!-hash(),
-         smcf := sparse!-matsm cadr u;   % sparse matrix canonical form
-      for each el in hashcontents car smcf do
-         puthash(car el, hash, simp!*(car u . mk!*sq cdr el . cddr u));
-      return {hash, cadr smcf, caddr smcf}
-   end
+      sparse!-matrix!-map(sparse!-matsm cadr u,
+         lambda value; simp!*(car u . mk!*sq value . cddr u))
    else if flagp(car u, 'sparse!-matfn) then reval2(u,v)
    else typerr(car u, "sparse matrix operator");
 
