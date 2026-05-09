@@ -1,7 +1,7 @@
 module sparserank;                      % Sparse matrix rank
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-09 16:08:37 franc>
+% Time-stamp: <2026-05-09 16:45:06 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -74,6 +74,18 @@ symbolic procedure sparse!-rank!-matrix u;
 % Cofactors, etc
 % %%%%%%%%%%%%%%
 
+% Proposed new Standard Lisp function:
+
+symbolic procedure maphash(hash, fn);
+   % Iterate over all entries in the hash-table HASH and return nil.
+   % For each entry, the function FN is called with two arguments --
+   % the key and the value of that entry.
+   % This function is the Common Lisp function maphash but with
+   % argument ordering like Standard Lisp map functions.
+   % The Standard Lisp function hashcontents returns a list of pairs
+   % of the form (key . value).
+   for each el in hashcontents hash do apply(fn, {car el, cdr el});
+
 symbolic operator sparse_submatrix;
 
 put('sparse_submatrix, 'rtypefn, 'quotesparse!-matrix);
@@ -90,21 +102,20 @@ symbolic procedure sparse_submatrix(u, i, j);
    else if j > cadddr u then
       rerror(sparse!-matrix, 24, {"Sparse matrix column number",j,"out of range"})
    else begin scalar hash := mk!-sparse!-matrix!-hash();
-      % Each alist element has the form ((i . j) . value).
-      for each el in hashcontents cadr u do
-      begin scalar ii := caar el, jj := cdar el;
-         if ii < i then <<
-            if jj < j then
-               puthash(car el, hash, cdr el)
-            else if jj > j then
-               puthash(ii.(jj-1), hash, cdr el)
-         >> else if ii > i then <<
-            if jj < j then
-               puthash((ii-1).jj, hash, cdr el)
-            else if jj > j then
-               puthash((ii-1).(jj-1), hash, cdr el)
-         >>;
-      end;
+      maphash(cadr u, lambda(key, value);
+              begin scalar ii := car key, jj := cdr key;
+                 if ii < i then <<
+                    if jj < j then
+                       puthash(key, hash, value)
+                    else if jj > j then
+                       puthash(ii.(jj-1), hash, value)
+                 >> else if ii > i then <<
+                    if jj < j then
+                       puthash((ii-1).jj, hash, value)
+                    else if jj > j then
+                       puthash((ii-1).(jj-1), hash, value)
+                 >>;
+              end);
       return {'sparse!-mat, hash, caddr u - 1, cadddr u - 1}
    end;
 

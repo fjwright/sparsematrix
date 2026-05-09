@@ -1,0 +1,6 @@
+in "sparsematrix.red",
+   "sparsematsm.red",
+   "sparsedet.red",
+   "sparserank.red"$
+
+end;

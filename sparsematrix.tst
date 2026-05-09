@@ -38,8 +38,8 @@ densify sparse_tp sr;
 
 % Determinant:
 m := mat((a,b,c),(d,e,f),(g,h,i));
-det m;
 s := sparsify m;
+det m;
 sparse_det s;
 
 % Addition and scalar multiplication:
@@ -76,24 +76,28 @@ m3*m4*m1*3;
 s3*s4*s1*3;
 
 % Positive integer powers:
-m := mat((1,2),(3,4));
-s := sparsify m;
-m^10;
-s^10;
+m5 := mat((1,2),(3,4));
+s5 := sparsify m5;
+m5^10;
+s5^10;
 % Zero and negative powers currently fail!
 
 % Rank:
-m := mat((a,b,c),(d,e,f));              % REDUCE manual
-rank m;
-sparse_rank sparsify m;
+rank m3;                                % REDUCE manual
+sparse_rank sparsify m3;
 
-m := mat((1,0,1),(0,1,1),(0,1,1));      % Wikipedia
-rank m;
-sparse_rank sparsify m;
+m6 := mat((1,0,1),(0,1,1),(0,1,1));     % Wikipedia
+rank m6;
+sparse_rank sparsify m6;
 
-m := mat((1,1,0,2),(-1,-1,0,-2));       % Wikipedia
-rank m;
-sparse_rank sparsify m;
+m6 := mat((1,1,0,2),(-1,-1,0,-2));      % Wikipedia
+rank m6;
+sparse_rank sparsify m6;
 
+% Submatrices:
+% m := mat((a,b,c),(d,e,f),(g,h,i));
+% s := sparsify m;
+m;
+densify sparse_submatrix(s,2,2);
 
 ;end;
