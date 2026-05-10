@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-10 15:23:56 franc>
+% Time-stamp: <2026-05-10 16:22:40 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -170,24 +170,24 @@ symbolic procedure sparse!-matsm1(u, name);
 
 symbolic procedure sparse!-addm(u,v);
    % Return the sum of two sparse matrix canonical forms U and V as a
-   % sparse matrix canonical form.  Return U + 0 as U and 0 + V as V.
+   % sparse matrix canonical form.
    % U & V have the form (<hash> <m> <n>).
-   if v = '(((nil . 1))) then u
-      % *** WRONG: '(((nil . 1))) is a canonical dense zero matrix! ***
-   else if u = '(((nil . 1))) then v
-   else if not(cadr u = cadr v and caddr u = caddr v) then
+   if not(cadr u = cadr v and caddr u = caddr v) then
       rerror(sparse!-matrix,8,"Sparse matrix mismatch")
-   else
-   begin scalar hash := mk!-sparse!-matrix!-hash(), val;
-      % Each element of hashcontents list has the form
-      % ((i . j) . value).
-      for each el in hashcontents car u do
-         puthash(car el, hash, cdr el);
-      for each el in hashcontents car v do
-         puthash(car el, hash,
-            if val := gethash(car el, hash) then
-               addsq(val, cdr el)
-            else cdr el);
+   else begin scalar hash := mk!-sparse!-matrix!-hash();
+      % Copy each nonzero element of sparse matrix U to hash:
+      maphash(car u,
+         (lambda(key, u_val);
+         puthash(key, hash, u_val)));
+      % Add or in each nonzero element of sparse matrix V to hash:
+      maphash(car v,
+         (lambda(key, v_val);
+          begin scalar u_val;
+             puthash(key, hash,
+                if (u_val := gethash(key, hash)) then
+                   addsq(u_val, v_val)
+                else v_val)
+          end));
       return {hash, cadr u, caddr u}
    end;
 
@@ -207,9 +207,9 @@ symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix canonical form U =
    % (<hash> <m> <n>) as a new sparse matrix canonical form.
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      % Each alist element has the form ((i . j) . value).
-      for each el in hashcontents car u do
-         puthash(cdar el . caar el, hash, cdr el);
+      maphash(car u,
+         (lambda(key, value);
+         puthash(cdr key . car key, hash, value)));
       return {hash, caddr u, cadr u}
    end;
 
