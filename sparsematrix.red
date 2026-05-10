@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-10 15:26:36 franc>
+% Time-stamp: <2026-05-10 17:40:40 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,8 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % Utility functions
 % %%%%%%%%%%%%%%%%%
 
-% Proposed new Standard Lisp function:
+% Proposed new Standard Lisp function, to be implemented in "sl-on-cl.lisp".
+% The version here provides a fallback if maphash is not available.
 
 symbolic procedure maphash(hash, fn);
    % Iterate over all entries in the hash-table HASH and return nil.
@@ -66,9 +67,10 @@ symbolic procedure maphash(hash, fn);
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(10, 1);
 
-% Provide a macro to allow name to be optional?
+symbolic macro procedure sparse!-matrix!-map u; % (sm, fn, &optional name)
+   {'sparse!-matrix!-map0, cadr u, caddr u, cdddr u and cadddr u};
 
-symbolic procedure sparse!-matrix!-map(sm, fn, name);
+symbolic procedure sparse!-matrix!-map0(sm, fn, name);
    % Iterate over all entries in the canonical sparse matrix form SM
    % and return the result as a new canonical sparse matrix form (with
    % the same dimensions as SM).  The function FN takes one argument

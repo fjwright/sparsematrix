@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-10 17:15:49 franc>
+% Time-stamp: <2026-05-10 17:38:00 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -248,7 +248,7 @@ symbolic procedure sparse!-multsm(u,v);
       sparse!-matrix!-map(v,
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         (lambda value; multsq(value, u)), nil);
+         (lambda value; multsq(value, u)));
 
 % %%%%%%%%%%%%
 % Substitution
@@ -262,7 +262,7 @@ symbolic procedure sparse!-matsub(u,v);
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
    'sparse!-mat .
-      sparse!-matrix!-map(cdr v, (lambda value; subeval1(u, value)), nil);
+      sparse!-matrix!-map(cdr v, (lambda value; subeval1(u, value)));
 
 % %%%%%%%%%%
 % Conversion
