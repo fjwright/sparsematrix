@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-10 16:22:40 franc>
+% Time-stamp: <2026-05-10 17:15:49 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -219,26 +219,25 @@ symbolic procedure sparse!-tp1 u;
 
 symbolic procedure sparse!-multm(u,v);
    % Return the product of two sparse matrix canonical forms U and V
-   % as a new sparse matrix canonical form.  Assume they are
-   % conformable, i.e. caddr u = cadr v
-   begin scalar alistu := hashcontents car u,
-         alistv := hashcontents car v,
-         hash := mk!-sparse!-matrix!-hash();
-      % Each alist element has the form ((i j) . value).
-      for each elu in alistu do
-      begin scalar i := caar elu, k := cdar elu;
-         for each elv in alistv do
-            if caar elv = k then
-               % The product of this pair of matrix elements is a
-               % summand of the scalar product forming the i,j element
-               % of the product matrix.
-               begin scalar j := cdar elv,
-                     scalprod := gethash(i.j, hash),
-                     prod := multsq(cdr elu, cdr elv);
-                  puthash(i.j, hash,
-                     if scalprod then addsq(scalprod, prod) else prod);
-               end;
-      end;
+   % as a new sparse matrix canonical form.  Assume U and V are
+   % conformable, i.e. caddr u = cadr v.
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      maphash(car u,
+         (lambda(u_key, u_value);
+          begin scalar i := car u_key, k := cdr u_key;
+             maphash(car v,
+                (lambda(v_key, v_value);
+                if car v_key = k then
+                   % The product of this pair of matrix elements is a
+                   % summand of the scalar product forming the i,j element
+                   % of the product matrix.
+                   begin scalar j := cdr v_key,
+                         scalprod := gethash(i.j, hash),
+                         prod := multsq(u_value, v_value);
+                      puthash(i.j, hash,
+                         if scalprod then addsq(scalprod, prod) else prod);
+                   end));
+          end));
       return {hash, cadr u, caddr v}
    end;
 
