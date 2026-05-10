@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-09 15:43:57 franc>
+% Time-stamp: <2026-05-10 15:23:56 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -68,11 +68,7 @@ symbolic procedure sparse!-matsm!*1 u;
    % EXPRESSION in the form
    %   (sparse!-mat <hash> <m> <n> . <name>).
    % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      for each el in hashcontents car u do
-         puthash(car el, hash, !*q2a cdr el);
-      return 'sparse!-mat . hash . cdr u;
-   end;
+   'sparse!-mat . sparse!-matrix!-map(u, function !*q2a, t);
 
 symbolic procedure sparse!-matsm u;
    % Simplify an arbitrary sparse matrix expression U in algebraic
@@ -131,11 +127,7 @@ symbolic procedure sparse!-matsm1(u, name);
       %%   car u = (sparse!-mat <hash> <m> <n>)
       %% Return a sparse matrix canonical form
       %%   (<hash> <m> <n> . <name>)
-      x := begin scalar hash := mk!-sparse!-matrix!-hash(), cdaru := cdar u;
-         for each el in hashcontents car cdaru do
-            puthash(car el, hash, xsimp cdr el);
-         return hash . cadr cdaru . caddr cdaru . name
-      end;
+      x := sparse!-matrix!-map(cdar u, function xsimp, name);
       go to b;
    d:                                   % inverse -- not yet implemented!
       rederr("Sparse matrix inverse not yet implemented!");
@@ -188,7 +180,7 @@ symbolic procedure sparse!-addm(u,v);
    else
    begin scalar hash := mk!-sparse!-matrix!-hash(), val;
       % Each element of hashcontents list has the form
-      % ((i j) . value).
+      % ((i . j) . value).
       for each el in hashcontents car u do
          puthash(car el, hash, cdr el);
       for each el in hashcontents car v do
@@ -254,14 +246,10 @@ symbolic procedure sparse!-multsm(u,v);
    % Return the product of standard quotient U and sparse matrix
    % canonical form V as a new sparse matrix canonical form.
    if u = (1 ./ 1) then v else
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      % Each alist element has the form ((i . j) . value).
-      for each el in hashcontents car v do
+      sparse!-matrix!-map(v,
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         puthash(car el, hash, multsq(cdr el,u));
-      return {hash, cadr v, caddr v}
-   end;
+         (lambda value; multsq(value, u)), nil);
 
 % %%%%%%%%%%%%
 % Substitution
@@ -274,12 +262,8 @@ symbolic procedure sparse!-matsub(u,v);
    % U is a substitution equation represented as a dotted pair.
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      % Each alist element has the form ((i . j) . value).
-      for each el in hashcontents cadr v do
-         puthash(car el, hash, subeval1(u, cdr el));
-      return {'sparse!-mat, hash, caddr v, cadddr v}
-   end;
+   'sparse!-mat .
+      sparse!-matrix!-map(cdr v, (lambda value; subeval1(u, value)), nil);
 
 % %%%%%%%%%%
 % Conversion

@@ -83,14 +83,17 @@ s5^10;
 % Zero and negative powers currently fail!
 
 % Rank:
-rank m3;                                % REDUCE manual
+% REDUCE manual
+rank m3;
 sparse_rank sparsify m3;
 
-m6 := mat((1,0,1),(0,1,1),(0,1,1));     % Wikipedia
+% Wikipedia
+m6 := mat((1,0,1),(0,1,1),(0,1,1));
 rank m6;
 sparse_rank sparsify m6;
 
-m6 := mat((1,1,0,2),(-1,-1,0,-2));      % Wikipedia
+% Wikipedia
+m6 := mat((1,1,0,2),(-1,-1,0,-2));
 rank m6;
 sparse_rank sparsify m6;
 
