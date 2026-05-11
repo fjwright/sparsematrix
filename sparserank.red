@@ -1,7 +1,7 @@
-module sparserank;                      % Sparse matrix rank
+module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-09 17:08:29 franc>
+% Time-stamp: <2026-05-11 14:47:58 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -106,6 +106,25 @@ symbolic procedure sparse_submatrix(u, i, j);
               end);
       return {'sparse!-mat, hash, caddr u - 1, cadddr u - 1}
    end;
+
+% The following cofactor code is based partly on "matrix/cofactor.red"
+% by Alan Barnes.
+
+put ('sparse_cofactor, 'simpfn, 'simpsparse!-cofactor);
+flag('(sparse_cofactor), 'immediate);
+
+symbolic procedure simpsparse!-cofactor u;
+   sparse!-cofactorq(reval car u,
+      ieval cadr u, ieval carx(cddr u,'sparse_cofactor));
+
+symbolic procedure sparse!-cofactorq(u, i, j);
+   % Return the cofactor of the element in row I and column J of the
+   % sparse matrix tagged algebraic form U as a standard quotient.
+   % (sparse!-detq checks its argument is square.)
+   <<
+      u := sparse!-detq sparse!-matsm sparse_submatrix(u, i, j);
+      if oddp(i + j) then negsq u else u
+   >>;
 
 endmodule;
 

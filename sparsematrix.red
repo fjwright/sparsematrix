@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-10 17:40:40 franc>
+% Time-stamp: <2026-05-11 14:58:47 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -195,7 +195,7 @@ symbolic procedure set!-sparse!-matelem(u,v);
 
 put('sparse!-matrix, 'aggregatefn, 'sparse!-matrixmap);
 
-flag('(sparse_det sparse_trace), 'sparse!-matfn);
+flag('(sparse_det sparse_trace sparse_cofactor), 'sparse!-matfn);
 
 symbolic procedure sparse!-matrixmap(u,v);
    % U = (<function> <sparse matrix>).
@@ -239,7 +239,7 @@ symbolic procedure sparse!-matpri u;
    % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
    % If no (null) name then display name as "?".
    begin scalar alist := hashcontents cadr u;
-      if null alist then return lprim "Sparse zero matrix";
+      if null alist then return lprim "Sparse zero (empty) matrix";
       % Each alist element has the form ((i . j) . value).
       % Sort by row index and then by column index:
       alist := sort(alist,

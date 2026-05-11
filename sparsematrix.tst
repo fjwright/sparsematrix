@@ -103,4 +103,10 @@ sparse_rank sparsify m6;
 m;
 densify sparse_submatrix(s,2,2);
 
+% Cofactors:
+sparse_cofactor(s,1,1);
+% Determinant via cofactors of first row:
+for j := 1 : 3 sum s(1,j)*sparse_cofactor(s,1,j);
+if ws = sparse_det s then true else false;
+
 ;end;
