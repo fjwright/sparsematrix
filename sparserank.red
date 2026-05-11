@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-11 14:47:58 franc>
+% Time-stamp: <2026-05-11 18:02:16 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -125,6 +125,30 @@ symbolic procedure sparse!-cofactorq(u, i, j);
       u := sparse!-detq sparse!-matsm sparse_submatrix(u, i, j);
       if oddp(i + j) then negsq u else u
    >>;
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Inverse (crude and inefficient temporary algorithm!)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% If C(A) is the matrix of cofactors of the square matrix A then A^-1
+% = C^T / |A|.  C^T is called the adjugate of A.
+
+symbolic operator sparse_inverse;
+
+symbolic procedure sparse_inverse u;
+   % U is a sparse matrix tagged algebraic form.
+   % Return its inverse as a sparse matrix tagged algebraic form using
+   % the transposed matrix of cofactors divided by the determinant.
+   begin scalar hash := mk!-sparse!-matrix!-hash(), d, m, n;
+      u := reval u;
+      d := simpsparse!-det {u}; % det as SQ
+      m := caddr u;  n := cadddr u;
+      for i := 1 : m do for j := 1 : n do
+         begin scalar x := sparse!-cofactorq(u,i,j); % SQ
+            puthash(j.i, hash, !*q2a quotsq(x,d));
+         end;
+      return {'sparse!-mat, hash, m, n}
+   end;
 
 endmodule;
 
