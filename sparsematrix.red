@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-11 14:58:47 franc>
+% Time-stamp: <2026-05-12 15:55:53 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -67,10 +67,12 @@ symbolic procedure maphash(hash, fn);
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(10, 1);
 
-symbolic macro procedure sparse!-matrix!-map u; % (sm, fn, &optional name)
-   {'sparse!-matrix!-map0, cadr u, caddr u, cdddr u and cadddr u};
+symbolic macro procedure map!-sparse!-matrix u; % (sm, fn, &optional name)
+   {'map!-sparse!-matrix0, cadr u, caddr u, cdddr u and cadddr u};
 
-symbolic procedure sparse!-matrix!-map0(sm, fn, name);
+flag('(map!-sparse!-matrix), 'variadic);
+
+symbolic procedure map!-sparse!-matrix0(sm, fn, name);
    % Iterate over all entries in the canonical sparse matrix form SM
    % and return the result as a new canonical sparse matrix form (with
    % the same dimensions as SM).  The function FN takes one argument
@@ -203,7 +205,7 @@ symbolic procedure sparse!-matrixmap(u,v);
    % The sparse matrix is input and output in tagged algebraic form.
    if flagp(car u, 'matmapfn)
    then sparse!-matsm!*1
-      sparse!-matrix!-map(sparse!-matsm cadr u,
+      map!-sparse!-matrix(sparse!-matsm cadr u,
          (lambda value; simp!*(car u . mk!*sq value . cddr u)), nil)
    else if flagp(car u, 'sparse!-matfn) then reval2(u,v)
    else typerr(car u, "sparse matrix operator");

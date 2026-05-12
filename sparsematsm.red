@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-10 17:38:00 franc>
+% Time-stamp: <2026-05-12 15:29:32 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -68,7 +68,7 @@ symbolic procedure sparse!-matsm!*1 u;
    % EXPRESSION in the form
    %   (sparse!-mat <hash> <m> <n> . <name>).
    % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   'sparse!-mat . sparse!-matrix!-map(u, function !*q2a, t);
+   'sparse!-mat . map!-sparse!-matrix(u, function !*q2a, t);
 
 symbolic procedure sparse!-matsm u;
    % Simplify an arbitrary sparse matrix expression U in algebraic
@@ -108,8 +108,7 @@ symbolic procedure sparse!-matsm1(u, name);
       else if caar u eq 'sparse!-mat then go to c1 % tagged alg form
       else if flagp(caar u, 'matmapfn) and cdar u  % map applied
          and getrtype cadar u eq 'sparse!-matrix
-      then % x := sparse!-matsm sparse!-matrixmap(car u,nil)
-         rederr("Sparse matrix map not yet implemented!")
+      then x := sparse!-matsm sparse!-matrixmap(car u,nil)
       else if (x := get(caar u, 'psopfn)) % psopfn function call
       then << x := lispapply(x, list cdar u);
          if eqcar(x,'sparse!-mat) then x := sparse!-matsm x >>
@@ -127,10 +126,9 @@ symbolic procedure sparse!-matsm1(u, name);
       %%   car u = (sparse!-mat <hash> <m> <n>)
       %% Return a sparse matrix canonical form
       %%   (<hash> <m> <n> . <name>)
-      x := sparse!-matrix!-map(cdar u, function xsimp, name);
+      x := map!-sparse!-matrix(cdar u, function xsimp, name);
       go to b;
-   d:                                   % inverse -- not yet implemented!
-      rederr("Sparse matrix inverse not yet implemented!");
+   d:                                   % inverse
       y := sparse!-matsm cadar u;
       if (n := length car y) neq length y
       then rerror(sparse!-matrix,4,"Non square sparse matrix")
@@ -155,7 +153,7 @@ symbolic procedure sparse!-matsm1(u, name);
       z := if null z then list list y else sparse!-multsm(y,z);
       go to c;
    h:
-      if null z then z := generateident n;
+      if null z then z := sparse!-generateident n;
       go to c;
    er:
       rerror(sparse!-matrix,7,list("Sparse matrix",car u,"not set"))
@@ -245,7 +243,7 @@ symbolic procedure sparse!-multsm(u,v);
    % Return the product of standard quotient U and sparse matrix
    % canonical form V as a new sparse matrix canonical form.
    if u = (1 ./ 1) then v else
-      sparse!-matrix!-map(v,
+      map!-sparse!-matrix(v,
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
          (lambda value; multsq(value, u)));
@@ -262,7 +260,7 @@ symbolic procedure sparse!-matsub(u,v);
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
    'sparse!-mat .
-      sparse!-matrix!-map(cdr v, (lambda value; subeval1(u, value)));
+      map!-sparse!-matrix(cdr v, (lambda value; subeval1(u, value)));
 
 % %%%%%%%%%%
 % Conversion

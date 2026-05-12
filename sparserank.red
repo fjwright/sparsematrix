@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-11 18:02:16 franc>
+% Time-stamp: <2026-05-12 16:11:48 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -148,6 +148,30 @@ symbolic procedure sparse_inverse u;
             puthash(j.i, hash, !*q2a quotsq(x,d));
          end;
       return {'sparse!-mat, hash, m, n}
+   end;
+
+% Functions called by sparse!-matsm1 to support matrix inverse
+% arithmetic:
+
+put('sparse!-mat, 'inversefn, 'sparse!-matinverse);
+
+symbolic procedure sparse!-matinverse u;
+   % Return the inverse of U.  Both U and its inverse are sparse
+   % matrix canonical forms.
+   sparse!-matsm sparse_inverse sparse!-matsm!*1 u;
+
+put('sparse!-mat, 'lnrsolvefn, 'sparse!-lnrsolve);
+
+symbolic procedure sparse!-lnrsolve(u, v);
+   % Return U**(-1)*V, where U is a sparse matrix and V is a
+   % conformable sparse matrix.  All matrices are canonical forms.
+   sparse!-multm(sparse!-matinverse u, v);
+
+symbolic procedure sparse!-generateident n;
+   % Return sparse matrix canonical form of identity matrix of order N.
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      for i := 1 : n do puthash(i.i, hash, 1 ./ 1);
+      return {hash, n, n}
    end;
 
 endmodule;
