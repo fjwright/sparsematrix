@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-13 17:11:27 franc>
+% Time-stamp: <2026-05-13 17:34:25 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -240,15 +240,12 @@ symbolic procedure sparse!-assgnpri uvw;
 symbolic procedure sparse!-matpri u;
    % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
    % If no (null) name then display name as "?".
-   begin scalar alist := hashcontents car (u := cdr u);
-      % Revert to lprim instead of write?
-      terpri();
-      write "% ", cadr u, " #times; ", caddr u, " sparse matrix #mdash; ";
-      if null alist then <<
-         write "no nonzero elements";  terpri();
-         return
-      >>;
-      write "nonzero elements:";  terpri();
+   begin scalar alist := hashcontents car (u := cdr u),
+         msg := {cadr u, "#times;", caddr u,
+            "sparse matrix #mdash;"};
+      if null alist then return
+         lprim append(msg, {"no nonzero elements"});
+      lprim append(msg, {"nonzero elements:"});
       % Each alist element has the form ((i . j) . value).
       % Sort by row index and then by column index:
       alist := sort(alist,
