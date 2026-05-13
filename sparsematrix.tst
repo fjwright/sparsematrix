@@ -110,28 +110,39 @@ sparse_cofactor(s,1,1);
 for j := 1 : 3 sum s(1,j)*sparse_cofactor(s,1,j);
 if ws = sparse_det s then true else false;
 
-% Inverse and non-positive integer powers:
+% Inverses and non-positive integer powers:
 m5^0;
 s5^0;
-m5^-1;
-s5^-1;
-m5^-1*5;
-s5^-1*s5;
-m5*5^-1;
-s5*s5^-1;
-m5^-2;
-s5^-2;
+m5^(-1);
+s5^(-1);
+m5^(-1)*m5;
+s5^(-1)*s5;
+m5*m5^(-1);
+s5*s5^(-1);
+m5^(-2);
+s5^(-2);
 
-% Sparse 1*1 zero matrix:
+% 1*1 zero matrix:
+matrix m0(1,1);
+m0^0;
+sparsify m0;
 sparse_matrix s0(1,1);
-mat(())^0;
+s0;
+densify s0;
 s0^0;
-mat(())^-1;
-s0^-1;
+m0^(-1);
+s0^(-1);
+m5*m0;
 s5*s0;
+m5/m0;
 s5/s0;
+
+% 1*1 nonzero matrix:
+m0(1,1) := 42;
 s0(1,1) := 42;
+m5*m0;
 s5*s0;
+m5/m0;
 s5/s0;
 
 ;end;

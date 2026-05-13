@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-12 17:50:21 franc>
+% Time-stamp: <2026-05-13 15:58:32 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -101,8 +101,7 @@ symbolic procedure sparse!-matsm1(u, name);
    % where <name> is either an identifier or nil, and the hash table
    % elements are STANDARD QUOTIENT FORMS.
    begin scalar x,y,z; integer n;
-   a:
-      if null u then return z
+   a: if null u then return z
       else if eqcar(car u, '!*div) then go to d % inverse
       else if atom car u then go to er          % not set
       else if caar u eq 'sparse!-mat then go to c1 % tagged alg form
@@ -116,7 +115,8 @@ symbolic procedure sparse!-matsm1(u, name);
          if eqcar(x,'sparse!-mat) then x := sparse!-matsm x>>;
    b: % Multiplication (scalar or matrix):
       z := if null z then x
-      else if null cdr z and null cdar z then sparse!-multsm(caar z,x)
+      else if cadr z = 1 and caddr z = 1 % 1*1 matrix: treat as scalar
+      then sparse!-multsm(gethash(1 . 1, car z), x) % CHECK NON-NIL!!!
       else sparse!-multm(x,z);
    c: % Loop through elements of matrix expression u:
       u := cdr u;
@@ -129,13 +129,13 @@ symbolic procedure sparse!-matsm1(u, name);
       x := map!-sparse!-matrix(cdar u, function xsimp, name);
       go to b;
    d: % Inverse
-      y := sparse!-matsm cadar u;
-      if (n := cadr y) neq caddr y
+      y := sparse!-matsm cadar u;       % y = (<hash> <m> <n>)
+      if (n := caddr y) neq cadr y
       then rerror(sparse!-matrix,4,"Non square sparse matrix")
       else if (z and n neq cadr z)
       then rerror(sparse!-matrix,5,"Sparse matrix mismatch")
       else if cddar u then go to h
-      else if n = 1 then go to e; % 1*1 matrix
+      else if n = 1 then go to e;       % y is a 1*1 matrix
       x := subfg!*;
       subfg!* := nil;
       if null z then z := apply1(get('sparse!-mat,'inversefn),y)
@@ -149,12 +149,17 @@ symbolic procedure sparse!-matsm1(u, name);
       go to c;
    e: % y is 1*1 matrix, cf. y = ((el))
       y := gethash(1 . 1, car y); % nil or value of single element as SQ
-      if null(y and numr y) then
-         % y is 1*1 zero matrix, cf. y = ((nil ./ 1))
+      if null y then
+         % y was 1*1 zero matrix, cf. y = ((nil ./ 1))
          % cf. mat(())^-1 or  mat((0))^-1 or M/mat(()) or M/mat((0))
          rerror(sparse!-matrix,6,"Zero divisor");
-      y := revpr y;                     % now y is a scalar
-      z := if null z then list list y else sparse!-multsm(y,z);
+      y := revpr y;                     % invert scalar y
+      z := if null z then
+         begin scalar hash := mk!-sparse!-matrix!-hash();
+            puthash(1 . 1, hash, y);
+            return {hash, 1, 1}
+         end
+      else sparse!-multsm(y,z);
       go to c;
    h:
       if null z then z := sparse!-generateident n;
