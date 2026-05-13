@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-13 15:58:32 franc>
+% Time-stamp: <2026-05-13 17:02:19 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -102,17 +102,18 @@ symbolic procedure sparse!-matsm1(u, name);
    % elements are STANDARD QUOTIENT FORMS.
    begin scalar x,y,z; integer n;
    a: if null u then return z
-      else if eqcar(car u, '!*div) then go to d % inverse
-      else if atom car u then go to er          % not set
-      else if caar u eq 'sparse!-mat then go to c1 % tagged alg form
-      else if flagp(caar u, 'matmapfn) and cdar u  % map applied
-         and getrtype cadar u eq 'sparse!-matrix
-      then x := sparse!-matsm sparse!-matrixmap(car u,nil)
-      else if (x := get(caar u, 'psopfn)) % psopfn function call
-      then << x := lispapply(x, list cdar u);
-         if eqcar(x,'sparse!-mat) then x := sparse!-matsm x >>
-      else <<x := lispapply(caar u,cdar u); % other function call
-         if eqcar(x,'sparse!-mat) then x := sparse!-matsm x>>;
+   else if eqcar(car u, '!*div) then go to d % inverse
+   else if atom car u then
+      rerror(sparse!-matrix,7,list("Sparse matrix",car u,"not set"))
+   else if caar u eq 'sparse!-mat then go to c1 % tagged alg form
+   else if flagp(caar u, 'matmapfn) and cdar u  % map applied
+      and getrtype cadar u eq 'sparse!-matrix
+   then x := sparse!-matsm sparse!-matrixmap(car u,nil)
+   else if (x := get(caar u, 'psopfn)) % psopfn function call
+   then << x := lispapply(x, list cdar u);
+      if eqcar(x,'sparse!-mat) then x := sparse!-matsm x >>
+   else <<x := lispapply(caar u,cdar u); % other function call
+      if eqcar(x,'sparse!-mat) then x := sparse!-matsm x>>;
    b: % Multiplication (scalar or matrix):
       z := if null z then x
       else if cadr z = 1 and caddr z = 1 % 1*1 matrix: treat as scalar
@@ -128,19 +129,21 @@ symbolic procedure sparse!-matsm1(u, name);
       %   (<hash> <m> <n> . <name>):
       x := map!-sparse!-matrix(cdar u, function xsimp, name);
       go to b;
-   d: % Inverse
+   d: % Inverse:
       y := sparse!-matsm cadar u;       % y = (<hash> <m> <n>)
-      if (n := caddr y) neq cadr y
-      then rerror(sparse!-matrix,4,"Non square sparse matrix")
-      else if (z and n neq cadr z)
-      then rerror(sparse!-matrix,5,"Sparse matrix mismatch")
-      else if cddar u then go to h
-      else if n = 1 then go to e;       % y is a 1*1 matrix
+      if (n := caddr y) neq cadr y then
+         rerror(sparse!-matrix,4,"Non square sparse matrix")
+      else if (z and n neq cadr z) then
+         rerror(sparse!-matrix,5,"Sparse matrix mismatch")
+      else if cddar u then <<
+         if null z then z := sparse!-generateident n;
+         go to c;
+      >> else if n = 1 then go to e;    % y is a 1*1 matrix
       x := subfg!*;
       subfg!* := nil;
       if null z then z := apply1(get('sparse!-mat,'inversefn),y)
-      else if null(x := get('sparse!-mat,'lnrsolvefn))
-      then z := multm(apply1(get('sparse!-mat,'inversefn),y),z)
+      else if null(x := get('sparse!-mat,'lnrsolvefn)) then
+         z := multm(apply1(get('sparse!-mat,'inversefn),y),z)
       else z := apply2(get('sparse!-mat,'lnrsolvefn),y,z);
       subfg!* := x;
       % Make sure there are no power substitutions:
@@ -161,11 +164,6 @@ symbolic procedure sparse!-matsm1(u, name);
          end
       else sparse!-multsm(y,z);
       go to c;
-   h:
-      if null z then z := sparse!-generateident n;
-      go to c;
-   er:
-      rerror(sparse!-matrix,7,list("Sparse matrix",car u,"not set"))
    end;
 
 % %%%%%%%%
