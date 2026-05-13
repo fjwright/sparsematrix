@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-12 16:11:48 franc>
+% Time-stamp: <2026-05-13 21:55:03 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -74,14 +74,9 @@ symbolic procedure sparse!-rank!-matrix u;
 % Cofactors, etc
 % %%%%%%%%%%%%%%
 
-symbolic operator sparse_submatrix;
-
-put('sparse_submatrix, 'rtypefn, 'quotesparse!-matrix);
-
-symbolic procedure sparse_submatrix(u, i, j);
-   % Return the submatrix of sparse matrix u excluding row i and
-   % column j.  Sparse matrices are represented as tagged algebraic
-   % forms.
+symbolic procedure sparse!-matrix!-check(fn, u, i, j);
+   % Check arguments and return fn of sparse matrix u excluding row i
+   % and column j.  U is a tagged algebraic form.
    if not eqcar(u, 'sparse!-mat) then typerr(u, "sparse matrix")
    else if not fixp i or i <= 0 then typerr(i, "positive integer")
    else if not fixp j or j <= 0 then typerr(j, "positive integer")
@@ -89,7 +84,24 @@ symbolic procedure sparse_submatrix(u, i, j);
       rerror(sparse!-matrix, 23, {"Sparse matrix row number",i,"out of range"})
    else if j > cadddr u then
       rerror(sparse!-matrix, 24, {"Sparse matrix column number",j,"out of range"})
-   else begin scalar hash := mk!-sparse!-matrix!-hash();
+   else apply3(fn, u, i, j);
+
+symbolic operator sparse_submatrix;
+
+put('sparse_submatrix, 'rtypefn, 'quotesparse!-matrix);
+
+symbolic procedure sparse_submatrix(u, i, j);
+   % Return the submatrix of sparse matrix u excluding row i and
+   % column j.  Sparse matrices are represented as tagged algebraic
+   % forms.  Arguments are checked.
+   'sparse!-mat .
+      sparse!-matrix!-check(function sparse!-submatrix, u, i, j);
+
+symbolic procedure sparse!-submatrix(u, i, j);
+   % Return the submatrix of sparse matrix u excluding row i and
+   % column j.  Sparse matrices are represented as canonical forms.
+   % No argument checking!
+   begin scalar hash := mk!-sparse!-matrix!-hash();
       maphash(cadr u, lambda(key, value);
               begin scalar ii := car key, jj := cdr key;
                  if ii < i then <<
@@ -104,7 +116,7 @@ symbolic procedure sparse_submatrix(u, i, j);
                        puthash((ii-1).(jj-1), hash, value)
                  >>;
               end);
-      return {'sparse!-mat, hash, caddr u - 1, cadddr u - 1}
+      return {hash, caddr u - 1, cadddr u - 1}
    end;
 
 % The following cofactor code is based partly on "matrix/cofactor.red"
@@ -113,16 +125,21 @@ symbolic procedure sparse_submatrix(u, i, j);
 put ('sparse_cofactor, 'simpfn, 'simpsparse!-cofactor);
 flag('(sparse_cofactor), 'immediate);
 
-symbolic procedure simpsparse!-cofactor u;
-   sparse!-cofactorq(reval car u,
+symbolic procedure simpsparse!-cofactor u; % (sm, i, j)
+   % Return the cofactor of the element in row I and column J of the
+   % sparse matrix tagged algebraic form SM as a standard quotient.
+   % Arguments are checked.
+   sparse!-matrix!-check(function sparse!-cofactorq,
+      sparse!-matsm car u,
       ieval cadr u, ieval carx(cddr u,'sparse_cofactor));
 
 symbolic procedure sparse!-cofactorq(u, i, j);
    % Return the cofactor of the element in row I and column J of the
-   % sparse matrix tagged algebraic form U as a standard quotient.
-   % (sparse!-detq checks its argument is square.)
+   % sparse matrix canonical form U as a standard quotient.
+   % No argument checking, except that sparse!-detq checks its
+   % argument is square.
    <<
-      u := sparse!-detq sparse!-matsm sparse_submatrix(u, i, j);
+      u := sparse!-detq sparse!-submatrix(u, i, j);
       if oddp(i + j) then negsq u else u
    >>;
 
@@ -133,32 +150,25 @@ symbolic procedure sparse!-cofactorq(u, i, j);
 % If C(A) is the matrix of cofactors of the square matrix A then A^-1
 % = C^T / |A|.  C^T is called the adjugate of A.
 
-symbolic operator sparse_inverse;
-
-symbolic procedure sparse_inverse u;
-   % U is a sparse matrix tagged algebraic form.
-   % Return its inverse as a sparse matrix tagged algebraic form using
-   % the transposed matrix of cofactors divided by the determinant.
-   begin scalar hash := mk!-sparse!-matrix!-hash(), d, m, n;
-      u := reval u;
-      d := simpsparse!-det {u}; % det as SQ
-      m := caddr u;  n := cadddr u;
-      for i := 1 : m do for j := 1 : n do
-         begin scalar x := sparse!-cofactorq(u,i,j); % SQ
-            puthash(j.i, hash, !*q2a quotsq(x,d));
-         end;
-      return {'sparse!-mat, hash, m, n}
-   end;
-
-% Functions called by sparse!-matsm1 to support matrix inverse
-% arithmetic:
+% The following functions are called by sparse!-matsm1 to support
+% matrix inverse arithmetic:
 
 put('sparse!-mat, 'inversefn, 'sparse!-matinverse);
 
 symbolic procedure sparse!-matinverse u;
-   % Return the inverse of U.  Both U and its inverse are sparse
+   % Return the inverse of U using the transposed matrix of cofactors
+   % divided by the determinant.  Both U and its inverse are sparse
    % matrix canonical forms.
-   sparse!-matsm sparse_inverse sparse!-matsm!*1 u;
+   % (sparse!-detq checks its argument is square.)
+   begin scalar hash := mk!-sparse!-matrix!-hash(),
+      d := sparse!-detq u,              % det as SQ
+      m := cadr u,  n := caddr u;
+      for i := 1 : m do for j := 1 : n do
+         begin scalar x := sparse!-cofactorq(u,i,j); % SQ
+            puthash(j.i, hash, quotsq(x,d));
+         end;
+      return {hash, m, n}
+   end;
 
 put('sparse!-mat, 'lnrsolvefn, 'sparse!-lnrsolve);
 
