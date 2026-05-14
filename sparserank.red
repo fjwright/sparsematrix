@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-12 16:11:48 franc>
+% Time-stamp: <2026-05-14 17:58:54 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -89,8 +89,13 @@ symbolic procedure sparse_submatrix(u, i, j);
       rerror(sparse!-matrix, 23, {"Sparse matrix row number",i,"out of range"})
    else if j > cadddr u then
       rerror(sparse!-matrix, 24, {"Sparse matrix column number",j,"out of range"})
-   else begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(cadr u, lambda(key, value);
+   else 'sparse!-mat . sparse!-submatrix(cdr u, i, j);
+
+symbolic procedure sparse!-submatrix(u, i, j);
+   % Return the submatrix of sparse matrix u excluding row i and
+   % column j.  Sparse matrices are represented as (<hash> <m> <n>).
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      maphash(car u, lambda(key, value);
               begin scalar ii := car key, jj := cdr key;
                  if ii < i then <<
                     if jj < j then
@@ -104,7 +109,7 @@ symbolic procedure sparse_submatrix(u, i, j);
                        puthash((ii-1).(jj-1), hash, value)
                  >>;
               end);
-      return {'sparse!-mat, hash, caddr u - 1, cadddr u - 1}
+      return {hash, cadr u - 1, caddr u - 1}
    end;
 
 % The following cofactor code is based partly on "matrix/cofactor.red"
@@ -156,9 +161,27 @@ symbolic procedure sparse_inverse u;
 put('sparse!-mat, 'inversefn, 'sparse!-matinverse);
 
 symbolic procedure sparse!-matinverse u;
-   % Return the inverse of U.  Both U and its inverse are sparse
+   % Return the inverse of U using the transposed matrix of cofactors
+   % divided by the determinant.  Both U and its inverse are sparse
    % matrix canonical forms.
-   sparse!-matsm sparse_inverse sparse!-matsm!*1 u;
+   begin scalar hash := mk!-sparse!-matrix!-hash(), d, m, n;
+      d := sparse!-detq u;              % det as SQ
+      m := cadr u;  n := caddr u;
+      for i := 1 : m do for j := 1 : n do
+         begin scalar x := sparse!-cofactorqq(u,i,j); % SQ
+            puthash(j.i, hash, quotsq(x,d));
+         end;
+      return {hash, m, n}
+   end;
+
+symbolic procedure sparse!-cofactorqq(u, i, j);
+   % Return the cofactor of the element in row I and column J of the
+   % sparse matrix canonical form U as a standard quotient.
+   % (sparse!-detq checks its argument is square.)
+   <<
+      u := sparse!-detq sparse!-submatrix(u, i, j);
+      if oddp(i + j) then negsq u else u
+   >>;
 
 put('sparse!-mat, 'lnrsolvefn, 'sparse!-lnrsolve);
 
