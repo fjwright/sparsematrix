@@ -145,4 +145,12 @@ s5*s0;
 m5/m0;
 s5/s0;
 
+% Map:
+m := mat((x^2,x^5),(x^4,x^5));
+s := sparsify m;
+map(int(~w,x), m);
+map(int(~w,x), s);
+map(1 + ~w, m);
+map(1 + ~w, s);
+
 ;end;
