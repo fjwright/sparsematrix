@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-13 17:34:25 franc>
+% Time-stamp: <2026-05-15 14:44:17 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -54,6 +54,7 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % Proposed new Standard Lisp function, to be implemented in "sl-on-cl.lisp".
 % The version here provides a fallback if maphash is not available.
 
+#if (not (getd 'maphash))
 symbolic procedure maphash(hash, fn);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
@@ -62,7 +63,8 @@ symbolic procedure maphash(hash, fn);
    % argument ordering like Standard Lisp map functions.
    % The Standard Lisp function hashcontents returns a list of pairs
    % of the form (key . value).
-   for each el in hashcontents hash do apply2(fn, car el, cdr el);
+   mapc(hashcontents hash, (lambda el; apply2(fn, car el, cdr el)));
+#endif
 
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(10, 1);
