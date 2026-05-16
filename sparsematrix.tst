@@ -153,4 +153,18 @@ map(int(~w,x), s);
 map(1 + ~w, m);
 map(1 + ~w, s);
 
+% Nullspace:
+m := mat((1,2,3,4),(5,6,7,8));
+s := sparsify m;
+map(tp, nullspace m);
+sparse_nullspace s;
+
+sparse_random_matrix(s,5,10);
+m := densify s;
+map(tp, nullspace m);
+if second length m - length ws = rank m then true else false;
+sparse_nullspace s;
+if second length s - length ws = rank s then true else false;
+
+
 ;end;
