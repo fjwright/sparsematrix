@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-15 14:44:17 franc>
+% Time-stamp: <2026-05-16 15:53:04 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -262,13 +262,10 @@ symbolic procedure sparse!-matpri u;
 % Generate sparse random matrices (for testing)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-symbolic operator sparse_random_matrix;
-
-symbolic procedure sparse_random_matrix(s, m, n);
+algebraic procedure sparse_random_matrix(s, m, n);
    % s must be an identifier.  Generate an m*n sparse matrix s
    % containing (m+n)/2 random positive integers.
    begin scalar i, j;
-      if not idp s then rederr({s, "invalid as identifier"});
       sparse_matrix s(m,n);
       for count := 1 : fix((m+n)/2) do <<
          i := random(m) + 1;

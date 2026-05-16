@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-15 12:41:10 franc>
+% Time-stamp: <2026-05-16 11:35:44 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -148,9 +148,11 @@ symbolic procedure sparse!-matinverse u;
    % Return the inverse of U using the transposed matrix of cofactors
    % divided by the determinant.  Both U and its inverse are sparse
    % matrix canonical forms.
-   begin scalar hash := mk!-sparse!-matrix!-hash(), d, m, n;
-      d := sparse!-detq u;              % d := det as SQ
+   begin scalar m, n, hash, d := sparse!-detq u; % SQ
+      if null numr d then
+         rerror(sparse!-matrix, 13, "Singular sparse matrix");
       m := cadr u;  n := caddr u;
+      hash := mk!-sparse!-matrix!-hash();
       for i := 1 : m do for j := 1 : n do
          begin scalar x := sparse!-cofactorqq(u,i,j); % SQ
             puthash(j.i, hash, quotsq(x,d));
