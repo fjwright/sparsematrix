@@ -2,6 +2,7 @@ in "sparsematrix.red",
    "sparsematsm.red",
    "sparsedet.red",
    "sparserank.red",
-   "sparsemap.red"$
+   "sparsemap.red",
+   "sparsenullsp.red"$
 
 end;

@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-16 15:53:04 franc>
+% Time-stamp: <2026-05-17 16:00:04 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -89,6 +89,17 @@ symbolic procedure map!-sparse!-matrix0(sm, fn, name);
       maphash(car sm, mapfn);
       if name eq t then name := cdddr sm;
       return hash . cadr sm . caddr sm . name;
+   end;
+
+% This should probably be in the main REDUCE source:
+
+symbolic operator mat2list;
+
+symbolic procedure mat2list m;
+   % Convert matrix M to a list of lists
+   begin scalar mm := reval m;
+      if not eqcar(mm, 'mat) then typerr(m, "matrix");
+      return 'list . for each row in cdr mm collect 'list . row;
    end;
 
 % %%%%%%%%%%%
@@ -262,17 +273,33 @@ symbolic procedure sparse!-matpri u;
 % Generate sparse random matrices (for testing)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-algebraic procedure sparse_random_matrix(s, m, n);
-   % s must be an identifier.  Generate an m*n sparse matrix s
-   % containing (m+n)/2 random positive integers.
-   begin scalar i, j;
-      sparse_matrix s(m,n);
+symbolic procedure sparse_random_matrix u;
+   % U must evaluate to a list of elements of the form (s m n).
+   % S must be an identifier.  Generate an M*N sparse matrix S
+   % containing (M+N)/2 random positive integers.
+   for each v in u do
+   begin scalar m, n, i, j, hash;
+      % Essentially, sparse_matrix s(m, n):
+      if (m := gettype car v) and not (m eq 'sparse!-matrix)
+      then typerr({m, car v}, "sparse matrix");
+      if length v neq 3 then typerr(v, 'sparse!-matrix);
+      m := reval_without_mod cadr v;
+      if not fixp m or m <= 0 then typerr(m, "positive integer");
+      n := reval_without_mod caddr v;
+      if not fixp n or n <= 0 then typerr(n, "positive integer");
+      put(car v, 'rtype, 'sparse!-matrix);
+      hash := mk!-sparse!-matrix!-hash();
+      put(car v, 'avalue, {'sparse!-matrix,
+         {'sparse!-mat, hash, m, n}});
+      % Now assign some elements of S:
       for count := 1 : fix((m+n)/2) do <<
          i := random(m) + 1;
          j := random(n) + 1;
-         s(i,j) := random(1000);
+         puthash(i.j, hash, random(1000));
       >>;
    end;
+
+rlistat '(sparse_random_matrix);
 
 endmodule;
 
