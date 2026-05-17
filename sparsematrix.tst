@@ -28,7 +28,7 @@ df(s,x);
 % Substitution:
 sub(a=aa,s);
 
-sparse_random_matrix(sr, 5, 5);
+sparse_random_matrix sr(5,5);
 
 % Trace:
 sparse_trace sr;
@@ -63,8 +63,8 @@ s1 + s2;
 % Matrix multiplication:
 m3 := mat((a,b,c),(d,e,f));
 m4 := mat((g,h),(i,j),(k,l));
-s3 := sparsify m1;
-s4 := sparsify m2;
+s3 := sparsify m3;
+s4 := sparsify m4;
 m3*m4;
 s3*s4;
 
@@ -144,5 +144,27 @@ m5*m0;
 s5*s0;
 m5/m0;
 s5/s0;
+
+% Map:
+m := mat((x^2,x^5),(x^4,x^5));
+s := sparsify m;
+map(int(~w,x), m);
+map(int(~w,x), s);
+map(1 + ~w, m);
+map(1 + ~w, s);
+
+% Nullspace:
+m := mat((1,2,3,4),(5,6,7,8));
+s := sparsify m;
+nullspace mat2list m;
+sparse_nullspace s;
+
+sparse_random_matrix s(5,10);
+m := densify s;
+nullspace mat2list m;
+if second length m - length ws = rank m then true else false;
+sparse_nullspace s;
+if second length s - length ws = sparse_rank s then true else false;
+
 
 ;end;
