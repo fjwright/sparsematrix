@@ -1,3 +1,5 @@
+on comp;
+
 in "sparsematrix.red",
    "sparsematsm.red",
    "sparsedet.red",
