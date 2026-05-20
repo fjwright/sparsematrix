@@ -1,8 +1,10 @@
 module newsparsedet;                 % Determinant of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-18 15:02:55 franc>
-% Created: April 2026
+% Time-stamp: <2026-05-18 15:48:28 franc>
+% Created: May 2026
+
+% ***** This new version is roughly twice as slow as the previous version! *****
 
 put('sparse_det, 'simpfn, 'simpsparse!-det);
 flag('(sparse_det), 'immediate);
