@@ -14,8 +14,8 @@ rs := rm$ transmat rs;
 on time;
 
 det rm;
-sparse_det rsm;
-det rs;
+sparse_det rsm;                % OK with size = 100
+det rs;                        % FAILS: Heap exhausted with size = 100
 
 rm^10$
 rsm^10$

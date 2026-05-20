@@ -1,7 +1,7 @@
 module sparsedet2;                   % Determinant of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-20 16:05:03 franc>
+% Time-stamp: <2026-05-20 16:58:45 franc>
 % Created: May 2026
 
 put('sparse_det, 'simpfn, 'simpsparse!-det);
@@ -17,19 +17,39 @@ symbolic procedure simpsparse!-det u;
 symbolic procedure sparse!-detq u;
    % Top level determinant function.
    % U is a sparse matrix canonical form (<hash> <m> <n>).
-   begin scalar m := cadr u;
+   begin scalar m := cadr u, hash, neg, d := 1 ./ 1;
       if caddr u neq m then rederr "Non square sparse matrix";
       if m = 1 then return gethash(1 . 1, car u) or 0;
-      return (if sparse!-echelon(car u, m, m) then -1 else 1) ./ 1;
+      hash := car u;
+      neg := sparse!-echelon(hash, m, m);
+      for i := 1 : m do
+         d := multsq(d, gethash(i.i, hash) or (nil ./ 1));
+      return if neg then negsq d else d;
    end;
+
+put('sparse_echelon, 'rtypefn, 'getrtypecar); % declares algebraic operator
+
+symbolic procedure sparse_echelon u;
+   % Return the sparse matrix in row echelon form.
+   % U is a tagged algebraic form.
+   % Return a sparse matrix canonical form
+   begin scalar hash, m, n;
+      u := sparse!-matsm u;
+      hash := car u;
+      m := cadr u;
+      n := caddr u;
+      sparse!-echelon(hash, m, n);
+      return sparse!-matsm!*1 {hash, m, n};
+   end;
+
+% The following row reduction code is based on
+% https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
 
 symbolic procedure sparse!-echelon(hash, m, n);
    % HASH contains the elements of a sparse M*N matrix.
    % The elements are assumed to be standard quotients.
    % On return the elements in HASH are in row echelon form.
    % Return non-nil if odd # row swaps, nil otherwise.
-   % Based on
-   % https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
    begin scalar
       h := 1,                           % initial pivot row
       k := 1,                           % initial pivot column
@@ -67,7 +87,7 @@ symbolic procedure sparse!-echelon(hash, m, n);
             k := k + 1;
          >>;
       end;
-      mathprint densify sparse!-matsm!*1 {hash, m, n};
+      % mathprint densify sparse!-matsm!*1 {hash, m, n};
       return neg;
    end;
 
