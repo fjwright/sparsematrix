@@ -1,7 +1,7 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-21 15:55:39 franc>
+% Time-stamp: <2026-05-21 16:26:53 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -105,8 +105,10 @@ symbolic procedure sparse!-echelon(hash, m, n);
             >>;
             % Do for all rows below pivot:
             for i := h + 1 : m do
-               begin scalar f := negsq quotsq(gethash(i.k, hash), pivot);
-                  % Fill with zeros the lower part of pivot column:
+               begin scalar f := gethash(i.k, hash);
+                  if null f then return; % row already in echelon form
+                  f := negsq quotsq(f, pivot);
+                  % Fill lower part of pivot column with zeros:
                   remhash(i.k, hash);
                   % Do for all remaining elements in this row:
                   for j := k + 1 : n do
