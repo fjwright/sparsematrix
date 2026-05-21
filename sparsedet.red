@@ -1,7 +1,7 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-20 18:00:53 franc>
+% Time-stamp: <2026-05-21 15:55:39 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -51,9 +51,10 @@ symbolic procedure simpsparse!-det u;
 symbolic procedure sparse!-detq u;
    % Top level determinant function.
    % U is a sparse matrix canonical form (<hash> <m> <n>).
+   % Return determinant as a SQ.
    begin scalar m := cadr u, hash, neg, d := 1 ./ 1;
       if caddr u neq m then rederr "Non square sparse matrix";
-      if m = 1 then return gethash(1 . 1, car u) or 0;
+      if m = 1 then return gethash(1 . 1, car u) or (nil ./ 1);
       hash := car u;
       neg := sparse!-echelon(hash, m, m);
       for i := 1 : m do
@@ -144,10 +145,11 @@ symbolic procedure sparse!-el!-swap(hash, i1_j1, i2_j2);
 
 symbolic procedure sparse!-add!-to!-el(hash, i_j, value);
    % Add VALUE to element with key I_J in hash table HASH.
-   % Assume all values are SQs.
+   % Do not save a zero element.  Assume all values are SQs.
    begin scalar old_val := gethash(i_j, hash);
-      puthash(i_j, hash,
-         if old_val then addsq(old_val, value) else value);
+      if old_val then value := addsq(old_val, value);
+      if numr value then puthash(i_j, hash, value)
+      else remhash(i_j, hash);
    end;
 
 % %%%%%
