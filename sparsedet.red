@@ -1,7 +1,7 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-21 18:00:44 franc>
+% Time-stamp: <2026-05-22 16:07:41 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -55,7 +55,8 @@ symbolic procedure sparse!-detq u;
    begin scalar m := cadr u, hash, neg, d := 1 ./ 1;
       if caddr u neq m then rederr "Non square sparse matrix";
       if m = 1 then return gethash(1 . 1, car u) or (nil ./ 1);
-      hash := car u;
+      % TEMPORARY (?) - copy hash since sparse!-echelon is destructive:
+      hash := copyhash car u;
       % Reduce hash (destructively) to row echelon form and return
       % 'singular if the matrix is singular; otherwise return non-nil
       % if the sign of the determinant has been changed (by an odd

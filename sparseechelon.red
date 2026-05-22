@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-21 17:57:09 franc>
+% Time-stamp: <2026-05-22 16:13:17 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -124,11 +124,10 @@ symbolic procedure sparse!-el!-swap(hash, i1_j1, i2_j2);
 
 symbolic procedure sparse!-add!-to!-el(hash, i_j, value);
    % Add VALUE to element with key I_J in hash table HASH.
-   % Do not save a zero element.  Assume all values are SQs.
+   % Do not save a zero element.  Assume values are SQs.
    begin scalar old_val := gethash(i_j, hash);
       if old_val then value := addsq(old_val, value);
-      if numr value then puthash(i_j, hash, value)
-      else remhash(i_j, hash);
+      puthash!-nzsq(i_j, hash, value);
    end;
 
 endmodule;

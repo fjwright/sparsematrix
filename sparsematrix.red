@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-17 16:00:04 franc>
+% Time-stamp: <2026-05-22 16:01:36 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -65,6 +65,15 @@ symbolic procedure maphash(hash, fn);
    % of the form (key . value).
    mapc(hashcontents hash, (lambda el; apply2(fn, car el, cdr el)));
 #endif
+
+symbolic procedure copyhash hash;
+   % Copy each element of hash table HASH to a new hash table and
+   % return the latter.
+   begin scalar newhash := mk!-sparse!-matrix!-hash();
+      maphash(hash, (lambda(key, value);
+      puthash(key, newhash, value)));
+      return newhash;
+   end;
 
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(10, 1);

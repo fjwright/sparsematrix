@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-13 17:02:19 franc>
+% Time-stamp: <2026-05-22 16:10:46 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -170,8 +170,14 @@ symbolic procedure sparse!-matsm1(u, name);
 % Addition
 % %%%%%%%%
 
-% This procedure would benefit from an efficient hash table copy
-% function.
+% COULD INLINE THIS PROCEDURE!
+
+symbolic procedure puthash!-nzsq(key, hash, value);
+   % Avoid putting a zero SQ entry into a sparse matrix hash table.
+   % VALUE is a SQ; if it is nonzero then insert it into hash table
+   % HASH, otherwise remove the entry in hash table HASH.
+   if numr value then puthash(key, hash, value)
+   else remhash(key, hash);
 
 symbolic procedure sparse!-addm(u,v);
    % Return the sum of two sparse matrix canonical forms U and V as a
@@ -179,22 +185,22 @@ symbolic procedure sparse!-addm(u,v);
    % U & V have the form (<hash> <m> <n>).
    if not(cadr u = cadr v and caddr u = caddr v) then
       rerror(sparse!-matrix,8,"Sparse matrix mismatch")
-   else begin scalar hash := mk!-sparse!-matrix!-hash();
-      % Copy each nonzero element of sparse matrix U to hash:
-      maphash(car u,
-         (lambda(key, u_val);
-         puthash(key, hash, u_val)));
-      % Add or in each nonzero element of sparse matrix V to hash:
-      maphash(car v,
-         (lambda(key, v_val);
-          begin scalar u_val;
-             puthash(key, hash,
-                if (u_val := gethash(key, hash)) then
-                   addsq(u_val, v_val)
-                else v_val)
-          end));
-      return {hash, cadr u, caddr u}
-   end;
+   else
+      % Copy each nonzero element of sparse matrix U to a new hash
+      % table:
+      begin scalar hash := copyhash car u;
+         % Add each nonzero element of sparse matrix V to the new hash
+         % table (and ensure the result is nonzero):
+         maphash(car v,
+            (lambda(key, v_val);
+             begin scalar u_val;
+                puthash!-nzsq(key, hash,
+                   if (u_val := gethash(key, hash)) then
+                      addsq(u_val, v_val)
+                   else v_val)
+             end));
+         return {hash, cadr u, caddr u}
+      end;
 
 % %%%%%%%%%
 % Transpose
@@ -239,7 +245,7 @@ symbolic procedure sparse!-multm(u,v);
                    begin scalar j := cdr v_key,
                          scalprod := gethash(i.j, hash),
                          prod := multsq(u_value, v_value);
-                      puthash(i.j, hash,
+                      puthash!-nzsq(i.j, hash,
                          if scalprod then addsq(scalprod, prod) else prod);
                    end));
           end));

@@ -43,6 +43,7 @@ m := mat((a,b,c),(d,e,f),(g,h,i));
 s := sparsify m;
 det m;
 sparse_det s;
+if det m = sparse_det s then "OK" else "***** ERROR *****";
 
 % Addition and scalar multiplication:
 m1 := mat((a,b),(c,d));
@@ -108,7 +109,7 @@ densify sparse_submatrix(s,2,2);
 sparse_cofactor(s,1,1);
 % Determinant via cofactors of first row:
 for j := 1 : 3 sum s(1,j)*sparse_cofactor(s,1,j);
-if ws = sparse_det s then true else false;
+if ws = sparse_det s then "OK" else "***** ERROR *****";
 
 % Inverses and non-positive integer powers:
 m5^0;
@@ -117,8 +118,10 @@ m5^(-1);
 s5^(-1);
 m5^(-1)*m5;
 s5^(-1)*s5;
+if ws = s5^0 then "OK" else "***** ERROR *****";
 m5*m5^(-1);
 s5*s5^(-1);
+if ws = s5^0 then "OK" else "***** ERROR *****";
 m5^(-2);
 s5^(-2);
 
@@ -162,9 +165,9 @@ sparse_nullspace s;
 sparse_random_matrix s(5,10);
 m := densify s;
 nullspace mat2list m;
-if second length m - length ws = rank m then true else false;
+if second length m - length ws = rank m then "OK" else "***** ERROR *****";
 sparse_nullspace s;
-if second length s - length ws = sparse_rank s then true else false;
+if second length s - length ws = sparse_rank s then "OK" else "***** ERROR *****";
 
 
 ;end;
