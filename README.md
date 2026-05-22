@@ -1,7 +1,7 @@
 # SPARSEMATRIX: A REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-05-16 17:34:47 franc>
+Time-stamp: <2026-05-22 17:23:57 franc>
 
 A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  By contrast, if most of the elements are non-zero, the matrix is considered *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix fewer than half the elements are nonzero.
 
@@ -17,6 +17,7 @@ Adding support for hash tables to REDUCE on Common Lisp inspired me to try to wr
 
 The SPARSE package has a number of issues:
 * If sparse and dense matrices are both used in an expression then the result appears always to be a sparse matrix.  I think that the result should usually be a dense matrix [BUT THIS NEEDS CHECKING]!
+* Computing the determinant of a sparse 100*100 integer matrix with 200 nonzero elements fails with heap overflow.
 * The REDUCE operators `map`, `sub`, `cofactor` and `nullspace` are not supported.  The aggregate property (that appropriate operators automatically map over a data structure) is not supported.  Inverses can only be computed for numerical matrices.  Raising a matrix to the power 0 produces the inverse.  Non-positive powers of matrices in products fail.
 * The `mateigen` operator is implemented as `spmateigen`, rather than overloading `mateigen`.
 
@@ -50,7 +51,7 @@ Nullspace | `nullspace m` | `sparse_nullspace s`
 
 Overload all standard matrix operators and allow combinations of dense and sparse matrices.
 
-* `MATEIGEN` Operator
+* `MATEIGEN` operator (maybe)
 * Operators in `LINALG` package (maybe)
 * Additional operators in `SPARSE` package (maybe)
 * Operators in `NORMFORM` package (maybe)
