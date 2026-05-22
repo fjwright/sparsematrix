@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-22 16:01:36 franc>
+% Time-stamp: <2026-05-22 17:00:30 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -65,6 +65,10 @@ symbolic procedure maphash(hash, fn);
    % of the form (key . value).
    mapc(hashcontents hash, (lambda el; apply2(fn, car el, cdr el)));
 #endif
+
+% Potential new Standard Lisp function, to be implemented in
+% "sl-on-cl.lisp" using copy-structure.  The version here provides a
+% fallback if copyhash is not available.
 
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
@@ -267,7 +271,7 @@ symbolic procedure sparse!-matpri u;
             "sparse matrix #mdash;"};
       if null alist then return
          lprim append(msg, {"no nonzero elements"});
-      lprim append(msg, {"nonzero elements:"});
+      lprim append(msg, {length alist, "nonzero elements:"});
       % Each alist element has the form ((i . j) . value).
       % Sort by row index and then by column index:
       alist := sort(alist,

@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-22 16:10:46 franc>
+% Time-stamp: <2026-05-22 17:12:38 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -117,7 +117,10 @@ symbolic procedure sparse!-matsm1(u, name);
    b: % Multiplication (scalar or matrix):
       z := if null z then x
       else if cadr z = 1 and caddr z = 1 % 1*1 matrix: treat as scalar
-      then sparse!-multsm(gethash(1 . 1, car z), x) % CHECK NON-NIL!!!
+      then
+         if (y := gethash(1 . 1, car z)) then sparse!-multsm(y, x) else
+            % Null matrix the same shape as x:
+            {mk!-sparse!-matrix!-hash(), cadr x, caddr x}
       else sparse!-multm(x,z);
    c: % Loop through elements of matrix expression u:
       u := cdr u;
