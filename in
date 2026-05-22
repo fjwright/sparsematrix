@@ -1,8 +1,11 @@
+on comp;
+
 in "sparsematrix.red",
    "sparsematsm.red",
    "sparsedet.red",
    "sparserank.red",
    "sparsemap.red",
-   "sparsenullsp.red"$
+   "sparsenullsp.red",
+   "sparseechelon.red"$
 
 end;

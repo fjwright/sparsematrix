@@ -1,7 +1,7 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-06 15:50:30 franc>
+% Time-stamp: <2026-05-22 16:07:41 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -41,7 +41,7 @@ module sparsedet;          % Determinant and trace of a sparse matrix.
 put('sparse_det, 'simpfn, 'simpsparse!-det);
 flag('(sparse_det), 'immediate);
 
-% Using expansion by minors.
+% Using reduction to row echelon form (Gaussian elimination).
 % No support for Bareiss algorithm at present!
 
 symbolic procedure simpsparse!-det u;
@@ -51,37 +51,20 @@ symbolic procedure simpsparse!-det u;
 symbolic procedure sparse!-detq u;
    % Top level determinant function.
    % U is a sparse matrix canonical form (<hash> <m> <n>).
-   begin scalar len := cadr u;          % number of rows <m>
-      if caddr u neq len then rederr "Non square sparse matrix";
-      return if len = 1 then
-         gethash(1 . 1, car u) or 0
-      else sparse!-detq1(car u, len, 1, for j := 1:len collect j)
-   end;
-
-symbolic procedure sparse!-detq1(hash, len, i, jlist);
-   % HASH contains elements of a sparse square matrix of order LEN.
-   % The elements are assumed to be standard quotients.
-   % Return the determinant of the matrix.
-   % Algorithm is recursive expansion by minors of first row.
-   % I is the current "first" row index, initially 1, finally LEN.
-   % JLIST is a list of column indices for the current sub-matrix,
-   % initially {1,...,LEN}.
-   begin scalar i1, result, neg;
-      % Base case: last (or single) row, single element.
-      if i = len then return gethash(i . car jlist, hash);
-      i1 := i + 1;
-      result := nil ./ 1;               % zero standard quotient
-      for each j in jlist do
-      begin scalar el := gethash(i.j, hash);
-         if el then <<
-            if neg then el := negsq el;
-            result := addsq(result, multsq(el,
-               % determinant of matrix excluding row i and column j:
-               sparse!-detq1(hash, len, i1, delete(j,jlist))));
-         >>;
-         neg := not neg;
-      end;
-      return result
+   % Return determinant as a SQ.
+   begin scalar m := cadr u, hash, neg, d := 1 ./ 1;
+      if caddr u neq m then rederr "Non square sparse matrix";
+      if m = 1 then return gethash(1 . 1, car u) or (nil ./ 1);
+      % TEMPORARY (?) - copy hash since sparse!-echelon is destructive:
+      hash := copyhash car u;
+      % Reduce hash (destructively) to row echelon form and return
+      % 'singular if the matrix is singular; otherwise return non-nil
+      % if the sign of the determinant has been changed (by an odd
+      % number of row swaps):
+      neg := sparse!-echelon(hash, m, m, t);
+      if neg eq 'singular then return (nil ./ 1);
+      for i := 1 : m do d := multsq(d, gethash(i.i, hash));
+      return if neg then negsq d else d;
    end;
 
 % %%%%%
