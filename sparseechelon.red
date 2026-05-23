@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-22 16:13:17 franc>
+% Time-stamp: <2026-05-23 12:02:01 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,7 @@ symbolic procedure sparse_echelon u;
       n := caddr u;
       % Reduce hash (destructively) to row echelon form:
       sparse!-echelon(hash, m, n, nil);
+      mathprint densify sparse!-matsm!*1 {hash, m, n};
       return sparse!-matsm!*1 {hash, m, n};
    end;
 
@@ -52,6 +53,9 @@ symbolic procedure sparse_echelon u;
 
 % The following row reduction code is based on
 % https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
+
+% sparse!-echelon is faster than sparse!-echelon1 and so
+% sparse!-echelon is used for determinant computation.
 
 symbolic procedure sparse!-echelon(hash, m, n, det);
    % HASH contains the elements of a sparse M*N matrix (A).
@@ -101,7 +105,6 @@ symbolic procedure sparse!-echelon(hash, m, n, det);
             k := k + 1;
          >>;
       end;
-      % mathprint densify sparse!-matsm!*1 {hash, m, n};
       return neg;
    end;
 
@@ -128,6 +131,78 @@ symbolic procedure sparse!-add!-to!-el(hash, i_j, value);
    begin scalar old_val := gethash(i_j, hash);
       if old_val then value := addsq(old_val, value);
       puthash!-nzsq(i_j, hash, value);
+   end;
+
+put('sparse_echelon1, 'rtypefn, 'getrtypecar); % declares algebraic operator
+
+symbolic procedure sparse_echelon1 u;
+   % Return the sparse matrix in row echelon form
+   % with leading elements all unity (semi-reduced).
+   % U is a tagged algebraic form.
+   % Return a sparse matrix canonical form
+   begin scalar hash, m, n;
+      u := sparse!-matsm u;
+      hash := car u;
+      m := cadr u;
+      n := caddr u;
+      % Reduce hash (destructively) to row echelon form:
+      sparse!-echelon1(hash, m, n, nil);
+      mathprint densify sparse!-matsm!*1 {hash, m, n};
+      return sparse!-matsm!*1 {hash, m, n};
+   end;
+
+symbolic procedure sparse!-echelon1(hash, m, n);
+   % HASH contains the elements of a sparse M*N matrix (A).
+   % The elements are assumed to be standard quotients.
+   % On return the elements in HASH are in row echelon form
+   % with leading elements all unity (semi-reduced).
+   % This procedure is slower than sparse!-echelon.
+   begin scalar
+      h := 1,                           % initial pivot row
+      k := 1;                           % initial pivot column
+      while h <= m and k <= n do
+      begin scalar i_piv := h, pivot;
+         % Find the first (nonzero) pivot below row h in column k:
+         while i_piv <= m and null (pivot := gethash(i_piv.k, hash)) do
+            i_piv := i_piv + 1;
+         if i_piv > m then <<
+            if det then return nil ./ 1;
+            % No pivot in this column, pass to next column
+            k := k + 1
+         >> else <<
+            if i_piv > h then
+               % Swap rows h and i_piv:
+               for j := k : n do sparse!-el!-swap(hash, h.j, i_piv.j);
+            % Reduce leading element of pivot row (h) to unity by
+            % dividing every nonzero element by pivot:
+            begin scalar f := invsq pivot, el;
+               puthash(h.k, hash, 1 ./ 1); % A[h, k] := 1
+               for j := k + 1 : n do
+                  if (el := gethash(h.j, hash)) then
+                     puthash(h.j, hash, multsq(el, f));
+            end;
+            % Do for all rows below pivot:
+            for i := h + 1 : m do
+               begin scalar f := gethash(i.k, hash); % A[i, k]
+                  if null f then return; % row already in echelon form
+                  f := negsq f; % - A[i, k] (since now pivot A[h, k] = 1)
+                  % Fill lower part of pivot column with zeros:
+                  remhash(i.k, hash);   % A[i, k] := 0
+                  % Do for all remaining elements in this row:
+                  for j := k + 1 : n do
+                     % A[i, j] := A[i, j] - A[h, j] * f
+                     begin scalar change := gethash(h.j, hash);
+                        if change then <<
+                           change := multsq(change, f);
+                           sparse!-add!-to!-el(hash, i.j, change);
+                        >>;
+                     end;
+               end;
+            % Increase pivot row and column:
+            h := h + 1;
+            k := k + 1;
+         >>;
+      end;
    end;
 
 endmodule;
