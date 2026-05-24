@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-22 17:00:30 franc>
+% Time-stamp: <2026-05-24 18:05:17 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,7 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % %%%%%%%%%%%%%%%%%
 
 % Proposed new Standard Lisp function, to be implemented in "sl-on-cl.lisp".
-% The version here provides a fallback if maphash is not available.
+% This version provides a fallback if maphash is not available.
 
 #if (not (getd 'maphash))
 symbolic procedure maphash(hash, fn);
@@ -63,21 +63,24 @@ symbolic procedure maphash(hash, fn);
    % argument ordering like Standard Lisp map functions.
    % The Standard Lisp function hashcontents returns a list of pairs
    % of the form (key . value).
-   mapc(hashcontents hash, (lambda el; apply2(fn, car el, cdr el)));
+   mapc(hashcontents hash,
+      (lambda el; apply2(fn, car el, cdr el)));
 #endif
 
-% Potential new Standard Lisp function, to be implemented in
-% "sl-on-cl.lisp" using copy-structure.  The version here provides a
+% Proposed new Standard Lisp function, to be implemented in
+% "sl-on-cl.lisp" using copy-structure.  This version provides a
 % fallback if copyhash is not available.
 
+#if (not (getd 'copyhash))
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
    begin scalar newhash := mk!-sparse!-matrix!-hash();
-      maphash(hash, (lambda(key, value);
-      puthash(key, newhash, value)));
+      maphash(hash,
+         (lambda(key, value); puthash(key, newhash, value)));
       return newhash;
    end;
+#endif
 
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(10, 1);
@@ -104,6 +107,13 @@ symbolic procedure map!-sparse!-matrix0(sm, fn, name);
       return hash . cadr sm . caddr sm . name;
    end;
 
+symbolic inline procedure puthash!-nzsq(key, hash, value);
+   % Avoid putting a zero SQ entry into a sparse matrix hash table.
+   % VALUE is a SQ; if it is nonzero then insert it into hash table
+   % HASH, otherwise remove the entry in hash table HASH.
+   if numr value then puthash(key, hash, value)
+   else remhash(key, hash);
+
 % This should probably be in the main REDUCE source:
 
 symbolic operator mat2list;
@@ -115,6 +125,7 @@ symbolic procedure mat2list m;
       return 'list . for each row in cdr mm collect 'list . row;
    end;
 
+
 % %%%%%%%%%%%
 % Declaration
 % %%%%%%%%%%%
@@ -157,6 +168,7 @@ put('sparse!-matrix, 'fn, 'sparse!-matflg);
 
 put('sparse!-matrix, 'tag, 'sparse!-mat);
 
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Dimensions access / length interface
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -175,6 +187,7 @@ symbolic procedure sparse!-matlength u;
       rerror(sparse!-matrix, 2, {"Sparse matrix",u,"not set"})
    else 'list . sparse!-matdims u;
 
+
 % %%%%%%%%%%%%%%
 % Element access
 % %%%%%%%%%%%%%%
@@ -215,6 +228,7 @@ symbolic procedure set!-sparse!-matelem(u,v);
    % and return v, cf. setmatelem.
    puthash(car x, cdr x, v) where x = access!-sparse!-matelem u;
 
+
 % %%%%%%%%%%%%%%%%%%
 % Aggregate property
 % %%%%%%%%%%%%%%%%%%
@@ -236,6 +250,7 @@ symbolic procedure sparse!-matrixmap(u,v);
    else if flagp(car u, 'sparse!-matfn) then reval2(u,v)
    else typerr(car u, "sparse matrix operator");
 
+
 % %%%%%%%%
 % Printing
 % %%%%%%%%
@@ -282,6 +297,7 @@ symbolic procedure sparse!-matpri u;
          assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
    end;
 
+
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Generate sparse random matrices (for testing)
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
