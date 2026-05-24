@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-16 11:35:44 franc>
+% Time-stamp: <2026-05-24 15:17:32 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -132,48 +132,7 @@ symbolic procedure sparse!-cofactorq(u, i, j);
       if oddp(i + j) then negsq u else u
    >>;
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Inverse (crude and inefficient temporary algorithm!)
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% If C(A) is the matrix of cofactors of the square matrix A then A^-1
-% = C^T / |A|.  C^T is called the adjugate of A.
-
-% Functions called by sparse!-matsm1 to support matrix inverse
-% arithmetic:
-
-put('sparse!-mat, 'inversefn, 'sparse!-matinverse);
-
-symbolic procedure sparse!-matinverse u;
-   % Return the inverse of U using the transposed matrix of cofactors
-   % divided by the determinant.  Both U and its inverse are sparse
-   % matrix canonical forms.
-   begin scalar m, n, hash, d := sparse!-detq u; % SQ
-      if null numr d then
-         rerror(sparse!-matrix, 13, "Singular sparse matrix");
-      m := cadr u;  n := caddr u;
-      hash := mk!-sparse!-matrix!-hash();
-      for i := 1 : m do for j := 1 : n do
-         begin scalar x := sparse!-cofactorqq(u,i,j); % SQ
-            puthash(j.i, hash, quotsq(x,d));
-         end;
-      return {hash, m, n}
-   end;
-
-symbolic procedure sparse!-cofactorqq(u, i, j);
-   % Return the cofactor of the element in row I and column J of the
-   % sparse matrix canonical form U as a standard quotient.
-   <<
-      u := sparse!-detq sparse!-submatrix(u, i, j);
-      if oddp(i + j) then negsq u else u
-   >>;
-
-put('sparse!-mat, 'lnrsolvefn, 'sparse!-lnrsolve);
-
-symbolic procedure sparse!-lnrsolve(u, v);
-   % Return U**(-1)*V, where U is a sparse matrix and V is a
-   % conformable sparse matrix.  All matrices are canonical forms.
-   sparse!-multm(sparse!-matinverse u, v);
+% The following procedure is not currently used:
 
 symbolic procedure sparse!-generateident n;
    % Return sparse matrix canonical form of identity matrix of order N.

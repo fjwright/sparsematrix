@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-23 16:19:31 franc>
+% Time-stamp: <2026-05-24 15:11:24 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -189,6 +189,66 @@ symbolic procedure sparse!-canonical(hash, m, n);
             >>;
          end;
    >>;
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Inverse and linear solve (inverse times matrix)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Functions called by sparse!-matsm1 to support matrix inverse
+% arithmetic:
+
+put('sparse!-mat, 'inversefn, 'sparse!-matinverse);
+
+symbolic procedure sparse!-matinverse u;
+   % Return the inverse of U using reduction of the augmented matrix
+   % to row canonical form.  Both U and its inverse are sparse matrix
+   % canonical forms.  Assume U is square (m*m).
+   begin scalar hash := copyhash car u,
+         m := cadr u, sing, newhash;
+      % Augment U with a unit matrix:
+      for i := 1 : m do puthash(i . (i + m), hash, 1 ./ 1);
+      % Reduce hash (destructively) to row canonical form:
+      sing := sparse!-echelon(hash, m, 2m, t);
+      if sing eq 'singular then
+         rerror(sparse!-matrix, 13, "Singular sparse matrix");
+      sparse!-canonical(hash, m, 2m);
+      % Extract the inverse matrix:
+      newhash := mk!-sparse!-matrix!-hash();
+      maphash(hash,
+         (lambda(key, value);
+         if cdr key > m then
+            puthash(car key . (cdr key - m), newhash, value)));
+      return {newhash, m, m};
+   end;
+
+put('sparse!-mat, 'lnrsolvefn, 'sparse!-lnrsolve);
+
+symbolic procedure sparse!-lnrsolve(u, v);
+   % Return U**(-1)*V, where U is a sparse matrix and V is a
+   % conformable sparse matrix, using reduction of the augmented
+   % matrix to row canonical form.  Assume U is m*m and V is m*n, so
+   % the product is m*n, and all matrices are represented as sparse
+   % matrix canonical forms.
+   begin scalar hash := copyhash car u,
+         m := cadr u, n := caddr v, sing, newhash;
+      % Augment U with V:
+      maphash(car v,
+         (lambda(key, value);
+         puthash(car key . (cdr key + m), hash, value)));
+      % Reduce hash (destructively) to row canonical form:
+      sing := sparse!-echelon(hash, m, m+n, t);
+      if sing eq 'singular then
+         rerror(sparse!-matrix, 13, "Singular sparse matrix");
+      sparse!-canonical(hash, m, m+n);
+      % Extract the product matrix:
+      newhash := mk!-sparse!-matrix!-hash();
+      maphash(hash,
+         (lambda(key, value);
+         if cdr key > m then
+            puthash(car key . (cdr key - m), newhash, value)));
+      return {newhash, m, n};
+   end;
 
 endmodule;
 
