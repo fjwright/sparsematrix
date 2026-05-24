@@ -30,7 +30,7 @@ s^10$                                  % SPARSE is fast (687 ms)
 det m;         % MATRIX is OK (282 ms)
 sparse_det sm; % SPARSEMATRIX is fastest (0 ms)
 % det s;       % SPARSE crashes!
-% FAILS with size = 50: Heap exhausted (eventually)
+% FAILS even with size = 50: Heap exhausted (eventually)
 
 % Inverse:
 m^(-1)$                              % MATRIX is OK (484 ms)
