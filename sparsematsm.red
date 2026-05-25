@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-22 17:12:38 franc>
+% Time-stamp: <2026-05-24 18:05:22 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -169,18 +169,10 @@ symbolic procedure sparse!-matsm1(u, name);
       go to c;
    end;
 
+
 % %%%%%%%%
 % Addition
 % %%%%%%%%
-
-% COULD INLINE THIS PROCEDURE!
-
-symbolic procedure puthash!-nzsq(key, hash, value);
-   % Avoid putting a zero SQ entry into a sparse matrix hash table.
-   % VALUE is a SQ; if it is nonzero then insert it into hash table
-   % HASH, otherwise remove the entry in hash table HASH.
-   if numr value then puthash(key, hash, value)
-   else remhash(key, hash);
 
 symbolic procedure sparse!-addm(u,v);
    % Return the sum of two sparse matrix canonical forms U and V as a
@@ -205,6 +197,7 @@ symbolic procedure sparse!-addm(u,v);
          return {hash, cadr u, caddr u}
       end;
 
+
 % %%%%%%%%%
 % Transpose
 % %%%%%%%%%
@@ -227,6 +220,7 @@ symbolic procedure sparse!-tp1 u;
       return {hash, caddr u, cadr u}
    end;
 
+
 % %%%%%%%%%%%%%%
 % Multiplication
 % %%%%%%%%%%%%%%
@@ -243,8 +237,8 @@ symbolic procedure sparse!-multm(u,v);
                 (lambda(v_key, v_value);
                 if car v_key = k then
                    % The product of this pair of matrix elements is a
-                   % summand of the scalar product forming the i,j element
-                   % of the product matrix.
+                   % summand of the scalar product forming the
+                   % (i,j)-element of the product matrix.
                    begin scalar j := cdr v_key,
                          scalprod := gethash(i.j, hash),
                          prod := multsq(u_value, v_value);
@@ -264,6 +258,7 @@ symbolic procedure sparse!-multsm(u,v);
          % noncom scalars in matrix elements!
          (lambda value; multsq(value, u)));
 
+
 % %%%%%%%%%%%%
 % Substitution
 % %%%%%%%%%%%%
@@ -278,6 +273,7 @@ symbolic procedure sparse!-matsub(u,v);
    'sparse!-mat .
       map!-sparse!-matrix(cdr v, (lambda value; subeval1(u, value)));
 
+
 % %%%%%%%%%%
 % Conversion
 % %%%%%%%%%%

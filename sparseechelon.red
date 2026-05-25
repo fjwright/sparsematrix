@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-22 16:13:17 franc>
+% Time-stamp: <2026-05-24 15:36:14 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,7 @@ symbolic procedure sparse_echelon u;
       n := caddr u;
       % Reduce hash (destructively) to row echelon form:
       sparse!-echelon(hash, m, n, nil);
+      mathprint densify sparse!-matsm!*1 {hash, m, n};
       return sparse!-matsm!*1 {hash, m, n};
    end;
 
@@ -52,6 +53,9 @@ symbolic procedure sparse_echelon u;
 
 % The following row reduction code is based on
 % https://en.wikipedia.org/wiki/Gaussian_elimination#Pseudocode
+
+% sparse!-echelon is faster than sparse!-echelon1 and so
+% sparse!-echelon is used for determinant computation.
 
 symbolic procedure sparse!-echelon(hash, m, n, det);
    % HASH contains the elements of a sparse M*N matrix (A).
@@ -101,7 +105,6 @@ symbolic procedure sparse!-echelon(hash, m, n, det);
             k := k + 1;
          >>;
       end;
-      % mathprint densify sparse!-matsm!*1 {hash, m, n};
       return neg;
    end;
 
@@ -128,6 +131,110 @@ symbolic procedure sparse!-add!-to!-el(hash, i_j, value);
    begin scalar old_val := gethash(i_j, hash);
       if old_val then value := addsq(old_val, value);
       puthash!-nzsq(i_j, hash, value);
+   end;
+
+put('sparse_canonical, 'rtypefn, 'getrtypecar); % declares algebraic operator
+
+symbolic procedure sparse_canonical u;
+   % Return the sparse matrix in row canonical form.
+   % U is a tagged algebraic form.
+   % Return a sparse matrix canonical form
+   begin scalar hash, m, n, neg;
+      u := sparse!-matsm u;
+      hash := car u;
+      m := cadr u;
+      n := caddr u;
+      % Reduce hash (destructively) to row canonical form:
+      neg := sparse!-echelon(hash, m, n, t);
+      mathprint densify sparse!-matsm!*1 {hash, m, n};
+      if neg eq 'singular then rederr("Singular leading submatrix");
+      sparse!-canonical(hash, m, n);
+      mathprint densify sparse!-matsm!*1 {hash, m, n};
+      return sparse!-matsm!*1 {hash, m, n};
+   end;
+
+symbolic procedure sparse!-canonical(hash, m, n);
+   % HASH contains the elements of a sparse M*N (augmented) matrix (A)
+   % in row echelon form.  The elements are assumed to be standard
+   % quotients.  On return the elements in HASH are in row canonical
+   % form.  Assume that the leading M*M submatrix is non-singular.
+   for i := m step -1 until 1 do <<
+      % Re-scale row(i) so that A[i,i] = 1:
+      begin scalar f := invsq gethash(i.i, hash); % f = 1/A[i,i]
+         % row(i) := row(i) / A[i,i]
+         puthash(i.i, hash, 1 ./ 1); % A[i,i] := 1
+         for j := i+1 : n do
+            begin scalar el := gethash(i.j, hash);
+               if el then
+                  puthash(i.j, hash, multsq(el, f));
+            end;
+      end;
+      % Zero col(i) above the (now unit) pivot A[i,i]:
+      for ii := i-1 step -1 until 1 do
+         begin scalar f := gethash(ii.i, hash); % f = A[ii,i]
+            if f then <<
+               % row(ii) := row(ii) - A[ii,i]*row(i) where A[i,i] = 1
+               remhash(ii.i, hash);     % A[ii,i] := 0
+               f := negsq f;            % f = - A[ii,i]
+               for j := i+1 : n do
+                  % A[ii,j] := A[ii,j] - A[ii,i]*A[i,j] (if A[i,j] neq 0)
+                  begin scalar A_i_j := gethash(i.j, hash), A_ii_j;
+                     if A_i_j then <<
+                        A_i_j := multsq(f, A_i_j);
+                        A_ii_j := gethash(ii.j, hash);
+                        puthash!-nzsq(ii.j, hash,
+                           if A_ii_j then addsq(A_ii_j, A_i_j) else A_i_j);
+                     >>;
+                  end;
+            >>;
+         end;
+   >>;
+
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Inverse and linear solve (inverse times matrix)
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Functions called by sparse!-matsm1 to support matrix inverse
+% arithmetic:
+
+put('sparse!-mat, 'inversefn, 'sparse!-matinverse);
+
+symbolic inline procedure sparse!-matinverse u;
+   % Return the inverse of sparse matrix U.
+   sparse!-lnrsolve(u, nil);
+
+put('sparse!-mat, 'lnrsolvefn, 'sparse!-lnrsolve);
+
+symbolic procedure sparse!-lnrsolve(u, v);
+   % U is a sparse matrix.  Return U^(-1)*V if V is a sparse matrix or
+   % U^(-1) if V is nil, in which case it defaults to the identity
+   % matrix.  Use reduction of the augmented matrix to row canonical
+   % form.  Assume U is m*m and V is m*n, so the product is m*n, and
+   % all matrices are represented as sparse matrix canonical forms.
+   begin scalar hash := copyhash car u,
+         m := cadr u, n, sing, newhash;
+      n := if v then <<                 % augment U with V
+         maphash(car v,
+            (lambda(key, value);
+            puthash(car key . (cdr key + m), hash, value)));
+         caddr v
+      >> else <<                        % augment U with a unit matrix
+         for i := 1 : m do puthash(i . (i + m), hash, 1 ./ 1);
+         m
+      >>;
+      % Reduce hash (destructively) to row canonical form:
+      sing := sparse!-echelon(hash, m, m + n, t);
+      if sing eq 'singular then
+         rerror(sparse!-matrix, 13, "Singular sparse matrix");
+      sparse!-canonical(hash, m, m + n);
+      % Extract the product or inverse matrix:
+      newhash := mk!-sparse!-matrix!-hash();
+      maphash(hash,
+         (lambda(key, value);
+         if cdr key > m then
+            puthash(car key . (cdr key - m), newhash, value)));
+      return {newhash, m, n};
    end;
 
 endmodule;
