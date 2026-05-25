@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-25 12:25:06 franc>
+% Time-stamp: <2026-05-25 17:59:02 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -315,8 +315,9 @@ symbolic procedure densify!-matrix u;
    begin scalar hash := car u, m := cadr u, n := caddr u, el;
       return 'mat .
          for i := 1 : m collect
-            for j := 1 : n collect
-               if el := gethash(i.j, hash) then !*q2a el else 0
+            if zerop n then {0} else
+               for j := 1 : n collect
+                  if el := gethash(i.j, hash) then !*q2a el else 0
    end;
 
 endmodule;
