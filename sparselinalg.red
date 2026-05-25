@@ -1,7 +1,7 @@
 module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-23 18:19:27 franc>
+% Time-stamp: <2026-05-25 15:56:54 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,38 +31,53 @@ module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % $Id$
 
-% Some useful facilities modelled on LINALG, the REDUCE Linear Algebra
-% Package, by Matt Rebbeck.
+% Some potentially useful facilities for working with sparse matrices
+% modelled loosely on LINALG, the REDUCE Linear Algebra Package, by
+% Matt Rebbeck.
 
-% sparse_matrix_augment(mat_1, mat_2, ..., mat_n) or
-% sparse_matrix_augment({mat_1, mat_2, ..., mat_n}) where mat_i are
-% either dense or sparse matrices, all having the same number of rows.
-% The result is the matrices adjoined horizontally in the order specified.
+% %%%%%%%%%%%%%%%%%%%%%
+% sparse_matrix_augment
+% %%%%%%%%%%%%%%%%%%%%%
 
 put('sparse_matrix_augment, 'psopfn, 'sparse_matrix_augment);
+put('sparse_matrix_augment, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure sparse_matrix_augment u;
-   % Adjoin horizontally multiple compatible dense or sparse matrices.
-   % Any lists among the arguments are flattened before processing.
-   begin scalar m;
+   % sparse_matrix_augment accepts any number of arguments that are
+   % either dense or sparse matrices, or lists thereof, where all
+   % matrices must have the same number of rows.  The result is the
+   % matrices adjoined horizontally in the order specified, as a
+   % sparse matrix.
+   begin scalar m;                      % common row dimension
+      if null u then return;
+      % Flatten any lists among the arguments before processing:
       u := for each el in revlis u join
          if eqcar(el, 'list) then cdr el else {el};
-      m := cadr lengthreval {car u};
-      for each el in cdr u do if cadr lengthreval {el} neq m then
-         rederr
-            "sparse_matrix_augment arguments must have the same row dimensions";
       % Build a list of sparse matrix canonical forms:
-      u := for each el in u collect
-         sparse!-matsm if eqcar(el, 'mat) then sparsify el else el;
+      u := for each el in u collect sparse!-matsm
+         begin scalar newm, mtrx :=
+            if eqcar(el, 'sparse!-mat) then <<
+               newm := caddr el;        % row dim of sparse matrix
+               el
+            >> else if eqcar(el, 'mat) then <<
+               newm := length cdr el;   % row dim of dense matrix
+               sparsify el
+            >> else typerr(el, "matrix");
+            if m then
+               (if newm neq m then rederr
+                  "matrices must have the same row dimensions")
+            else m := newm;
+            return mtrx;
+         end;
       return sparse!-matsm!*1 sparse!-matrix!-augment(u, m);
    end;
 
 symbolic procedure sparse!-matrix!-augment(u, m);
    % Adjoin horizontally a list U of sparse matrix canonical forms all
    % with row dim M, and return a sparse matrix canonical form.
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      integer n;               % col dim of result so far, initially 0
-      for each el in u do <<
+   begin scalar hash := copyhash caar u,
+         n := caddar u;                 % col dim of result so far
+      for each el in cdr u do <<
          maphash(car el,
             (lambda(key, value);
             puthash(car key . (n + cdr key), hash, value)));

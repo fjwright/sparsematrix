@@ -36,7 +36,7 @@ sparse_det sm; % SPARSEMATRIX is fastest (16 ms)
 % Inverse:
 m^(-1)$                              % MATRIX is OK (1438 ms)
 sm^(-1)$                             % SPARSEMATRIX is fast (62 ms)
-s^(-1)$                              % SPARSE crashes
+% s^(-1)$                              % SPARSE crashes
 % Only appears to work with numerical entries!
 
 if m^(-1)*m = m*m^(-1) then "OK" else "***** ERROR *****"; % OK

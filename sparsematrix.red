@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-24 18:05:17 franc>
+% Time-stamp: <2026-05-25 10:24:32 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -51,7 +51,7 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % Utility functions
 % %%%%%%%%%%%%%%%%%
 
-% Proposed new Standard Lisp function, to be implemented in "sl-on-cl.lisp".
+% Proposed new Standard Lisp function, implemented in "sl-on-cl.lisp".
 % This version provides a fallback if maphash is not available.
 
 #if (not (getd 'maphash))
@@ -67,9 +67,9 @@ symbolic procedure maphash(hash, fn);
       (lambda el; apply2(fn, car el, cdr el)));
 #endif
 
-% Proposed new Standard Lisp function, to be implemented in
-% "sl-on-cl.lisp" using copy-structure.  This version provides a
-% fallback if copyhash is not available.
+% Proposed new Standard Lisp function, implemented in "sl-on-cl.lisp"
+% using copy-structure.  This version provides a fallback if copyhash
+% is not available.
 
 #if (not (getd 'copyhash))
 symbolic procedure copyhash hash;

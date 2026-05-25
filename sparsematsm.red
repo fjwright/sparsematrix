@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-24 18:05:22 franc>
+% Time-stamp: <2026-05-25 12:25:06 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -202,9 +202,6 @@ symbolic procedure sparse!-addm(u,v);
 % Transpose
 % %%%%%%%%%
 
-% This code currently works but seems a bit convoluted, in that it
-% appears to end up calling sparse!-matsm multiple time!
-
 symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
 
 put('sparse_tp, 'rtypefn, 'getrtypecar); % declares algebraic operator
@@ -240,10 +237,10 @@ symbolic procedure sparse!-multm(u,v);
                    % summand of the scalar product forming the
                    % (i,j)-element of the product matrix.
                    begin scalar j := cdr v_key,
-                         scalprod := gethash(i.j, hash),
+                         scaprod := gethash(i.j, hash),
                          prod := multsq(u_value, v_value);
                       puthash!-nzsq(i.j, hash,
-                         if scalprod then addsq(scalprod, prod) else prod);
+                         if scaprod then addsq(scaprod, prod) else prod);
                    end));
           end));
       return {hash, cadr u, caddr v}
