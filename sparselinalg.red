@@ -1,7 +1,7 @@
 module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-25 18:04:19 franc>
+% Time-stamp: <2026-05-26 15:30:19 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -88,12 +88,13 @@ symbolic procedure sparse!-matrix!-augment(u, m);
    end;
 
 
-% %%%%%%%%%%%%%%%%%%%%%
-% sparse_select_columns
-% %%%%%%%%%%%%%%%%%%%%%
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% sparse_select_columns / sparse_augment_columns
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % cf. LINALG augment_columns
 
 put('sparse_select_columns, 'psopfn, 'sparse_select_columns);
+put('sparse_augment_columns, 'psopfn, 'sparse_select_columns);
 put('sparse_select_columns, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure sparse_select_columns u; % (mtrx, columns)
@@ -104,9 +105,13 @@ symbolic procedure sparse_select_columns u; % (mtrx, columns)
    % col_1 .. col_n, which means all column indices in the interval
    % from col_1 to col_n inclusive (where `..' is the REDUCE interval
    % operator).  Return a sparse matrix copy of MTRX containing only
-   % the specified columns.  (Column indices out of range are
-   % ignored.)
-   begin scalar mtrx, columns, range;
+   % the specified columns in the order specified; duplicate column
+   % indices are respected.  (Column indices out of range are not an
+   % error.)
+   sparse!-process!-mtrx!&cols(u, function sparse!-select!-columns);
+
+symbolic procedure sparse!-process!-mtrx!&cols(u, fn);
+   begin scalar mtrx, columns;
       u := revlis u;
       % Process matrix:
       mtrx := car u;
@@ -115,18 +120,18 @@ symbolic procedure sparse_select_columns u; % (mtrx, columns)
       else if not eqcar(mtrx, 'sparse!-mat) then
          typerr(el, "matrix");
       mtrx := sparse!-matsm mtrx;
-      % Process columns:
-      u := cdr u;
-      if eqcar(car u, 'list) then
-         columns := cdar u              % (col_1, col_2, ..., col_n)
-      else if eqcar(car u, '!*interval!*) then
-         range := cdar u                % (start finish)
-      else columns := u;                % (col_1, col_2, ..., col_n)
-      for each el in columns or range do
-         if not fixp el then typerr(el, "matrix column index");
-      if range then
-         columns := for col := car range : cadr range collect col;
-       return sparse!-matsm!*1 sparse!-select!-columns(mtrx, columns);
+      % Process column indices:
+      columns := for each el in cdr u join
+         if fixp el then {el}
+         else if eqcar(el, 'list) then
+         << for each el in cdr el do
+            if not fixp el then typerr(el, "matrix column index");
+            cdr el >>
+         else if eqcar(el, '!*interval!*) and
+         fixp cadr el and fixp caddr el then
+            for col := cadr el : caddr el collect col
+         else typerr(el, "matrix column index");
+      return sparse!-matsm!*1 apply2(fn, mtrx, columns);
    end;
 
 symbolic procedure sparse!-select!-columns(mtrx, columns);
@@ -148,6 +153,35 @@ symbolic procedure sparse!-select!-columns(mtrx, columns);
           end));
       return {hash, cadr mtrx, length columns};
    end;
+
+
+% %%%%%%%%%%%%%%%%%%%%%
+% sparse_remove_columns
+% %%%%%%%%%%%%%%%%%%%%%
+% cf. LINALG remove_columns
+
+put('sparse_remove_columns, 'psopfn, 'sparse_remove_columns);
+put('sparse_remove_columns, 'rtypefn, 'quotesparse!-matrix);
+
+symbolic procedure sparse_remove_columns u; % (mtrx, columns)
+   % MTRX should be a sparse or dense matrix.
+   % COLUMNS should be a sequence, list or range of column indices,
+   % i.e. col_1, col_2, ..., col_n, or {col_1, col_2, ..., col_n} or
+   % col_1 .. col_n, which means all column indices in the interval
+   % from col_1 to col_n inclusive (where `..' is the REDUCE interval
+   % operator).  Return a sparse matrix copy of MTRX without the
+   % specified columns.  (Column indices out of range are not an
+   % error.)
+   sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
+
+symbolic procedure sparse!-remove!-columns(mtrx, columns);
+   % MTRX is a sparse matrix canonical form.
+   % COLUMNS is a list of column indices.
+   % Return a copy of MTRX without the specified columns,
+   % with the columns correctly re-indexed.
+   sparse!-select!-columns(mtrx,
+      for col := 1 : caddr mtrx join
+         if not member(col, columns) then {col});
 
 endmodule;
 

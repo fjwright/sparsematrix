@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-25 10:24:32 franc>
+% Time-stamp: <2026-05-26 15:12:33 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -271,6 +271,9 @@ symbolic procedure sparse!-assgnpri uvw;
    % V = (<variable>) or null if not an assignment
    % W = only
    begin scalar u := car uvw, v := cadr uvw;
+      % Display as a dense matrix if feasible, mainly for testing
+      % with small sparse matrices:
+      if caddr u <= 10 then return assgnpri(densify u, v, 'only);
       if v then
          u := 'sparse!-mat . cadr u . caddr u . cadddr u . car v;
       sparse!-matpri u;
