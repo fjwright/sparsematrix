@@ -1,7 +1,7 @@
 module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-27 11:21:08 franc>
+% Time-stamp: <2026-05-27 12:45:44 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -108,16 +108,16 @@ symbolic procedure sparse_select_columns u; % (mtrx, columns)
    % if b < a then the interval is expanded as `a, a-1, a-2, ..., b'.
    % Return a sparse matrix copy of MTRX containing only the specified
    % columns in the order specified; duplicate column indices are
-   % respected.  (Column indices out of range generate a column of
-   % zeros.)
+   % respected.
    u and sparse!-process!-mtrx!&cols(u, function sparse!-select!-columns);
 
-symbolic procedure sparse!-index!-check(idx, n1);
-   if fixp idx then if minusp idx then n1 + idx else idx
+symbolic procedure sparse!-index!-check(idx, n);
+   if fixp idx and not zerop idx and abs idx <= n then
+      if minusp idx then n + 1 + idx else idx
    else typerr(idx, "matrix column index");
 
 symbolic procedure sparse!-process!-mtrx!&cols(u, fn);
-   begin scalar mtrx, n1, columns;
+   begin scalar mtrx, n, columns;
       u := revlis u;
       % Process matrix:
       mtrx := car u;
@@ -126,17 +126,17 @@ symbolic procedure sparse!-process!-mtrx!&cols(u, fn);
       else if not eqcar(mtrx, 'sparse!-mat) then
          typerr(mtrx, "matrix");
       mtrx := sparse!-matsm mtrx;       % sparse matrix canonical form
-      n1 := caddr mtrx + 1;             % column dimension + 1
+      n := caddr mtrx;                  % column dimension
       % Process column indices:
       columns := for each el in cdr u join
-         if fixp el then {sparse!-index!-check(el, n1)}
+         if fixp el then {sparse!-index!-check(el, n)}
          else if eqcar(el, 'list) then
             for each col in cdr el collect
-               sparse!-index!-check(col, n1)
+               sparse!-index!-check(col, n)
          else if eqcar(el, '!*interval!*) then
          begin scalar
-            a := sparse!-index!-check(cadr el, n1),
-            b := sparse!-index!-check(caddr el, n1),
+            a := sparse!-index!-check(cadr el, n),
+            b := sparse!-index!-check(caddr el, n),
             s := if a <= b then +1 else -1;
             return for col := a step s until b collect col;
          end;
@@ -148,19 +148,22 @@ symbolic procedure sparse!-select!-columns(mtrx, columns);
    % COLUMNS is a list of column indices.
    % Return a copy of MTRX containing only the specified columns,
    % with the columns correctly re-indexed.
-   % (Would it be better just to loop through indices rather than use
-   % maphash here?)
-   begin scalar oldhash := car mtrx,
-      newhash := mk!-sparse!-matrix!-hash();
+   begin scalar hash := mk!-sparse!-matrix!-hash(), alist,
+      % Convert columns to an alist with elements of the form
+      % (old_col_ind new_col_ind_1 new_col_ind_2 ...):
       integer newcol;                   % initialised to 0
-      for each oldcol in columns do <<
+      for each oldcol in columns do
+      begin scalar el;
          newcol := newcol + 1;
-         maphash(oldhash,
-            (lambda(key, value);
-            if oldcol = cdr key then
-               puthash(car key . newcol, newhash, value)));
-      >>;
-      return {newhash, cadr mtrx, newcol};
+         if el := assoc(oldcol, alist) then
+            nconc(el, {newcol})
+         else alist := {oldcol, newcol} . alist;
+      end;
+      maphash(car mtrx,
+         (lambda(key, value);
+         for each newcol in cdr assoc(cdr key, alist) do
+            puthash(car key . newcol, hash, value)));
+      return {hash, cadr mtrx, newcol};
    end;
 
 
@@ -182,7 +185,7 @@ symbolic procedure sparse_remove_columns u; % (mtrx, columns)
    % are allowed, and count from the right.  In an interval `a .. b',
    % if b < a then the interval is expanded as `a, a-1, a-2, ..., b'.
    % Return a sparse matrix copy of MTRX without the specified
-   % columns.  (Column indices out of range are not an error.)
+   % columns.
    u and sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
 
 symbolic procedure sparse!-remove!-columns(mtrx, columns);
@@ -205,7 +208,7 @@ symbolic procedure sparse!-remove!-columns(mtrx, columns);
              if (el := assoc(cdr key, columns)) then
                 puthash(car key . cdr el, hash, value);
           end));
-      return {hash, cadr mtrx, length columns};
+      return {hash, cadr mtrx, newcol};
    end;
 
 endmodule;
