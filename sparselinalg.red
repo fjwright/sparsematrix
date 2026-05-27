@@ -1,7 +1,7 @@
 module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-27 12:45:44 franc>
+% Time-stamp: <2026-05-27 16:22:09 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -98,17 +98,17 @@ put('sparse_augment_columns, 'psopfn, 'sparse_select_columns);
 put('sparse_select_columns, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure sparse_select_columns u; % (mtrx, columns)
-   % MTRX should be a sparse or dense matrix.  COLUMNS should be a
-   % sequence of integers, integer lists or integer intervals
-   % representing column indices, i.e. `col_1, col_2, ..., col_n', or
-   % `{col_1, col_2, ..., col_n}' or `col_1 .. col_n', which means all
-   % column indices in the interval from col_1 to col_n inclusive
-   % (where `..' is the REDUCE interval operator).  Negative indices
-   % are allowed, and count from the right.  In an interval `a .. b',
-   % if b < a then the interval is expanded as `a, a-1, a-2, ..., b'.
-   % Return a sparse matrix copy of MTRX containing only the specified
-   % columns in the order specified; duplicate column indices are
-   % respected.
+   % MTRX should be an algebraic sparse or dense matrix.  COLUMNS
+   % should be a sequence of integers, integer lists or integer
+   % intervals representing column indices, i.e. `col_1, col_2, ...,
+   % col_n', or `{col_1, col_2, ..., col_n}' or `col_1 .. col_n',
+   % which means all column indices in the interval from col_1 to
+   % col_n inclusive (where `..' is the REDUCE interval operator).
+   % Negative indices are allowed, and count from the right.  In an
+   % interval `a .. b', if b < a then the interval is expanded as `a,
+   % a-1, a-2, ..., b'.  Return an algebraic sparse matrix copy of
+   % MTRX containing only the specified columns in the order
+   % specified; duplicate column indices are respected.
    u and sparse!-process!-mtrx!&cols(u, function sparse!-select!-columns);
 
 symbolic procedure sparse!-index!-check(idx, n);
@@ -140,15 +140,14 @@ symbolic procedure sparse!-process!-mtrx!&cols(u, fn);
             s := if a <= b then +1 else -1;
             return for col := a step s until b collect col;
          end;
-      return sparse!-matsm!*1 apply2(fn, mtrx, columns);
+      return apply2(fn, mtrx, columns);
    end;
 
 symbolic procedure sparse!-select!-columns(mtrx, columns);
-   % MTRX is a sparse matrix canonical form.
-   % COLUMNS is a list of column indices.
-   % Return a copy of MTRX containing only the specified columns,
-   % with the columns correctly re-indexed.
-   begin scalar hash := mk!-sparse!-matrix!-hash(), alist,
+   % MTRX is a sparse matrix canonical form.  COLUMNS is a list of
+   % column indices.  Return an algebraic copy of MTRX containing only
+   % the specified columns, with the columns correctly re-indexed.
+   begin scalar hash := mk!-sparse!-matrix!-hash(), alist;
       % Convert columns to an alist with elements of the form
       % (old_col_ind new_col_ind_1 new_col_ind_2 ...):
       integer newcol;                   % initialised to 0
@@ -163,7 +162,7 @@ symbolic procedure sparse!-select!-columns(mtrx, columns);
          (lambda(key, value);
          for each newcol in cdr assoc(cdr key, alist) do
             puthash(car key . newcol, hash, value)));
-      return {hash, cadr mtrx, newcol};
+      return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
    end;
 
 
@@ -176,23 +175,22 @@ put('sparse_remove_columns, 'psopfn, 'sparse_remove_columns);
 put('sparse_remove_columns, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure sparse_remove_columns u; % (mtrx, columns)
-   % MTRX should be a sparse or dense matrix.  COLUMNS should be a
-   % sequence of integers, integer lists or integer intervals
-   % representing column indices, i.e. col_1, col_2, ..., col_n, or
-   % {col_1, col_2, ..., col_n} or col_1 .. col_n, which means all
-   % column indices in the interval from col_1 to col_n inclusive
-   % (where `..' is the REDUCE interval operator).  Negative indices
-   % are allowed, and count from the right.  In an interval `a .. b',
-   % if b < a then the interval is expanded as `a, a-1, a-2, ..., b'.
-   % Return a sparse matrix copy of MTRX without the specified
-   % columns.
+   % MTRX should be an algebraic sparse or dense matrix.  COLUMNS
+   % should be a sequence of integers, integer lists or integer
+   % intervals representing column indices, i.e. col_1, col_2, ...,
+   % col_n, or {col_1, col_2, ..., col_n} or col_1 .. col_n, which
+   % means all column indices in the interval from col_1 to col_n
+   % inclusive (where `..' is the REDUCE interval operator).  Negative
+   % indices are allowed, and count from the right.  In an interval `a
+   % .. b', if b < a then the interval is expanded as `a, a-1, a-2,
+   % ..., b'.  Return an algebraic sparse matrix copy of MTRX without
+   % the specified columns.
    u and sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
 
 symbolic procedure sparse!-remove!-columns(mtrx, columns);
-   % MTRX is a sparse matrix canonical form.
-   % COLUMNS is a list of column indices.
-   % Return a copy of MTRX without the specified columns,
-   % with the columns correctly re-indexed.
+   % MTRX is a sparse matrix canonical form.  COLUMNS is a list of
+   % column indices.  Return an algebraic copy of MTRX without the
+   % specified columns, with the columns correctly re-indexed.
    begin scalar hash := mk!-sparse!-matrix!-hash();
       integer newcol;           % initialised to 0
       % Convert columns to a selection list:
@@ -208,7 +206,45 @@ symbolic procedure sparse!-remove!-columns(mtrx, columns);
              if (el := assoc(cdr key, columns)) then
                 puthash(car key . cdr el, hash, value);
           end));
-      return {hash, cadr mtrx, newcol};
+      return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
+   end;
+
+
+% %%%%%%%%%%%%%%%%%%
+% sparse_get_columns
+% %%%%%%%%%%%%%%%%%%
+% cf. LINALG get_columns
+
+put('sparse_get_columns, 'psopfn, 'sparse_get_columns);
+
+symbolic procedure sparse_get_columns u; % (mtrx, columns)
+   % Like sparse_select_columns, but returns a list of sparse column
+   % matrices.
+   u and sparse!-process!-mtrx!&cols(u, function sparse!-get!-columns);
+
+symbolic procedure sparse!-get!-columns(mtrx, columns);
+   % MTRX is a sparse matrix canonical form.  COLUMNS is a list of
+   % column indices.  Return an algebraic list of the specified
+   % columns of MTRX, in the order specified, as algebraic sparse
+   % column matrices.
+   begin scalar hashes, alist, m := cadr mtrx;
+      % Convert columns to an alist with elements of the form
+      % (old_col_ind new_col_ind_1 new_col_ind_2 ...):
+      integer newcol;                   % initialised to 0
+      hashes := for each oldcol in columns collect
+      begin scalar el;
+         newcol := newcol + 1;
+         if el := assoc(oldcol, alist) then
+            nconc(el, {newcol})
+         else alist := {oldcol, newcol} . alist;
+         return mk!-sparse!-matrix!-hash();
+      end;
+      maphash(car mtrx,
+         (lambda(key, value);
+         for each newcol in cdr assoc(cdr key, alist) do
+            puthash(car key . 1, nth(hashes, newcol), value)));
+      return 'list . for each hash in hashes collect
+         sparse!-matsm!*1 {hash, m, 1};
    end;
 
 endmodule;
