@@ -1,7 +1,7 @@
 module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-26 17:09:31 franc>
+% Time-stamp: <2026-05-27 11:21:08 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -110,7 +110,7 @@ symbolic procedure sparse_select_columns u; % (mtrx, columns)
    % columns in the order specified; duplicate column indices are
    % respected.  (Column indices out of range generate a column of
    % zeros.)
-   sparse!-process!-mtrx!&cols(u, function sparse!-select!-columns);
+   u and sparse!-process!-mtrx!&cols(u, function sparse!-select!-columns);
 
 symbolic procedure sparse!-index!-check(idx, n1);
    if fixp idx then if minusp idx then n1 + idx else idx
@@ -124,7 +124,7 @@ symbolic procedure sparse!-process!-mtrx!&cols(u, fn);
       if eqcar(mtrx, 'mat) then
          mtrx := sparsify mtrx
       else if not eqcar(mtrx, 'sparse!-mat) then
-         typerr(el, "matrix");
+         typerr(mtrx, "matrix");
       mtrx := sparse!-matsm mtrx;       % sparse matrix canonical form
       n1 := caddr mtrx + 1;             % column dimension + 1
       % Process column indices:
@@ -183,7 +183,7 @@ symbolic procedure sparse_remove_columns u; % (mtrx, columns)
    % if b < a then the interval is expanded as `a, a-1, a-2, ..., b'.
    % Return a sparse matrix copy of MTRX without the specified
    % columns.  (Column indices out of range are not an error.)
-   sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
+   u and sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
 
 symbolic procedure sparse!-remove!-columns(mtrx, columns);
    % MTRX is a sparse matrix canonical form.

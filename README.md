@@ -1,13 +1,15 @@
 # SPARSEMATRIX: A REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-05-25 12:52:34 franc>
+Time-stamp: <2026-05-26 18:13:47 franc>
 
-A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix fewer than half the elements are nonzero.
+A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix fewer than half the elements are nonzero.  (Of course, a dense matrix can be treated as a sparse matrix, and vice versa, which is likely to be less efficient but is useful for testing.)
 
 The REDUCE MATRIX package implicitly assumes dense matrices.  SPARSEMATRIX is a re-implementation of the MATRIX package that assumes sparse matrices.  It uses hash tables as the primary data structures to store matrix elements, and the canonical form for a sparse matrix is a LISP list of the form `(<hash> <m> <n>)`, where `<hash>` is a hash table, `<m>` is the number of rows (row dimension), and `<n>` is the number of columns (column dimension).  Only nonzero elements are ever stored in the has table; missing elements are implicitly zero.  By contrast, the canonical form for a dense matrix is a LISP list of rows of the form `(<row_1> <row_2> ... <row_m>)`, where each `<row_i>` is a list of the matrix elements in the *i-th* row.  The algorithms used to manipulate sparse matrices avoid accessing implicitly-zero (i.e. non-stored) matrix elements as much as possible, whereas the algorithms used to manipulate dense matrices always run through all matrix elements, regardless of their values.
 
-Currently, sparse and dense matrices cannot be mixed, but I plan to implement full and automatic interoperability in future.  However, a sparse matrix can be explicitly converted to a dense matrix, and vice versa.
+In tests using large sparse matrices (500&times;500 matrices with 1000 nonzero rational number elements), the `SPARSEMATRIX` and `SPARSE` packages are comparable and both very significantly faster than the `MATRIX` package for addition and multiplication.  They are faster for inversion and `SPARSEMATRIX` is faster for determinant (but `SPARSE` crashes).
+
+Currently, sparse and dense matrices cannot generally be mixed, but I plan to implement full and automatic interoperability in future.  However, a sparse matrix can be explicitly converted to a dense matrix, and vice versa.
 
 ## Critique of SPARSE, an alternative sparse matrix package
 
@@ -31,7 +33,7 @@ Description | Dense matrix operation | Sparse matrix operation
 Declaration | `matrix m(i,j)` | `sparse_matrix s(i,j)`
 Creation | `m := mat(...)` | `sparse_random_matrix s(i,j)`
 Dimensions | `length m` | `length s`
-Display (with `on nat`) | 2D table | list of nonzero elements
+Display (with `on nat`) | 2D table | generally list of nonzero elements (but 2D table for small matrices)
 Element access | `m(i,j)` | `s(i,j)`
 Map | `map(1 + ~w, m)` | `map(1 + ~w, s)`
 Aggregate | `<function> m` | `<function> s`
@@ -48,14 +50,29 @@ Nullspace | `nullspace m` | `sparse_nullspace s`
 * `densify`: converts a sparse matrix to a dense matrix
 * `sparsify`: converts a dense matrix to a sparse matrix
 
+Small sparse matrices (with no more than 10 columns) are displayed the same as dense matrices (mainly to facilitate testing).
+
+See `sparsematrix.rlg` for examples of using the above `SPARSEMATRIX` versions of the `MATRIX` operators with small dense matrices that the files `speed*.tst` for some timed examples using large sparse matrices.
+
+
+## Support for `LINALG` operators
+
+* `sparse_matrix_augment`, cf. `matrix_augment`
+* `sparse_select_columns` (synonym `sparse_augment_columns`), cf.  `augment_columns`
+* `sparse_remove_columns`, cf. `remove_columns`
+
+The `SPARSEMATRIX` versions of these operators are more general than those in the `LINALG` package.  The input matrices can use either sparse or dense representation, but the output is always uses sparse representation.  Arguments specifying column indices can be sequences of integers, integer lists or integer intervals.  Column indices can be negative, meaning count from the right, and intervals can be descending.  The operator `sparse_select_columns` allows columns to be duplicated.
+
+Currently, support is in the file `sparselinalg.red`, which needs to be input separately from the main `SPARSEMATRIX` package.  See `sparselinalg.rlg` for examples of using the above `SPARSEMATRIX` versions of the `LINALG` operators.
+
 ## Planned SPARSEMATRIX support
 
 Overload all standard matrix operators and allow combinations of dense and sparse matrices.
 
 * `MATEIGEN` operator (maybe)
-* Operators in `LINALG` package (maybe)
-* Additional operators in `SPARSE` package (maybe)
-* Operators in `NORMFORM` package (maybe)
+* More operators from `LINALG` package (maybe)
+* More operators from `SPARSE` package (maybe)
+* Operators from `NORMFORM` package (maybe)
 
 <!-- Local Variables: -->
 <!-- fill-column: 1000 -->
