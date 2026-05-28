@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-28 12:08:06 franc>
+% Time-stamp: <2026-05-28 15:47:34 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -219,14 +219,17 @@ put('sparse!-matrix, 'getelemfn, 'get!-sparse!-matelem);
 symbolic procedure get!-sparse!-matelem u;
    % Return an element of a sparse matrix u = (id i j).
    % cf. getmatelem.
-   (gethash(car x, cdr x) or 0) where x = access!-sparse!-matelem u;
+   (gethash(car x, cdr x) or 0)
+      where x = access!-sparse!-matelem u;
 
 put('sparse!-matrix, 'setelemfn, 'set!-sparse!-matelem);
 
 symbolic procedure set!-sparse!-matelem(u,v);
    % Assign v to an element of a sparse matrix u = (id i j)
    % and return v, cf. setmatelem.
-   puthash(car x, cdr x, v) where x = access!-sparse!-matelem u;
+   (if zerop v then << remhash(car x, cdr x); 0 >>
+   else puthash(car x, cdr x, v))
+      where x = access!-sparse!-matelem u;
 
 
 % %%%%%%%%%%%%%%%%%%
