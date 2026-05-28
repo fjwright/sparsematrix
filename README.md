@@ -1,7 +1,7 @@
 # SPARSEMATRIX: A REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-05-26 18:13:47 franc>
+Time-stamp: <2026-05-28 12:17:00 franc>
 
 A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix fewer than half the elements are nonzero.  (Of course, a dense matrix can be treated as a sparse matrix, and vice versa, which is likely to be less efficient but is useful for testing.)
 
@@ -50,7 +50,7 @@ Nullspace | `nullspace m` | `sparse_nullspace s`
 * `densify`: converts a sparse matrix to a dense matrix
 * `sparsify`: converts a dense matrix to a sparse matrix
 
-Small sparse matrices (with no more than 10 columns) are displayed the same as dense matrices (mainly to facilitate testing).
+If the switch `sparse_matrix_dense_print` is `on`, which it is by default, then small sparse matrices are displayed the same as dense matrices (mainly to facilitate testing), where _small_ means having no more than the number of columns specified by the value of the (shared) variable `sparse_matrix_dense_print_colmax`, which is 10 by default.
 
 See `sparsematrix.rlg` for examples of using the above `SPARSEMATRIX` versions of the `MATRIX` operators with small dense matrices that the files `speed*.tst` for some timed examples using large sparse matrices.
 
@@ -60,6 +60,7 @@ See `sparsematrix.rlg` for examples of using the above `SPARSEMATRIX` versions o
 * `sparse_matrix_augment`, cf. `matrix_augment`
 * `sparse_select_columns` (synonym `sparse_augment_columns`), cf.  `augment_columns`
 * `sparse_remove_columns`, cf. `remove_columns`
+* `sparse_get_columns`, cf. `get_columns`
 
 The `SPARSEMATRIX` versions of these operators are more general than those in the `LINALG` package.  The input matrices can use either sparse or dense representation, but the output is always uses sparse representation.  Arguments specifying column indices can be sequences of integers, integer lists or integer intervals.  Column indices can be negative, meaning count from the right, and intervals can be descending.  The operator `sparse_select_columns` allows columns to be duplicated.
 

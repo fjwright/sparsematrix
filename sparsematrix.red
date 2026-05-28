@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-26 15:12:33 franc>
+% Time-stamp: <2026-05-28 12:08:06 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -255,12 +255,15 @@ symbolic procedure sparse!-matrixmap(u,v);
 % Printing
 % %%%%%%%%
 
+share sparse_matrix_dense_print_colmax;
+sparse_matrix_dense_print_colmax := 10;
+switch sparse_matrix_dense_print = on;
+
 % The following code is used by assgnpri.
 
+% Needed for special printing of assignments of sparse matrices:
 flag('(sparse!-matrix), 'sprifn);
 put('sparse!-mat, 'assgnpri, 'sparse!-assgnpri);
-
-% The two procedures below can probably be merged!
 
 symbolic procedure sparse!-assgnpri uvw;
    % Called by assgnpri to print a sparse matrix
@@ -273,32 +276,41 @@ symbolic procedure sparse!-assgnpri uvw;
    begin scalar u := car uvw, v := cadr uvw;
       % Display as a dense matrix if feasible, mainly for testing
       % with small sparse matrices:
-      if caddr u <= 10 then return assgnpri(densify u, v, 'only);
+      if !*sparse_matrix_dense_print and
+         caddr u <= sparse_matrix_dense_print_colmax then
+            return assgnpri(densify u, v, 'only);
       if v then
          u := 'sparse!-mat . cadr u . caddr u . cadddr u . car v;
       sparse!-matpri u;
    end;
 
-% put('sparse!-mat, 'prifn, 'sparse!-matpri);
+% Needed to print sparse matrices inside other structures, such as
+% lists:
+put('sparse!-mat, 'prifn, 'sparse!-matpri);
 
 symbolic procedure sparse!-matpri u;
-   % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
-   % If no (null) name then display name as "?".
-   begin scalar alist := hashcontents car (u := cdr u),
-         msg := {cadr u, "#times;", caddr u,
+   % Display as a dense matrix if feasible, mainly for testing
+   % with small sparse matrices:
+   if !*sparse_matrix_dense_print and
+      caddr u <= sparse_matrix_dense_print_colmax
+   then matpri densify u else
+      % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
+      % If no (null) name then display name as "?".
+      begin scalar alist := hashcontents car (u := cdr u),
+            msg := {cadr u, "#times;", caddr u,
             "sparse matrix #mdash;"};
-      if null alist then return
-         lprim append(msg, {"no nonzero elements"});
-      lprim append(msg, {length alist, "nonzero elements:"});
-      % Each alist element has the form ((i . j) . value).
-      % Sort by row index and then by column index:
-      alist := sort(alist,
-         lambda(x,y);
-      caar x < caar y or
-         (caar x = caar y and cdar x < cdar y));
-      for each el in alist do
-         assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
-   end;
+         if null alist then return
+            lprim append(msg, {"no nonzero elements"});
+         lprim append(msg, {length alist, "nonzero elements:"});
+         % Each alist element has the form ((i . j) . value).
+         % Sort by row index and then by column index:
+         alist := sort(alist,
+            lambda(x,y);
+         caar x < caar y or
+            (caar x = caar y and cdar x < cdar y));
+         for each el in alist do
+            assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
+      end;
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
