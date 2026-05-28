@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-28 15:42:31 franc>
+% Time-stamp: <2026-05-28 18:12:20 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -35,18 +35,20 @@ module sparsepredicates;                % Sparse matrix predicates
 % sparse_matrix_p, cf. LINALG matrixp
 % sparse_square_matrix_p, cf. LINALG squarep
 % sparse_symmetric_matrix_p, cf. LINALG symmetricp
-% sparse_antisymmetric_matrix_p
+% sparse_skew_symmetric_matrix_p
 % sparse_hermitean_matrix_p
-% sparse_antihermitean_matrix_p
+% sparse_skew_hermitean_matrix_p
 
 % Currently, the symmetry-related predicates test for EXACT symmetry
 % and do not allow for numerical error in floating-point matrices!
 
 symbolic operator sparse_matrix_p, sparse_square_matrix_p,
-   sparse_symmetric_matrix_p, sparse_antisymmetric_matrix_p;
+   sparse_symmetric_matrix_p, sparse_skew_symmetric_matrix_p,
+   sparse_hermitean_matrix_p, sparse_skew_hermitean_matrix_p;
 
 flag('(sparse_matrix_p sparse_matrix_p
-   sparse_symmetric_matrix_p sparse_antisymmetric_matrix_p),
+   sparse_symmetric_matrix_p sparse_skew_symmetric_matrix_p
+      sparse_hermitean_matrix_p sparse_skew_hermitean_matrix_p),
    'boolean);
 
 symbolic procedure sparse_matrix_p u;
@@ -54,42 +56,86 @@ symbolic procedure sparse_matrix_p u;
    eqcar(u, 'sparse!-mat);
 
 symbolic procedure sparse_square_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) and it is
+   % Return t if u is a sparse matrix (algebraic form) that is
    % square; nil otherwise.
    eqcar(u, 'sparse!-mat) and caddr u = cadddr u;
 
+% The following functions would benefit from a version of maphash that
+% can stop early!  This could be provided via the Common Lisp macro
+% with-hash-table-iterator.
+
 symbolic procedure sparse_symmetric_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) and it is
-   % symmetric; nil otherwise.
+   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % and) symmetric; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
          maphash(hash,
             (lambda(key,val1);
             result and                  % efficiency hack!
             begin scalar i := car key, j := cdr key, val2;
-               if i < j and (val2 := gethash(j.i, hash)) and
-                  val1 neq val2 then
-                     result := nil;
+               if i < j then
+                  result := (val2 := gethash(j.i, hash)) and val1 = val2;
             end));
          return result;
       end;
 
-symbolic procedure sparse_antisymmetric_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) and it is
-   % anti-symmetric; nil otherwise.
+symbolic procedure sparse_skew_symmetric_matrix_p u;
+   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % and) skew-symmetric; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
          maphash(hash,
             (lambda(key,val1);
             result and                  % efficiency hack!
             begin scalar i := car key, j := cdr key, val2;
-               if (i = j and val1 neq 0) or
-                  (i < j and (val2 := gethash(j.i, hash)) and
-                     val1 neq reval {'minus, val2}) then
-                        result := nil;
+               if i = j then
+                  result := val1 = 0
+               else if i < j then
+                  result := (val2 := gethash(j.i, hash)) and
+                  reval {'plus, val1, val2} = 0;
             end));
          return result;
       end;
+
+symbolic procedure sparse_hermitean_matrix_p u;
+   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % and) hermitean; nil otherwise.
+   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
+      begin scalar hash := car u, result := t;
+         maphash(hash,
+            (lambda(key,val1);
+            result and                  % efficiency hack!
+            begin scalar i := car key, j := cdr key, val2;
+               if i = j then
+                  result := reval {'impart, val1} = 0
+               else if i < j then
+                  result := (val2 := gethash(j.i, hash)) and
+                  reval {'difference, val1, {'conj, val2}} = 0;
+            end));
+         return result;
+      end;
+
+symbolic procedure sparse_skew_hermitean_matrix_p u;
+   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % and) skew-hermitean; nil otherwise.
+   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
+      begin scalar hash := car u, result := t;
+         maphash(hash,
+            (lambda(key,val1);
+            result and                  % efficiency hack!
+            begin scalar i := car key, j := cdr key, val2;
+               if i = j then
+                  result := reval {'repart, val1} = 0
+               else if i < j then
+                  result := (val2 := gethash(j.i, hash)) and
+                  reval {'plus, val1, {'conj, val2}} = 0;
+            end));
+         return result;
+      end;
+
+% Useful for testing; this should be included in "matrix/matrix.red"!
+
+flag('(conj), 'matmapfn);
 
 endmodule;
 
