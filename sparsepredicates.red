@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-29 15:13:03 franc>
+% Time-stamp: <2026-05-29 16:03:40 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -39,22 +39,23 @@ flag('(conj repart impart), 'matmapfn);
 % sparse_square_matrix_p, cf. LINALG squarep
 % sparse_symmetric_matrix_p, cf. LINALG symmetricp
 % sparse_skew_symmetric_matrix_p
-% sparse_hermitean_matrix_p
-% sparse_skew_hermitean_matrix_p
+% sparse_hermitian_matrix_p
+% sparse_skew_hermitian_matrix_p
 % sparse_orthogonal_matrix_p
+% sparse_unitary_matrix_p
 
 % Currently, the symmetry-related predicates test for EXACT symmetry
 % and do not allow for numerical error in floating-point matrices!
 
 symbolic operator sparse_matrix_p, sparse_square_matrix_p,
    sparse_symmetric_matrix_p, sparse_skew_symmetric_matrix_p,
-   sparse_hermitean_matrix_p, sparse_skew_hermitean_matrix_p,
-   sparse_orthogonal_matrix_p;
+   sparse_hermitian_matrix_p, sparse_skew_hermitian_matrix_p,
+   sparse_orthogonal_matrix_p, sparse_unitary_matrix_p;
 
 flag('(sparse_matrix_p sparse_matrix_p
    sparse_symmetric_matrix_p sparse_skew_symmetric_matrix_p
-      sparse_hermitean_matrix_p sparse_skew_hermitean_matrix_p
-         sparse_orthogonal_matrix_p),
+      sparse_hermitian_matrix_p sparse_skew_hermitian_matrix_p
+         sparse_orthogonal_matrix_p sparse_unitary_matrix_p),
    'boolean);
 
 symbolic procedure sparse_matrix_p u;
@@ -103,9 +104,9 @@ symbolic procedure sparse_skew_symmetric_matrix_p u;
          return result;
       end;
 
-symbolic procedure sparse_hermitean_matrix_p u;
+symbolic procedure sparse_hermitian_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
-   % and) hermitean; nil otherwise.
+   % and) Hermitian; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
          maphash(hash,
@@ -121,9 +122,9 @@ symbolic procedure sparse_hermitean_matrix_p u;
          return result;
       end;
 
-symbolic procedure sparse_skew_hermitean_matrix_p u;
+symbolic procedure sparse_skew_hermitian_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
-   % and) skew-hermitean; nil otherwise.
+   % and) skew-Hermitian; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
          maphash(hash,
@@ -141,21 +142,47 @@ symbolic procedure sparse_skew_hermitean_matrix_p u;
 
 symbolic procedure sparse_orthogonal_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
-   % and) orthogonal; nil otherwise.  A matrix A is orthogonal if AA^T
-   % = A^TA = I.
+   % and) orthogonal; nil otherwise.  A matrix A is orthogonal if
+   % A*A^T = A^T*A = I, where ^T denote transpose.
    eqcar(u, 'sparse!-mat) and caddr u = cadddr u and
-      begin scalar v, result := t;
-         u := sparse!-matsm u;
-         v := sparse!-tp1 u;
-         u := sparse!-multm(u,v);
-         % u should be an identity sparse matrix in canonical form.
-         maphash(car u,
-            (lambda(key,val);
-            result and                  % efficiency hack!
-               (result := if car key = cdr key then val = (1 ./ 1)
-               else numr val eq nil)));
-         return result;
-      end;
+   begin scalar v, result := t;
+      u := sparse!-matsm u; % canonical form, SQ elements
+      v := sparse!-tp1 u;   % transpose as canonical form, SQ elements
+      u := sparse!-multm(u,v);  % A*A^T as canonical form, SQ elements
+      % u should be an identity sparse matrix in canonical form.
+      maphash(car u,
+         (lambda(key,val);
+         result and                     % efficiency hack!
+            (result := if car key = cdr key then val = (1 ./ 1)
+            else numr val eq nil)));
+      return result;
+   end;
+
+symbolic inline procedure sparse!-conjsq u;
+   % See simpconj in "poly/compopr.red".
+   multsq(cmpx_conjsf numr u, invsq cmpx_conjsf denr u);
+
+symbolic procedure sparse_unitary_matrix_p u;
+   % Return t if U is a sparse matrix (algebraic form) that is (square
+   % and) unitary; nil otherwise.  A matrix A is unitary if A*A^H =
+   % A^H*A = I, where ^H denotes conjugate transpose.
+   eqcar(u, 'sparse!-mat) and caddr u = cadddr u and
+   begin scalar v, result := t, hash;
+      u := sparse!-matsm u; % canonical form, SQ elements
+      v := sparse!-tp1 u;   % transpose as canonical form, SQ elements
+      hash := car v;
+      maphash(hash,         % conjugate as canonical form, SQ elements
+         (lambda(key,val);
+         puthash(key, hash, sparse!-conjsq val)));
+      u := sparse!-multm(u,v);  % A*A^H as canonical form, SQ elements
+      % u should be an identity sparse matrix in canonical form.
+      maphash(car u,
+         (lambda(key,val);
+         result and                     % efficiency hack!
+            (result := if car key = cdr key then val = (1 ./ 1)
+            else numr val eq nil)));
+      return result;
+   end;
 
 endmodule;
 

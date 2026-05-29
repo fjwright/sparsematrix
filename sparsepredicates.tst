@@ -40,6 +40,14 @@ so(2,2) := -so(2,2)$
 so;
 sparse_orthogonal_matrix_p so;          % DOESN'T SIMPLIFY!
 
+sparse_matrix su(3,3);
+su(1,1) := su(2,2) := 1$
+su(1,2) := -(su(2,1) := i)$
+su(1,3) := su(3,2) := -1 + i$
+su(2,3) := su(3,1) := 1 + i$
+su := su/2;
+sparse_unitary_matrix_p su;             % DOESN'T SIMPLIFY!
+
 ;end;
 
 % Note: sparse_tp conj s fails; error in how conj is mapped over a
