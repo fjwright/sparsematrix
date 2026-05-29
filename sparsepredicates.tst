@@ -14,10 +14,10 @@ sparse_skew_symmetric_matrix_p sas;
 m := mat((1+i,2),(3i,4+i));
 s := sparsify m;
 sh := s + conj sparse_tp s;
-sparse_hermitean_matrix_p sh;
+sparse_hermitian_matrix_p sh;
 
 sah := s - conj sparse_tp s;
-sparse_skew_hermitean_matrix_p sah;
+sparse_skew_hermitian_matrix_p sah;
 
 % Lipshutz
 sparse_matrix so(3,3);
@@ -34,11 +34,11 @@ so(1,1) := so(2,2) := cos theta$
 so(2,1) := -(so(1,2) := sin theta)$
 so;
 for all th let (cos th)^2 + (sin th)^2 => 1;
-sparse_orthogonal_matrix_p so;          % DOESN'T SIMPLIFY!
+sparse_orthogonal_matrix_p so;
 so(2,1) := -so(2,1)$
 so(2,2) := -so(2,2)$
 so;
-sparse_orthogonal_matrix_p so;          % DOESN'T SIMPLIFY!
+sparse_orthogonal_matrix_p so;
 
 sparse_matrix su(3,3);
 su(1,1) := su(2,2) := 1$
@@ -46,7 +46,7 @@ su(1,2) := -(su(2,1) := i)$
 su(1,3) := su(3,2) := -1 + i$
 su(2,3) := su(3,1) := 1 + i$
 su := su/2;
-sparse_unitary_matrix_p su;             % DOESN'T SIMPLIFY!
+sparse_unitary_matrix_p su;
 
 ;end;
 

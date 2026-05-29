@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-29 16:03:40 franc>
+% Time-stamp: <2026-05-29 16:28:20 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -153,8 +153,8 @@ symbolic procedure sparse_orthogonal_matrix_p u;
       maphash(car u,
          (lambda(key,val);
          result and                     % efficiency hack!
-            (result := if car key = cdr key then val = (1 ./ 1)
-            else numr val eq nil)));
+            (result := if car key = cdr key then subs2!* val = (1 ./ 1)
+            else numr subs2!* val eq nil)));
       return result;
    end;
 
@@ -179,8 +179,8 @@ symbolic procedure sparse_unitary_matrix_p u;
       maphash(car u,
          (lambda(key,val);
          result and                     % efficiency hack!
-            (result := if car key = cdr key then val = (1 ./ 1)
-            else numr val eq nil)));
+            (result := if car key = cdr key then subs2!* val = (1 ./ 1)
+            else numr subs2!* val eq nil)));
       return result;
    end;
 

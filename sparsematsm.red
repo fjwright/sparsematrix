@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-25 17:59:02 franc>
+% Time-stamp: <2026-05-29 16:16:26 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -67,8 +67,13 @@ symbolic procedure sparse!-matsm!*1 u;
    % Return a COPY in which each element is converted to an ALGEBRAIC
    % EXPRESSION in the form
    %   (sparse!-mat <hash> <m> <n> . <name>).
-   % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   'sparse!-mat . map!-sparse!-matrix(u, function !*q2a, t);
+   <<
+      % We use subs2!* to make sure each element simplified fully.
+      u := 'sparse!-mat .
+         map!-sparse!-matrix(u, (lambda x; !*q2a subs2!* x), t);
+      !*sub2 := nil;                   % Since all substitutions done.
+      u
+   >>;
 
 symbolic procedure sparse!-matsm u;
    % Simplify an arbitrary sparse matrix expression U in algebraic
