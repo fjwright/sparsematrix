@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-28 15:47:34 franc>
+% Time-stamp: <2026-05-29 12:08:16 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -82,8 +82,13 @@ symbolic procedure copyhash hash;
    end;
 #endif
 
+% 1000 hash table entries accommodates a 500*500 sparse matrix with
+% nonzero diagonal and 500 other nonzero elements.  Also, the REDUCE
+% simplifier uses hash-tables with 1000 elements initially (see
+% "alg/simp.red")
+
 symbolic inline procedure mk!-sparse!-matrix!-hash;
-   mkhash(10, 1);
+   mkhash(1000, 1);
 
 symbolic macro procedure map!-sparse!-matrix u; % (sm, fn, &optional name)
    {'map!-sparse!-matrix0, cadr u, caddr u, cdddr u and cadddr u};

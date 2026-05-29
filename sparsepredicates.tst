@@ -13,10 +13,34 @@ sparse_skew_symmetric_matrix_p sas;
 
 m := mat((1+i,2),(3i,4+i));
 s := sparsify m;
-sh := s + sparse_tp << conj s >>;
+sh := s + conj sparse_tp s;
 sparse_hermitean_matrix_p sh;
 
-sah := s - sparse_tp << conj s >>;
+sah := s - conj sparse_tp s;
 sparse_skew_hermitean_matrix_p sah;
 
+% Lipshutz
+sparse_matrix so(3,3);
+so(1,1) := so(3,2) := 1/9$
+so(1,2) := so(3,1) := 8/9$
+so(1,3) := so(2,2) := -4/9$
+so(2,1) := so(3,3) := 4/9$
+so(2,3) := -7/9$
+so;
+sparse_orthogonal_matrix_p so;
+
+sparse_matrix so(2,2);
+so(1,1) := so(2,2) := cos theta$
+so(2,1) := -(so(1,2) := sin theta)$
+so;
+for all th let (cos th)^2 + (sin th)^2 => 1;
+sparse_orthogonal_matrix_p so;          % DOESN'T SIMPLIFY!
+so(2,1) := -so(2,1)$
+so(2,2) := -so(2,2)$
+so;
+sparse_orthogonal_matrix_p so;          % DOESN'T SIMPLIFY!
+
 ;end;
+
+% Note: sparse_tp conj s fails; error in how conj is mapped over a
+% sparse matrix.

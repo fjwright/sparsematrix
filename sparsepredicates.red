@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-28 18:12:20 franc>
+% Time-stamp: <2026-05-29 15:13:03 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,32 +31,38 @@ module sparsepredicates;                % Sparse matrix predicates
 
 % $Id$
 
-% TO DO:
+% Useful for testing; this should be included in "matrix/matrix.red"!
+
+flag('(conj repart impart), 'matmapfn);
+
 % sparse_matrix_p, cf. LINALG matrixp
 % sparse_square_matrix_p, cf. LINALG squarep
 % sparse_symmetric_matrix_p, cf. LINALG symmetricp
 % sparse_skew_symmetric_matrix_p
 % sparse_hermitean_matrix_p
 % sparse_skew_hermitean_matrix_p
+% sparse_orthogonal_matrix_p
 
 % Currently, the symmetry-related predicates test for EXACT symmetry
 % and do not allow for numerical error in floating-point matrices!
 
 symbolic operator sparse_matrix_p, sparse_square_matrix_p,
    sparse_symmetric_matrix_p, sparse_skew_symmetric_matrix_p,
-   sparse_hermitean_matrix_p, sparse_skew_hermitean_matrix_p;
+   sparse_hermitean_matrix_p, sparse_skew_hermitean_matrix_p,
+   sparse_orthogonal_matrix_p;
 
 flag('(sparse_matrix_p sparse_matrix_p
    sparse_symmetric_matrix_p sparse_skew_symmetric_matrix_p
-      sparse_hermitean_matrix_p sparse_skew_hermitean_matrix_p),
+      sparse_hermitean_matrix_p sparse_skew_hermitean_matrix_p
+         sparse_orthogonal_matrix_p),
    'boolean);
 
 symbolic procedure sparse_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form); nil otherwise.
+   % Return t if U is a sparse matrix (algebraic form); nil otherwise.
    eqcar(u, 'sparse!-mat);
 
 symbolic procedure sparse_square_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) that is
+   % Return t if U is a sparse matrix (algebraic form) that is
    % square; nil otherwise.
    eqcar(u, 'sparse!-mat) and caddr u = cadddr u;
 
@@ -65,7 +71,7 @@ symbolic procedure sparse_square_matrix_p u;
 % with-hash-table-iterator.
 
 symbolic procedure sparse_symmetric_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) symmetric; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
@@ -80,7 +86,7 @@ symbolic procedure sparse_symmetric_matrix_p u;
       end;
 
 symbolic procedure sparse_skew_symmetric_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) skew-symmetric; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
@@ -98,7 +104,7 @@ symbolic procedure sparse_skew_symmetric_matrix_p u;
       end;
 
 symbolic procedure sparse_hermitean_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) hermitean; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
@@ -116,7 +122,7 @@ symbolic procedure sparse_hermitean_matrix_p u;
       end;
 
 symbolic procedure sparse_skew_hermitean_matrix_p u;
-   % Return t if u is a sparse matrix (algebraic form) that is (square
+   % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) skew-hermitean; nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
       begin scalar hash := car u, result := t;
@@ -133,9 +139,23 @@ symbolic procedure sparse_skew_hermitean_matrix_p u;
          return result;
       end;
 
-% Useful for testing; this should be included in "matrix/matrix.red"!
-
-flag('(conj), 'matmapfn);
+symbolic procedure sparse_orthogonal_matrix_p u;
+   % Return t if U is a sparse matrix (algebraic form) that is (square
+   % and) orthogonal; nil otherwise.  A matrix A is orthogonal if AA^T
+   % = A^TA = I.
+   eqcar(u, 'sparse!-mat) and caddr u = cadddr u and
+      begin scalar v, result := t;
+         u := sparse!-matsm u;
+         v := sparse!-tp1 u;
+         u := sparse!-multm(u,v);
+         % u should be an identity sparse matrix in canonical form.
+         maphash(car u,
+            (lambda(key,val);
+            result and                  % efficiency hack!
+               (result := if car key = cdr key then val = (1 ./ 1)
+               else numr val eq nil)));
+         return result;
+      end;
 
 endmodule;
 
