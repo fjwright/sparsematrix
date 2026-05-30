@@ -1,8 +1,8 @@
 load sparsematrix,
+   sparsepatch,
    sparsematsm,
    sparsedet,
    sparserank,
-   sparsemap,
    sparsenullsp,
    sparseechelon;
 

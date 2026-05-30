@@ -1,10 +1,10 @@
 on comp;
 
 in "sparsematrix.red",
+   "sparsepatch.red",
    "sparsematsm.red",
    "sparsedet.red",
    "sparserank.red",
-   "sparsemap.red",
    "sparsenullsp.red",
    "sparseechelon.red"$
 

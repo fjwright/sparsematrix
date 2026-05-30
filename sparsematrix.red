@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-29 12:08:16 franc>
+% Time-stamp: <2026-05-30 16:50:03 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -165,11 +165,9 @@ put('sparse!-mat, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure quotesparse!-matrix u; 'sparse!-matrix;
 
-flag('(sparse!-mat), 'sparse!-matflg);
+% flag('(sparse!-mat), 'sparse!-matflg);
 
 flag('(sparse!-mat), 'noncommuting);
-
-put('sparse!-matrix, 'fn, 'sparse!-matflg);
 
 put('sparse!-matrix, 'tag, 'sparse!-mat);
 
@@ -237,13 +235,22 @@ symbolic procedure set!-sparse!-matelem(u,v);
       where x = access!-sparse!-matelem u;
 
 
-% %%%%%%%%%%%%%%%%%%
-% Aggregate property
-% %%%%%%%%%%%%%%%%%%
+% %%%%%%%
+% Mapping
+% %%%%%%%
 
-% Automatically map an operator over the elements of a matrix.
+% Explicitly map an operator over the elements of a matrix:
+
+put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
+
+symbolic procedure map!-sparse!-mat(f,o);
+   'sparse!-mat . map!-sparse!-matrix(cdr o,
+      (lambda w; apply1(f,w)));
+
+% Automatically map an operator over the elements of a matrix:
 
 put('sparse!-matrix, 'aggregatefn, 'sparse!-matrixmap);
+put('sparse!-matrix, 'fn, 'matflg);
 
 flag('(sparse_det sparse_trace sparse_cofactor), 'sparse!-matfn);
 

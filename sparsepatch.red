@@ -1,4 +1,29 @@
-module sparsemap;
+module sparsepatch;              % Patches for the main REDUCE sources
+
+% Useful for testing; this should be included in "matrix/matrix.red"!
+
+flag('(conj repart impart), 'matmapfn);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% Patch getrtype2 in "alg/reval.red":
+
+symbolic procedure getrtype2 u;
+   % Placeholder for packages that key expression type to the operator.
+   begin scalar x;
+     % Next line is maybe only needed by EXCALC.
+      return if (x := get(car u,'rtype)) and (x := get(x,'rtypefn))
+               then apply1(x,cdr u)
+              else if x := get(car u,'rtypefn) then apply1(x,cdr u)
+              else if flagp(car u,'matmapfn) and cdr u
+                 % Only matrix had property indicator fn with value
+                 % matflg, which appeared not to be used for anything!
+                 and get(x := getrtype cadr u, 'fn) eq 'matflg
+               then x
+              else nil
+   end;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 % Revised version of the function map!-eval1 in "alg/map.red" taken
 % from "eds/edspatch.red".
@@ -44,14 +69,6 @@ symbolic procedure mapmat(f,o);
          apply1(f,w);
 
 put('mat,'mapfn,'mapmat);
-
-% Additions by FJW:
-
-symbolic procedure map!-sparse!-mat(f,o);
-   'sparse!-mat . map!-sparse!-matrix(cdr o,
-      (lambda w; apply1(f,w)));
-
-put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
 endmodule;
 
