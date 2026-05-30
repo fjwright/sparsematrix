@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-29 17:39:17 franc>
+% Time-stamp: <2026-05-30 12:01:00 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@ symbolic procedure sparse_symmetric_matrix_p u;
             (lambda(key,val1);
             result and                  % efficiency hack!
             begin scalar i := car key, j := cdr key, val2;
-               if i < j then
+               if i neq j then
                   result := (val2 := gethash(j.i, hash)) and val1 = val2;
             end));
          return result;
@@ -100,7 +100,7 @@ symbolic procedure sparse_skew_symmetric_matrix_p u;
             begin scalar i := car key, j := cdr key, val2;
                if i = j then
                   result := val1 = 0
-               else if i < j then
+               else
                   result := (val2 := gethash(j.i, hash)) and
                   reval {'plus, val1, val2} = 0;
             end));
@@ -118,7 +118,7 @@ symbolic procedure sparse_hermitian_matrix_p u;
             begin scalar i := car key, j := cdr key, val2;
                if i = j then
                   result := reval {'impart, val1} = 0
-               else if i < j then
+               else
                   result := (val2 := gethash(j.i, hash)) and
                   reval {'difference, val1, {'conj, val2}} = 0;
             end));
@@ -136,7 +136,7 @@ symbolic procedure sparse_skew_hermitian_matrix_p u;
             begin scalar i := car key, j := cdr key, val2;
                if i = j then
                   result := reval {'repart, val1} = 0
-               else if i < j then
+               else
                   result := (val2 := gethash(j.i, hash)) and
                   reval {'plus, val1, {'conj, val2}} = 0;
             end));
