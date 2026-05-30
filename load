@@ -1,9 +1,11 @@
-load sparsematrix,
-   sparsepatch,
-   sparsematsm,
-   sparsedet,
-   sparserank,
-   sparsenullsp,
-   sparseechelon;
+% -*-REDUCE-*-
+
+symbolic <<
+   global '(filelist);
+
+   in filelist$
+
+   for each file in filelist do evload {file};
+>>;
 
 end;

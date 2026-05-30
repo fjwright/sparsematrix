@@ -1,0 +1,6 @@
+% -*-REDUCE-*-
+
+filelist := '(sparsematrix sparsepatch sparsematsm
+   sparsedet sparserank sparsenullsp sparseechelon);
+
+end;
