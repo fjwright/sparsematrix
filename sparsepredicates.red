@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-31 15:34:10 franc>
+% Time-stamp: <2026-05-31 16:58:52 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -76,84 +76,77 @@ symbolic procedure sparse_square_matrix_p u;
 % with-hash-table-iterator.
 
 symbolic procedure maphash!-and(table, fn);
-   % TABLE is a hash-table and FN is a predicate of two arguments.
-   % Return the result of combining using AND the value of FN applied
-   % to every element of TABLE.  Stop applying FN to elements of TABLE
-   % as soon as the result is determined.  This function can be
-   % implemented using maphash as here, or more efficiently using the
-   % Common Lisp macro with-hash-table-iterator.
+   % TABLE is a hash-table and FN is a predicate taking the arguments
+   % KEY, VALUE, TABLE, where KEY and VALUE are properties of each
+   % hash-table element.  Return the result of using AND to combine
+   % the values of FN applied to every element of TABLE.  Stop
+   % applying FN to elements of TABLE as soon as the result is
+   % determined.  This function can be implemented using maphash as
+   % here, or probably more efficiently using the Common Lisp macro
+   % with-hash-table-iterator.
    begin scalar result := t;
-         maphash(table,
-            (lambda(key,val);
-            result and                  % efficiency hack!
-            (result := apply2(fn, key, val))));
-         return result;
+      maphash(table,
+         (lambda(key, value);
+         result and                     % efficiency hack!
+            (result := apply3(fn, key, value, table))));
+      return result;
    end;
+
+symbolic procedure sparse!-special!-matrix!-p(u, pred);
+   % Return t if U is a sparse matrix (algebraic form) that is square
+   % and PRED applied to every nonzero element is true; return nil
+   % otherwise.
+   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
+      maphash!-and(car u, pred);
 
 symbolic procedure sparse_symmetric_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) symmetric, nil otherwise.
-   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u;
-         return
-            maphash!-and(hash,
-               (lambda(key,val1);
-                begin scalar i := car key, j := cdr key, val2;
-                   return (i = j) or
-                      ((val2 := gethash(j.i, hash)) and val1 = val2);
-                end));
-      end;
+   sparse!-special!-matrix!-p(u,
+      (lambda(key, val1, hash);
+       begin scalar i := car key, j := cdr key, val2;
+          return (i = j) or
+             ((val2 := gethash(j.i, hash)) and val1 = val2);
+       end));
 
 symbolic procedure sparse_skew_symmetric_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) skew-symmetric, nil otherwise.
-   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u;
-         return
-            maphash!-and(hash,
-               (lambda(key,val1);
-                begin scalar i := car key, j := cdr key, val2;
-                   return if i = j then
-                      val1 = 0
-                   else
-                      (val2 := gethash(j.i, hash)) and
-                      reval {'plus, val1, val2} = 0;
-                end));
-      end;
+   sparse!-special!-matrix!-p(u,
+      (lambda(key, val1, hash);
+       begin scalar i := car key, j := cdr key, val2;
+          return if i = j then
+             val1 = 0
+          else
+             (val2 := gethash(j.i, hash)) and
+             reval {'plus, val1, val2} = 0;
+       end));
 
 symbolic procedure sparse_hermitian_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) Hermitian, nil otherwise.
-   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u;
-         return
-            maphash!-and(hash,
-               (lambda(key,val1);
-                begin scalar i := car key, j := cdr key, val2;
-                   return if i = j then
-                      reval {'impart, val1} = 0
-                   else
-                      (val2 := gethash(j.i, hash)) and
-                      reval {'difference, val1, {'conj, val2}} = 0;
-                end));
-      end;
+   sparse!-special!-matrix!-p(u,
+      (lambda(key, val1, hash);
+       begin scalar i := car key, j := cdr key, val2;
+          return if i = j then
+             reval {'impart, val1} = 0
+          else
+             (val2 := gethash(j.i, hash)) and
+             reval {'difference, val1, {'conj, val2}} = 0;
+       end));
 
 symbolic procedure sparse_skew_hermitian_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) skew-Hermitian, nil otherwise.
-   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u;
-         return
-            maphash!-and(hash,
-               (lambda(key,val1);
-                begin scalar i := car key, j := cdr key, val2;
-                   return if i = j then
-                      reval {'repart, val1} = 0
-                   else
-                      (val2 := gethash(j.i, hash)) and
-                      reval {'plus, val1, {'conj, val2}} = 0;
-                end));
-      end;
+   sparse!-special!-matrix!-p(u,
+      (lambda(key, val1, hash);
+       begin scalar i := car key, j := cdr key, val2;
+          return if i = j then
+             reval {'repart, val1} = 0
+          else
+             (val2 := gethash(j.i, hash)) and
+             reval {'plus, val1, {'conj, val2}} = 0;
+       end));
 
 symbolic procedure sparse_identity_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
@@ -168,7 +161,7 @@ symbolic procedure sparse!-identity!-p u;
    % matrix, nil otherwise.
    begin scalar result :=
       maphash!-and(car u,
-         (lambda(key,val);
+         (lambda(key, val, ignored);
          if car key = cdr key then subs2!* val = (1 ./ 1)
          else numr subs2!* val eq nil));
       !*sub2 := nil;                    % since all substitutions done
