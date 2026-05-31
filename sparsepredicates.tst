@@ -13,10 +13,10 @@ sparse_skew_symmetric_matrix_p sas;
 
 m := mat((1+i,2),(3i,4+i));
 s := sparsify m;
-sh := s + << conj sparse_tp s >>;
+sh := s + conj sparse_tp s;
 sparse_hermitian_matrix_p sh;
 
-sah := s - << conj sparse_tp s >>;
+sah := s - conj sparse_tp s;
 sparse_skew_hermitian_matrix_p sah;
 
 % Lipshutz
@@ -54,6 +54,3 @@ su := su/2;
 sparse_unitary_matrix_p su;
 
 ;end;
-
-% Note: sparse_tp conj s fails; error in how conj is mapped over a
-% sparse matrix.

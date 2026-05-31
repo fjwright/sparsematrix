@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-30 12:01:00 franc>
+% Time-stamp: <2026-05-31 15:34:10 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,10 +31,6 @@ module sparsepredicates;                % Sparse matrix predicates
 
 % $Id$
 
-% Useful for testing; this should be included in "matrix/matrix.red"!
-
-flag('(conj repart impart), 'matmapfn);
-
 % sparse_matrix_p, cf. LINALG matrixp
 % sparse_square_matrix_p, cf. LINALG squarep
 % sparse_symmetric_matrix_p, cf. LINALG symmetricp
@@ -44,6 +40,11 @@ flag('(conj repart impart), 'matmapfn);
 % sparse_identity_matrix_p
 % sparse_orthogonal_matrix_p
 % sparse_unitary_matrix_p
+
+% TO DO:
+% sparse_diagonal_matrix_p
+% sparse_upper_triangular_matrix_p
+% sparse_lower_triangular_matrix_p
 
 % Currently, these predicates are EXACT and do not allow for numerical
 % error in floating-point matrices!
@@ -74,73 +75,84 @@ symbolic procedure sparse_square_matrix_p u;
 % can stop early!  This could be provided via the Common Lisp macro
 % with-hash-table-iterator.
 
+symbolic procedure maphash!-and(table, fn);
+   % TABLE is a hash-table and FN is a predicate of two arguments.
+   % Return the result of combining using AND the value of FN applied
+   % to every element of TABLE.  Stop applying FN to elements of TABLE
+   % as soon as the result is determined.  This function can be
+   % implemented using maphash as here, or more efficiently using the
+   % Common Lisp macro with-hash-table-iterator.
+   begin scalar result := t;
+         maphash(table,
+            (lambda(key,val);
+            result and                  % efficiency hack!
+            (result := apply2(fn, key, val))));
+         return result;
+   end;
+
 symbolic procedure sparse_symmetric_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) symmetric, nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u, result := t;
-         maphash(hash,
-            (lambda(key,val1);
-            result and                  % efficiency hack!
-            begin scalar i := car key, j := cdr key, val2;
-               if i neq j then
-                  result := (val2 := gethash(j.i, hash)) and val1 = val2;
-            end));
-         return result;
+      begin scalar hash := car u;
+         return
+            maphash!-and(hash,
+               (lambda(key,val1);
+                begin scalar i := car key, j := cdr key, val2;
+                   return (i = j) or
+                      ((val2 := gethash(j.i, hash)) and val1 = val2);
+                end));
       end;
 
 symbolic procedure sparse_skew_symmetric_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) skew-symmetric, nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u, result := t;
-         maphash(hash,
-            (lambda(key,val1);
-            result and                  % efficiency hack!
-            begin scalar i := car key, j := cdr key, val2;
-               if i = j then
-                  result := val1 = 0
-               else
-                  result := (val2 := gethash(j.i, hash)) and
-                  reval {'plus, val1, val2} = 0;
-            end));
-         return result;
+      begin scalar hash := car u;
+         return
+            maphash!-and(hash,
+               (lambda(key,val1);
+                begin scalar i := car key, j := cdr key, val2;
+                   return if i = j then
+                      val1 = 0
+                   else
+                      (val2 := gethash(j.i, hash)) and
+                      reval {'plus, val1, val2} = 0;
+                end));
       end;
 
 symbolic procedure sparse_hermitian_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) Hermitian, nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u, result := t;
-         maphash(hash,
-            (lambda(key,val1);
-            result and                  % efficiency hack!
-            begin scalar i := car key, j := cdr key, val2;
-               if i = j then
-                  result := reval {'impart, val1} = 0
-               else
-                  result := (val2 := gethash(j.i, hash)) and
-                  reval {'difference, val1, {'conj, val2}} = 0;
-            end));
-         return result;
+      begin scalar hash := car u;
+         return
+            maphash!-and(hash,
+               (lambda(key,val1);
+                begin scalar i := car key, j := cdr key, val2;
+                   return if i = j then
+                      reval {'impart, val1} = 0
+                   else
+                      (val2 := gethash(j.i, hash)) and
+                      reval {'difference, val1, {'conj, val2}} = 0;
+                end));
       end;
 
 symbolic procedure sparse_skew_hermitian_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) skew-Hermitian, nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      begin scalar hash := car u, result := t;
-         maphash(hash,
-            (lambda(key,val1);
-            result and                  % efficiency hack!
-            begin scalar i := car key, j := cdr key, val2;
-               if i = j then
-                  result := reval {'repart, val1} = 0
-               else
-                  result := (val2 := gethash(j.i, hash)) and
-                  reval {'plus, val1, {'conj, val2}} = 0;
-            end));
-         return result;
+      begin scalar hash := car u;
+         return
+            maphash!-and(hash,
+               (lambda(key,val1);
+                begin scalar i := car key, j := cdr key, val2;
+                   return if i = j then
+                      reval {'repart, val1} = 0
+                   else
+                      (val2 := gethash(j.i, hash)) and
+                      reval {'plus, val1, {'conj, val2}} = 0;
+                end));
       end;
 
 symbolic procedure sparse_identity_matrix_p u;
@@ -154,12 +166,11 @@ symbolic procedure sparse!-identity!-p u;
    % U is a sparse matrix in canonical form with SQ elements that may
    % not yet be fully simplified.  Return t if it is an identity
    % matrix, nil otherwise.
-   begin scalar result := t;
-      maphash(car u,
+   begin scalar result :=
+      maphash!-and(car u,
          (lambda(key,val);
-         result and                     % efficiency hack!
-            (result := if car key = cdr key then subs2!* val = (1 ./ 1)
-            else numr subs2!* val eq nil)));
+         if car key = cdr key then subs2!* val = (1 ./ 1)
+         else numr subs2!* val eq nil));
       !*sub2 := nil;                    % since all substitutions done
       return result;
    end;
@@ -173,7 +184,7 @@ symbolic procedure sparse_orthogonal_matrix_p u;
       u := sparse!-matsm u; % canonical form, SQ elements
       v := sparse!-tp1 u;   % transpose as canonical form, SQ elements
       u := sparse!-multm(u,v);  % A*A^T as canonical form, SQ elements
-      return sparse!-identity!-p u;;
+      return sparse!-identity!-p u;
    end;
 
 symbolic inline procedure sparse!-conjsq u;
@@ -185,15 +196,15 @@ symbolic procedure sparse_unitary_matrix_p u;
    % and) unitary, nil otherwise.  A matrix A is unitary if A*A^H =
    % A^H*A = I, where ^H denotes conjugate transpose.
    eqcar(u, 'sparse!-mat) and caddr u = cadddr u and
-   begin scalar v, result := t, hash;
+   begin scalar v, hash;
       u := sparse!-matsm u; % canonical form, SQ elements
       v := sparse!-tp1 u;   % transpose as canonical form, SQ elements
       hash := car v;
-      maphash(hash,         % conjugate as canonical form, SQ elements
+      maphash(hash,         % conjugate v as canonical form, SQ elements
          (lambda(key,val);
          puthash(key, hash, sparse!-conjsq val)));
       u := sparse!-multm(u,v);  % A*A^H as canonical form, SQ elements
-      return sparse!-identity!-p u;;
+      return sparse!-identity!-p u;
    end;
 
 endmodule;
