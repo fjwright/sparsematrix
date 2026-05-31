@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-31 16:58:52 franc>
+% Time-stamp: <2026-05-31 18:08:19 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -37,14 +37,12 @@ module sparsepredicates;                % Sparse matrix predicates
 % sparse_skew_symmetric_matrix_p
 % sparse_hermitian_matrix_p
 % sparse_skew_hermitian_matrix_p
-% sparse_identity_matrix_p
-% sparse_orthogonal_matrix_p
-% sparse_unitary_matrix_p
-
-% TO DO:
 % sparse_diagonal_matrix_p
 % sparse_upper_triangular_matrix_p
 % sparse_lower_triangular_matrix_p
+% sparse_identity_matrix_p
+% sparse_orthogonal_matrix_p
+% sparse_unitary_matrix_p
 
 % Currently, these predicates are EXACT and do not allow for numerical
 % error in floating-point matrices!
@@ -52,13 +50,15 @@ module sparsepredicates;                % Sparse matrix predicates
 symbolic operator sparse_matrix_p, sparse_square_matrix_p,
    sparse_symmetric_matrix_p, sparse_skew_symmetric_matrix_p,
    sparse_hermitian_matrix_p, sparse_skew_hermitian_matrix_p,
-   sparse_identity_matrix_p,
+   sparse_diagonal_matrix_p, sparse_upper_triangular_matrix_p,
+   sparse_lower_triangular_matrix_p, sparse_identity_matrix_p,
    sparse_orthogonal_matrix_p, sparse_unitary_matrix_p;
 
 flag('(sparse_matrix_p sparse_matrix_p
    sparse_symmetric_matrix_p sparse_skew_symmetric_matrix_p
       sparse_hermitian_matrix_p sparse_skew_hermitian_matrix_p
-         sparse_identity_matrix_p
+         sparse_diagonal_matrix_p sparse_upper_triangular_matrix_p
+            sparse_lower_triangular_matrix_p sparse_identity_matrix_p
             sparse_orthogonal_matrix_p sparse_unitary_matrix_p),
    'boolean);
 
@@ -147,6 +147,27 @@ symbolic procedure sparse_skew_hermitian_matrix_p u;
              (val2 := gethash(j.i, hash)) and
              reval {'plus, val1, {'conj, val2}} = 0;
        end));
+
+symbolic procedure sparse_diagonal_matrix_p u;
+   % Return t if U is a sparse matrix (algebraic form) that is (square
+   % and) diagonal, nil otherwise.
+   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
+      maphash!-and(car u,
+         (lambda(key, val, ignored); car key = cdr key));
+
+symbolic procedure sparse_upper_triangular_matrix_p u;
+   % Return t if U is a sparse matrix (algebraic form) that is (square
+   % and) upper triangular, nil otherwise.
+   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
+      maphash!-and(car u,
+         (lambda(key, val, ignored); car key <= cdr key));
+
+symbolic procedure sparse_lower_triangular_matrix_p u;
+   % Return t if U is a sparse matrix (algebraic form) that is (square
+   % and) lower triangular, nil otherwise.
+   eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
+      maphash!-and(car u,
+         (lambda(key, val, ignored); car key >= cdr key));
 
 symbolic procedure sparse_identity_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square

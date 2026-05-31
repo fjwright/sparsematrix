@@ -5,6 +5,8 @@ sparse_matrix_p m;
 sparse_matrix_p s;
 sparse_square_matrix_p s;
 
+% Symmetric, etc.:
+
 sparse_symmetric_matrix_p s;
 ss := s + sparse_tp s;
 sparse_symmetric_matrix_p ss;
@@ -18,6 +20,26 @@ sparse_hermitian_matrix_p sh;
 
 sah := s - conj sparse_tp s;
 sparse_skew_hermitian_matrix_p sah;
+
+m := mat((a,b),(c,d));
+
+% Diagonal and triangular:
+
+sd := sparsify mat((a,0,0),(0,b,0),(0,0,c));
+su := sparsify mat((a,b,c),(0,d,e),(0,0,f));
+sl := sparse_tp su;
+
+sparse_diagonal_matrix_p sd;
+sparse_upper_triangular_matrix_p sd;
+sparse_lower_triangular_matrix_p sd;
+
+sparse_diagonal_matrix_p su;
+sparse_upper_triangular_matrix_p su;
+sparse_lower_triangular_matrix_p su;
+
+sparse_diagonal_matrix_p sl;
+sparse_upper_triangular_matrix_p sl;
+sparse_lower_triangular_matrix_p sl;
 
 % Lipshutz
 sparse_matrix so(3,3);
