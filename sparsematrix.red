@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-30 16:50:03 franc>
+% Time-stamp: <2026-06-01 17:31:20 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -51,10 +51,21 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % Utility functions
 % %%%%%%%%%%%%%%%%%
 
-% Proposed new Standard Lisp function, implemented in "sl-on-cl.lisp".
-% This version provides a fallback if maphash is not available.
+% Proposed new Standard Lisp functions, implemented in
+% "sl-on-cl.lisp".  The versions below provide a fallback if they are
+% not available.
+
+#if (not (getd 'hash!-table!-p))
+% Provided in CSL but not PSL.
+symbolic inline procedure hash!-table!-p u;
+   % This implementation is not reliable, but currently I only need to
+   % distinguish a sparse matrix canonical form from a standard
+   % quotient by applying this to the car.
+   atom u and not (idp u or numberp u);
+#endif
 
 #if (not (getd 'maphash))
+% Provided in CSL but not PSL.
 symbolic procedure maphash(hash, fn);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
@@ -66,10 +77,6 @@ symbolic procedure maphash(hash, fn);
    mapc(hashcontents hash,
       (lambda el; apply2(fn, car el, cdr el)));
 #endif
-
-% Proposed new Standard Lisp function, implemented in "sl-on-cl.lisp"
-% using copy-structure.  This version provides a fallback if copyhash
-% is not available.
 
 #if (not (getd 'copyhash))
 symbolic procedure copyhash hash;

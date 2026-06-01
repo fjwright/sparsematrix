@@ -1,7 +1,7 @@
 module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-27 16:22:09 franc>
+% Time-stamp: <2026-06-01 17:36:13 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -44,14 +44,12 @@ put('sparse_matrix_augment, 'psopfn, 'sparse_matrix_augment);
 put('sparse_matrix_augment, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure sparse_matrix_augment u;
-   % sparse_matrix_augment accepts any number of arguments that are
-   % either sparse or dense matrices, or lists thereof, where all
-   % matrices must have the same number of rows.  The result is the
-   % matrices adjoined horizontally in the order specified, as a
-   % sparse matrix.
-   begin scalar m;                      % common row dimension
-      if null u then return;
-      % Flatten any lists among the arguments before processing:
+   % Accept any number of arguments that are either sparse or dense
+   % matrices, or lists thereof, where all matrices must have the same
+   % number of rows.  The result is the matrices adjoined horizontally
+   % in the order specified, as a sparse matrix.
+   u and begin scalar m;   % common row dimension
+      % Evaluate arguments and flatten any lists:
       u := for each el in revlis u join
          if eqcar(el, 'list) then cdr el else {el};
       % Build a list of sparse matrix canonical forms:
@@ -85,6 +83,57 @@ symbolic procedure sparse!-matrix!-augment(u, m);
          n := n + caddr el;
       >>;
       return {hash, m, n};
+   end;
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% sparse_block_diagonal_matrix
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% cf. LINALG diagonal
+
+put('sparse_block_diagonal_matrix, 'psopfn, 'sparse_block_diagonal_matrix);
+put('sparse_block_diagonal_matrix, 'rtypefn, 'quotesparse!-matrix);
+
+symbolic procedure sparse_block_diagonal_matrix u;
+   % Accept any number of arguments that are either sparse or dense
+   % matrices or scalars, or lists thereof, where all matrices must be
+   % square.  Scalars are treated as 1*1 matrices.  The result is the
+   % matrices adjoined into a block diagonal matrix in the order
+   % specified, as a square sparse matrix.
+   u and <<
+      % Evaluate arguments and flatten any lists:
+      u := for each el in revlis u join
+         if getrtype el eq 'list then cdr el else {el};
+      % Build a list of sparse matrix canonical forms or SQs:
+      u := for each el in u collect
+         begin scalar rtype := getrtype el;
+            if null rtype then return simp el;
+            if rtype eq 'sparse!-matrix then
+               (if caddr el = caddr el then % square
+                  return sparse!-matsm el)
+            else if rtype eq 'matrix then
+               (if length cdr el = length cadr el then % square
+                  return sparse!-matsm sparsify el);
+            typerr(el, "square matrix");
+         end;
+      sparse!-matsm!*1 sparse!-block!-diagonal!-matrix u
+   >>;
+
+symbolic procedure sparse!-block!-diagonal!-matrix u;
+   % Adjoin diagonally a list U of square sparse matrix canonical
+   % forms or SQs, and return a square sparse matrix canonical form.
+   begin scalar hash := mk!-sparse!-matrix!-hash();
+      integer dim;                    % row & col dim of result so far
+      for each el in u do
+         if hash!-table!-p car el then << % sparse matrix canonical form
+            maphash(car el,
+               (lambda(key, value);
+               puthash((dim + car key) . (dim + cdr key), hash, value)));
+            dim := dim + caddr el;
+         >> else <<                     % scalar = 1*1 matrix
+            dim := dim + 1;
+            puthash(dim . dim, hash, el);
+         >>;
+      return {hash, dim, dim};
    end;
 
 

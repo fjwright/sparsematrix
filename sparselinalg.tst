@@ -1,5 +1,3 @@
-in "sparselinalg.red"$
-
 on errcont;
 
 m := mat((1,2),(3,4),(5,6));
@@ -16,6 +14,20 @@ sparse_matrix_augment(m);
 s1 := sparse_matrix_augment(m, 2s);
 sparse_matrix_augment({m, 2s});
 sparse_matrix_augment({m, 2s}, {2m, 3s});
+
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% sparse_block_diagonal_matrix
+% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% cf. LINALG diagonal
+
+sparse_block_diagonal_matrix();
+sparse_block_diagonal_matrix(42);
+sparse_block_diagonal_matrix(m);
+m := mat((a,b),(c,d));
+s := sparsify m;
+sparse_block_diagonal_matrix(m, 2s);
+sparse_block_diagonal_matrix(x, {m, 2s}, 42);
+sparse_block_diagonal_matrix({m, 2s}, {2m, 3s});
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % sparse_select_columns / sparse_augment_columns
