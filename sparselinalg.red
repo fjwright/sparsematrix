@@ -1,7 +1,7 @@
-module sparselinalg;    % Useful linalg operations for sparse matrices
+module sparselinalg; % Construction and manipulation of sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-02 16:09:59 franc>
+% Time-stamp: <2026-06-02 16:31:24 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -44,6 +44,22 @@ symbolic procedure sparse!-reval!&flatten u;
 %                         MATRIX CONSTRUCTION
 %                         %%%%%%%%%%%%%%%%%%%
 
+% sparse_identity_matrix
+% cf. LINALG make_identity
+
+symbolic operator sparse_identity_matrix;
+put('sparse_identity_matrix, 'rtypefn, 'quotesparse!-matrix);
+
+symbolic procedure sparse_identity_matrix(dim);
+   % DIM is a positive integer.  Return a DIM*DIM sparse identity
+   % matrix.
+   begin scalar hash;
+      if not(fixp dim and dim > 0) then typerr(dim, "matrix dimension");
+      hash := mk!-sparse!-matrix!-hash();
+      for i := 1 : dim do puthash(i.i, hash, 1);
+      return {'sparse!-mat, hash, dim, dim}
+   end;
+
 % sparse_band_matrix
 % cf. LINALG band_matrix (with reversed arguments)
 
@@ -58,7 +74,7 @@ symbolic procedure sparse_band_matrix u; % (dim, scalars)
    % i - fix((n-1)/2) to j + n.  Normally, n will be odd.
    u and cdr u and
    begin scalar dim := reval car u, n, j0, hash;
-      if not(fixp dim and dim > 0) then typerr(dim, "positive integer");
+      if not(fixp dim and dim > 0) then typerr(dim, "matrix dimension");
       for each el in (u := sparse!-reval!&flatten cdr u) do
          if getrtype el then typerr(el, "scalar");
       n := length u;  j0 := quotient(n-1, 2);
