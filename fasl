@@ -5,10 +5,11 @@ symbolic <<
 
    in filelist$
 
-   on comp;
-
-   for each file in filelist do
+   for each file in filelist do <<
+      faslout file;
       infile concat2(id2string file, ".red");
+      faslend;
+   >>;
 >>;
 
 end;

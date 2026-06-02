@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-24 18:05:22 franc>
+% Time-stamp: <2026-05-29 16:16:26 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -67,8 +67,13 @@ symbolic procedure sparse!-matsm!*1 u;
    % Return a COPY in which each element is converted to an ALGEBRAIC
    % EXPRESSION in the form
    %   (sparse!-mat <hash> <m> <n> . <name>).
-   % *** TEMPORARY HACK TO CHECK SIMPLER FACILITIES! ***
-   'sparse!-mat . map!-sparse!-matrix(u, function !*q2a, t);
+   <<
+      % We use subs2!* to make sure each element simplified fully.
+      u := 'sparse!-mat .
+         map!-sparse!-matrix(u, (lambda x; !*q2a subs2!* x), t);
+      !*sub2 := nil;                   % Since all substitutions done.
+      u
+   >>;
 
 symbolic procedure sparse!-matsm u;
    % Simplify an arbitrary sparse matrix expression U in algebraic
@@ -202,9 +207,6 @@ symbolic procedure sparse!-addm(u,v);
 % Transpose
 % %%%%%%%%%
 
-% This code currently works but seems a bit convoluted, in that it
-% appears to end up calling sparse!-matsm multiple time!
-
 symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
 
 put('sparse_tp, 'rtypefn, 'getrtypecar); % declares algebraic operator
@@ -240,10 +242,10 @@ symbolic procedure sparse!-multm(u,v);
                    % summand of the scalar product forming the
                    % (i,j)-element of the product matrix.
                    begin scalar j := cdr v_key,
-                         scalprod := gethash(i.j, hash),
+                         scaprod := gethash(i.j, hash),
                          prod := multsq(u_value, v_value);
                       puthash!-nzsq(i.j, hash,
-                         if scalprod then addsq(scalprod, prod) else prod);
+                         if scaprod then addsq(scaprod, prod) else prod);
                    end));
           end));
       return {hash, cadr u, caddr v}
@@ -318,8 +320,9 @@ symbolic procedure densify!-matrix u;
    begin scalar hash := car u, m := cadr u, n := caddr u, el;
       return 'mat .
          for i := 1 : m collect
-            for j := 1 : n collect
-               if el := gethash(i.j, hash) then !*q2a el else 0
+            if zerop n then {0} else
+               for j := 1 : n collect
+                  if el := gethash(i.j, hash) then !*q2a el else 0
    end;
 
 endmodule;

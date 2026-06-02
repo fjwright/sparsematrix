@@ -1,5 +1,3 @@
-in in$
-
 load_package sparse;
 
 size := 500$

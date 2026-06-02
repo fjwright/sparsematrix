@@ -1,2 +1,4 @@
-~
+*~
+*.lisp
+*.fasl
 notes.txt

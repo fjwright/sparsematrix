@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-24 18:05:17 franc>
+% Time-stamp: <2026-06-01 17:31:20 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -51,10 +51,21 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % Utility functions
 % %%%%%%%%%%%%%%%%%
 
-% Proposed new Standard Lisp function, to be implemented in "sl-on-cl.lisp".
-% This version provides a fallback if maphash is not available.
+% Proposed new Standard Lisp functions, implemented in
+% "sl-on-cl.lisp".  The versions below provide a fallback if they are
+% not available.
+
+#if (not (getd 'hash!-table!-p))
+% Provided in CSL but not PSL.
+symbolic inline procedure hash!-table!-p u;
+   % This implementation is not reliable, but currently I only need to
+   % distinguish a sparse matrix canonical form from a standard
+   % quotient by applying this to the car.
+   atom u and not (idp u or numberp u);
+#endif
 
 #if (not (getd 'maphash))
+% Provided in CSL but not PSL.
 symbolic procedure maphash(hash, fn);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
@@ -67,10 +78,6 @@ symbolic procedure maphash(hash, fn);
       (lambda el; apply2(fn, car el, cdr el)));
 #endif
 
-% Proposed new Standard Lisp function, to be implemented in
-% "sl-on-cl.lisp" using copy-structure.  This version provides a
-% fallback if copyhash is not available.
-
 #if (not (getd 'copyhash))
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
@@ -82,8 +89,13 @@ symbolic procedure copyhash hash;
    end;
 #endif
 
+% 1000 hash table entries accommodates a 500*500 sparse matrix with
+% nonzero diagonal and 500 other nonzero elements.  Also, the REDUCE
+% simplifier uses hash-tables with 1000 elements initially (see
+% "alg/simp.red")
+
 symbolic inline procedure mk!-sparse!-matrix!-hash;
-   mkhash(10, 1);
+   mkhash(1000, 1);
 
 symbolic macro procedure map!-sparse!-matrix u; % (sm, fn, &optional name)
    {'map!-sparse!-matrix0, cadr u, caddr u, cdddr u and cadddr u};
@@ -160,11 +172,9 @@ put('sparse!-mat, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure quotesparse!-matrix u; 'sparse!-matrix;
 
-flag('(sparse!-mat), 'sparse!-matflg);
+% flag('(sparse!-mat), 'sparse!-matflg);
 
 flag('(sparse!-mat), 'noncommuting);
-
-put('sparse!-matrix, 'fn, 'sparse!-matflg);
 
 put('sparse!-matrix, 'tag, 'sparse!-mat);
 
@@ -219,23 +229,35 @@ put('sparse!-matrix, 'getelemfn, 'get!-sparse!-matelem);
 symbolic procedure get!-sparse!-matelem u;
    % Return an element of a sparse matrix u = (id i j).
    % cf. getmatelem.
-   (gethash(car x, cdr x) or 0) where x = access!-sparse!-matelem u;
+   (gethash(car x, cdr x) or 0)
+      where x = access!-sparse!-matelem u;
 
 put('sparse!-matrix, 'setelemfn, 'set!-sparse!-matelem);
 
 symbolic procedure set!-sparse!-matelem(u,v);
    % Assign v to an element of a sparse matrix u = (id i j)
    % and return v, cf. setmatelem.
-   puthash(car x, cdr x, v) where x = access!-sparse!-matelem u;
+   (if zerop v then << remhash(car x, cdr x); 0 >>
+   else puthash(car x, cdr x, v))
+      where x = access!-sparse!-matelem u;
 
 
-% %%%%%%%%%%%%%%%%%%
-% Aggregate property
-% %%%%%%%%%%%%%%%%%%
+% %%%%%%%
+% Mapping
+% %%%%%%%
 
-% Automatically map an operator over the elements of a matrix.
+% Explicitly map an operator over the elements of a matrix:
+
+put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
+
+symbolic procedure map!-sparse!-mat(f,o);
+   'sparse!-mat . map!-sparse!-matrix(cdr o,
+      (lambda w; apply1(f,w)));
+
+% Automatically map an operator over the elements of a matrix:
 
 put('sparse!-matrix, 'aggregatefn, 'sparse!-matrixmap);
+put('sparse!-matrix, 'fn, 'matflg);
 
 flag('(sparse_det sparse_trace sparse_cofactor), 'sparse!-matfn);
 
@@ -255,12 +277,15 @@ symbolic procedure sparse!-matrixmap(u,v);
 % Printing
 % %%%%%%%%
 
+share sparse_matrix_dense_print_colmax;
+sparse_matrix_dense_print_colmax := 10;
+switch sparse_matrix_dense_print = on;
+
 % The following code is used by assgnpri.
 
+% Needed for special printing of assignments of sparse matrices:
 flag('(sparse!-matrix), 'sprifn);
 put('sparse!-mat, 'assgnpri, 'sparse!-assgnpri);
-
-% The two procedures below can probably be merged!
 
 symbolic procedure sparse!-assgnpri uvw;
    % Called by assgnpri to print a sparse matrix
@@ -271,31 +296,43 @@ symbolic procedure sparse!-assgnpri uvw;
    % V = (<variable>) or null if not an assignment
    % W = only
    begin scalar u := car uvw, v := cadr uvw;
+      % Display as a dense matrix if feasible, mainly for testing
+      % with small sparse matrices:
+      if !*sparse_matrix_dense_print and
+         caddr u <= sparse_matrix_dense_print_colmax then
+            return assgnpri(densify u, v, 'only);
       if v then
          u := 'sparse!-mat . cadr u . caddr u . cadddr u . car v;
       sparse!-matpri u;
    end;
 
-% put('sparse!-mat, 'prifn, 'sparse!-matpri);
+% Needed to print sparse matrices inside other structures, such as
+% lists:
+put('sparse!-mat, 'prifn, 'sparse!-matpri);
 
 symbolic procedure sparse!-matpri u;
-   % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
-   % If no (null) name then display name as "?".
-   begin scalar alist := hashcontents car (u := cdr u),
-         msg := {cadr u, "#times;", caddr u,
+   % Display as a dense matrix if feasible, mainly for testing
+   % with small sparse matrices:
+   if !*sparse_matrix_dense_print and
+      caddr u <= sparse_matrix_dense_print_colmax
+   then matpri densify u else
+      % Print a sparse matrix u = (sparse!-mat <hash> <m> <n> . <name>)
+      % If no (null) name then display name as "?".
+      begin scalar alist := hashcontents car (u := cdr u),
+            msg := {cadr u, "#times;", caddr u,
             "sparse matrix #mdash;"};
-      if null alist then return
-         lprim append(msg, {"no nonzero elements"});
-      lprim append(msg, {length alist, "nonzero elements:"});
-      % Each alist element has the form ((i . j) . value).
-      % Sort by row index and then by column index:
-      alist := sort(alist,
-         lambda(x,y);
-      caar x < caar y or
-         (caar x = caar y and cdar x < cdar y));
-      for each el in alist do
-         assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
-   end;
+         if null alist then return
+            lprim append(msg, {"no nonzero elements"});
+         lprim append(msg, {length alist, "nonzero elements:"});
+         % Each alist element has the form ((i . j) . value).
+         % Sort by row index and then by column index:
+         alist := sort(alist,
+            lambda(x,y);
+         caar x < caar y or
+            (caar x = caar y and cdar x < cdar y));
+         for each el in alist do
+            assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
+      end;
 
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
