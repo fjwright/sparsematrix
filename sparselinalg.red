@@ -1,7 +1,7 @@
 module sparselinalg;    % Useful linalg operations for sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-01 17:36:13 franc>
+% Time-stamp: <2026-06-02 16:09:59 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -35,9 +35,51 @@ module sparselinalg;    % Useful linalg operations for sparse matrices
 % modelled loosely on LINALG, the REDUCE Linear Algebra Package, by
 % Matt Rebbeck.
 
-% %%%%%%%%%%%%%%%%%%%%%
+symbolic procedure sparse!-reval!&flatten u;
+   % Reval and flatten a list that may include REDUCE lists.
+   for each el in revlis u join
+      if eqcar(el, 'list) then cdr el else {el};
+
+%                         %%%%%%%%%%%%%%%%%%%
+%                         MATRIX CONSTRUCTION
+%                         %%%%%%%%%%%%%%%%%%%
+
+% sparse_band_matrix
+% cf. LINALG band_matrix (with reversed arguments)
+
+put('sparse_band_matrix, 'psopfn, 'sparse_band_matrix);
+put('sparse_band_matrix, 'rtypefn, 'quotesparse!-matrix);
+
+symbolic procedure sparse_band_matrix u; % (dim, scalars)
+   % DIM is a positive integer specifying the dimensions of the square
+   % matrix generated.  SCALARS is a sequence of scalar expressions,
+   % or lists thereof.  Return a DIM*DIM sparse matrix with the n
+   % scalars in the order specified in each row i in columns from j =
+   % i - fix((n-1)/2) to j + n.  Normally, n will be odd.
+   u and cdr u and
+   begin scalar dim := reval car u, n, j0, hash;
+      if not(fixp dim and dim > 0) then typerr(dim, "positive integer");
+      for each el in (u := sparse!-reval!&flatten cdr u) do
+         if getrtype el then typerr(el, "scalar");
+      n := length u;  j0 := quotient(n-1, 2);
+      hash := mk!-sparse!-matrix!-hash();
+      for i := 1 : dim do
+         begin scalar j := i - j0;
+            for each x in u do <<
+               if 1 <= j and j <= dim and
+                  x neq 0 then puthash(i.j, hash, x);
+               j := j + 1;
+            >>;
+         end;
+      return {'sparse!-mat, hash, dim, dim}
+   end;
+
+
+%                      %%%%%%%%%%%%%%%%%%%%%%%%%
+%                      WHOLE MATRIX MANIPULATION
+%                      %%%%%%%%%%%%%%%%%%%%%%%%%
+
 % sparse_matrix_augment
-% %%%%%%%%%%%%%%%%%%%%%
 % cf. LINALG matrix_augment
 
 put('sparse_matrix_augment, 'psopfn, 'sparse_matrix_augment);
@@ -49,11 +91,8 @@ symbolic procedure sparse_matrix_augment u;
    % number of rows.  The result is the matrices adjoined horizontally
    % in the order specified, as a sparse matrix.
    u and begin scalar m;   % common row dimension
-      % Evaluate arguments and flatten any lists:
-      u := for each el in revlis u join
-         if eqcar(el, 'list) then cdr el else {el};
       % Build a list of sparse matrix canonical forms:
-      u := for each el in u collect sparse!-matsm
+      u := for each el in sparse!-reval!&flatten u collect sparse!-matsm
          begin scalar newm, mtrx :=
             if eqcar(el, 'sparse!-mat) then <<
                newm := caddr el;        % row dim of sparse matrix
@@ -85,9 +124,7 @@ symbolic procedure sparse!-matrix!-augment(u, m);
       return {hash, m, n};
    end;
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % sparse_block_diagonal_matrix
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % cf. LINALG diagonal
 
 put('sparse_block_diagonal_matrix, 'psopfn, 'sparse_block_diagonal_matrix);
@@ -100,11 +137,8 @@ symbolic procedure sparse_block_diagonal_matrix u;
    % matrices adjoined into a block diagonal matrix in the order
    % specified, as a square sparse matrix.
    u and <<
-      % Evaluate arguments and flatten any lists:
-      u := for each el in revlis u join
-         if getrtype el eq 'list then cdr el else {el};
       % Build a list of sparse matrix canonical forms or SQs:
-      u := for each el in u collect
+      u := for each el in sparse!-reval!&flatten u collect
          begin scalar rtype := getrtype el;
             if null rtype then return simp el;
             if rtype eq 'sparse!-matrix then
@@ -137,9 +171,11 @@ symbolic procedure sparse!-block!-diagonal!-matrix u;
    end;
 
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                         %%%%%%%%%%%%%%%%%%%
+%                         COLUMN MANIPULATION
+%                         %%%%%%%%%%%%%%%%%%%
+
 % sparse_select_columns / sparse_augment_columns
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % cf. LINALG augment_columns
 
 put('sparse_select_columns, 'psopfn, 'sparse_select_columns);
@@ -214,10 +250,7 @@ symbolic procedure sparse!-select!-columns(mtrx, columns);
       return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
    end;
 
-
-% %%%%%%%%%%%%%%%%%%%%%
 % sparse_remove_columns
-% %%%%%%%%%%%%%%%%%%%%%
 % cf. LINALG remove_columns
 
 put('sparse_remove_columns, 'psopfn, 'sparse_remove_columns);
@@ -258,10 +291,7 @@ symbolic procedure sparse!-remove!-columns(mtrx, columns);
       return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
    end;
 
-
-% %%%%%%%%%%%%%%%%%%
 % sparse_get_columns
-% %%%%%%%%%%%%%%%%%%
 % cf. LINALG get_columns
 
 put('sparse_get_columns, 'psopfn, 'sparse_get_columns);
