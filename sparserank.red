@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-24 15:17:32 franc>
+% Time-stamp: <2026-06-03 16:08:11 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -34,6 +34,17 @@ module sparserank;                % Sparse matrix rank, cofactor, etc.
 % %%%%
 % Rank
 % %%%%
+
+put('rank, 'psopfn, 'generic!-rank!-eval); % updates "matrix/rank.red"
+put('matrix, 'rankfn, 'rank!-eval);
+put('sparse!-matrix, 'rankfn, 'sparse!-rank!-eval);
+
+symbolic procedure generic!-rank!-eval u;
+   % Return the rank of a generic matrix,
+   % e.g. either a dense or sparse matrix,
+   % with normal type as fallback.
+   (if rankfn then apply1(rankfn, u) else rank!-eval u)
+      where rankfn = get(getrtype car u, 'rankfn);
 
 % The rank code is based on "matrix/rank.red" by Eberhard Schruefer.
 
@@ -74,9 +85,14 @@ symbolic procedure sparse!-rank!-matrix u;
 % Cofactors, etc
 % %%%%%%%%%%%%%%
 
-symbolic procedure sparse!-matrix!-check(fn, u, i, j);
-   % Check arguments and return fn of sparse matrix u excluding row i
-   % and column j.  U is a tagged algebraic form.
+symbolic operator sparse_submatrix;
+
+put('sparse_submatrix, 'rtypefn, 'quotesparse!-matrix);
+
+symbolic procedure sparse_submatrix(u, i, j);
+   % Return the submatrix of sparse matrix u excluding row i and
+   % column j.  Sparse matrices are represented as tagged algebraic
+   % forms.
    if not eqcar(u, 'sparse!-mat) then typerr(u, "sparse matrix")
    else if not fixp i or i <= 0 then typerr(i, "positive integer")
    else if not fixp j or j <= 0 then typerr(j, "positive integer")
@@ -110,15 +126,24 @@ symbolic procedure sparse!-submatrix(u, i, j);
 % The following cofactor code is based partly on "matrix/cofactor.red"
 % by Alan Barnes.
 
-put ('sparse_cofactor, 'simpfn, 'simpsparse!-cofactor);
+put('cofactor, 'simpfn, 'generic!-simpcofactor); % updates "matrix/cofactor.red"
+flag('(cofactor), 'immediate);
+flag('(cofactor), 'matfn);
+put('matrix, 'cofactorfn, 'simpcofactor);
+put('sparse!-matrix, 'cofactorfn, 'sparse!-simpcofactor);
+
+symbolic procedure generic!-simpcofactor u;
+   % Return the cofactor of a generic matrix,
+   % e.g. either a dense or sparse matrix,
+   % with normal type as fallback.
+   (if cofactorfn then apply1(cofactorfn, u) else simpcofactor u)
+      where cofactorfn = get(getrtype car u, 'cofactorfn);
+
+put ('sparse_cofactor, 'simpfn, 'sparse!-simpcofactor);
 flag('(sparse_cofactor), 'immediate);
 
-symbolic procedure simpsparse!-cofactor u; % (sm, i, j)
-   % Return the cofactor of the element in row I and column J of the
-   % sparse matrix tagged algebraic form SM as a standard quotient.
-   % Arguments are checked.
-   sparse!-matrix!-check(function sparse!-cofactorq,
-      sparse!-matsm car u,
+symbolic procedure sparse!-simpcofactor u;
+   sparse!-cofactorq(reval car u,
       ieval cadr u, ieval carx(cddr u,'sparse_cofactor));
 
 symbolic procedure sparse!-cofactorq(u, i, j);
@@ -127,7 +152,7 @@ symbolic procedure sparse!-cofactorq(u, i, j);
    % (sparse_submatrix checks its arguments and sparse!-detq checks
    % its argument is square.)
    <<
-      u := sparse!-detq sparse!-submatrix(u, i, j);
+      u := sparse!-detq sparse!-matsm sparse_submatrix(u, i, j);
       if oddp(i + j) then negsq u else u
    >>;
 

@@ -20,7 +20,7 @@ sparsify m;
 
 s := ws;
 
-% Aggregate property:
+% Implicit mapping:
 abs s;
 depend {a,b,c,d}, x;
 df(s,x);
@@ -32,18 +32,22 @@ sparse_random_matrix sr(5,5);
 
 % Trace:
 sparse_trace sr;
+trace sr;
 
 densify sr;
 
 % Transpose:
 densify sparse_tp sr;
+tp sr;
+densify tp sr;
 
 % Determinant:
 m := mat((a,b,c),(d,e,f),(g,h,i));
 s := sparsify m;
 det m;
 sparse_det s;
-if det m = sparse_det s then "OK" else "***** ERROR *****";
+det s;
+if det m = det s then "OK" else "***** ERROR *****";
 
 % Addition and scalar multiplication:
 m1 := mat((a,b),(c,d));
@@ -85,31 +89,35 @@ m5^10;
 s5^10;
 
 % Rank:
-% REDUCE manual
+% REDUCE manual example
 rank m3;
 sparse_rank sparsify m3;
+rank sparsify m3;
 
-% Wikipedia
+% Wikipedia example
 m6 := mat((1,0,1),(0,1,1),(0,1,1));
 rank m6;
 sparse_rank sparsify m6;
+rank sparsify m6;
 
-% Wikipedia
+% Wikipedia example
 m6 := mat((1,1,0,2),(-1,-1,0,-2));
 rank m6;
 sparse_rank sparsify m6;
+rank sparsify m6;
 
 % Submatrices:
 % m := mat((a,b,c),(d,e,f),(g,h,i));
 % s := sparsify m;
 m;
-densify sparse_submatrix(s,2,2);
+densify sparse_submatrix(s,2,2);        % not advertised!
 
 % Cofactors:
 sparse_cofactor(s,1,1);
+cofactor(s,1,1);
 % Determinant via cofactors of first row:
-for j := 1 : 3 sum s(1,j)*sparse_cofactor(s,1,j);
-if ws = sparse_det s then "OK" else "***** ERROR *****";
+for j := 1 : 3 sum s(1,j)*cofactor(s,1,j);
+if ws = det s then "OK" else "***** ERROR *****";
 
 % Inverses and non-positive integer powers:
 m5^0;
@@ -148,7 +156,7 @@ s5*s0;
 m5/m0;
 s5/s0;
 
-% Map:
+% Explicit mapping:
 m := mat((x^2,x^5),(x^4,x^5));
 s := sparsify m;
 map(int(~w,x), m);
@@ -161,13 +169,13 @@ m := mat((1,2,3,4),(5,6,7,8));
 s := sparsify m;
 nullspace mat2list m;
 sparse_nullspace s;
+nullspace s;
 
 sparse_random_matrix s(5,10);
 m := densify s;
 nullspace mat2list m;
 if second length m - length ws = rank m then "OK" else "***** ERROR *****";
-sparse_nullspace s;
-if second length s - length ws = sparse_rank s then "OK" else "***** ERROR *****";
-
+nullspace s;
+if second length s - length ws = rank s then "OK" else "***** ERROR *****";
 
 ;end;
