@@ -1,4 +1,3 @@
 *~
-*.lisp
-*.fasl
+fasldir
 notes.txt
