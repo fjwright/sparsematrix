@@ -20,7 +20,7 @@ sparsify m;
 
 s := ws;
 
-% Aggregate property:
+% Implicit mapping:
 abs s;
 depend {a,b,c,d}, x;
 df(s,x);
@@ -89,18 +89,18 @@ m5^10;
 s5^10;
 
 % Rank:
-% REDUCE manual
+% REDUCE manual example
 rank m3;
 sparse_rank sparsify m3;
 rank sparsify m3;
 
-% Wikipedia
+% Wikipedia example
 m6 := mat((1,0,1),(0,1,1),(0,1,1));
 rank m6;
 sparse_rank sparsify m6;
 rank sparsify m6;
 
-% Wikipedia
+% Wikipedia example
 m6 := mat((1,1,0,2),(-1,-1,0,-2));
 rank m6;
 sparse_rank sparsify m6;
@@ -156,7 +156,7 @@ s5*s0;
 m5/m0;
 s5/s0;
 
-% Map:
+% Explicit mapping:
 m := mat((x^2,x^5),(x^4,x^5));
 s := sparsify m;
 map(int(~w,x), m);

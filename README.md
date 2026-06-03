@@ -1,11 +1,12 @@
 # SPARSEMATRIX: A REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-06-03 15:47:08 franc>
+Time-stamp: <2026-06-03 16:59:19 franc>
 
 A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on the context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix no more than half the elements are nonzero.  A common borderline case is triangular matrices.  (Of course, a dense matrix can be treated as a sparse matrix, and vice versa, which is likely to be less efficient but is useful for testing.)
 
-The REDUCE MATRIX package implicitly assumes dense matrices.  SPARSEMATRIX is a re-implementation of the MATRIX package that assumes sparse matrices.  It uses hash tables to store matrix elements, and the canonical form for a sparse matrix is a LISP list of the form `(<hash> <m> <n>)`, where `<hash>` is a hash table, `<m>` is the number of rows (row dimension), and `<n>` is the number of columns (column dimension).  Only nonzero elements should be stored in the hash table and all missing elements are implicitly zero.  By contrast, the canonical form for a dense matrix is a LISP list of rows of the form `(<row_1> <row_2> ... <row_m>)`, where each `<row_i>` is a list of the matrix elements in the *i-th* row.  The algorithms used to manipulate sparse matrices avoid accessing implicitly-zero (i.e. non-stored) matrix elements as much as possible, whereas the algorithms used to manipulate dense matrices always run through all matrix elements, regardless of their values.
+The REDUCE MATRIX package implicitly assumes dense matrices.  SPARSEMATRIX is a re-implementation of the MATRIX package that assumes sparse matrices.  It uses hash tables to store matrix elements, and the canonical form for a sparse matrix is a LISP list of the form `(<hash> <m> <n>)`, where `<hash>` is a hash table, `<m>` is the number of rows (row dimension), and `<n>` is the number of columns (column dimension).  Only nonzero elements should be stored in the hash table and all missing elements are implicitly zero.  By contrast, the canonical form for a dense matrix is a LISP list of rows of the form `(<row_1> <row_2> ... <row_m>)`, where each `<row_i>` is a list of the matrix elements in the *i-th* row.  The algorithms used to manipulate sparse matrices avoid accessing implicitly-zero (i.e. non-stored) matrix elements as much as possible, whereas the algorithms used to manipulate dense matrices always run through all matrix elements, regardless of their values.  Results obtained
+ using the `MATRIX` and `SPARSEMATRIX` packages should be identical (apart from memory use and time), and the test files compare the results of using them both.
 
 In tests using large sparse matrices (500&times;500 matrices with 1000 nonzero rational number elements), the `SPARSEMATRIX` and `SPARSE` packages are comparable and both very significantly faster than the `MATRIX` package for addition and multiplication.  They are faster for inversion and `SPARSEMATRIX` is faster for determinant (but `SPARSE` crashes).
 
@@ -36,12 +37,12 @@ Dimensions | `length m` | `length s`
 Element access | `m(i,j)` | `s(i,j)`
 Arithmetic | `+ - * / ^` | `+ - * / ^`
 Inverse | `m^(-1)` | `s^(-1)`
-Transpose | `tp m` | `tp s` or `sparse_tp s`
-Trace | `trace m` | `trace s` or `sparse_trace s`
-Determinant | `det m` | `det s` or `sparse_det s`
-Cofactors | `cofactor(m,i,j)` | `cofactor(s,i,j)` or `sparse_cofactor(s,i,j)`
-Rank | `rank m` | `rank s` or `sparse_rank s`
-Nullspace | `nullspace m` | `nullspace s` or `sparse_nullspace s`
+Transpose | `tp m` | `tp s` (or `sparse_tp s`)
+Trace | `trace m` | `trace s` (or `sparse_trace s`)
+Determinant | `det m` | `det s` (or `sparse_det s`)
+Cofactors | `cofactor(m,i,j)` | `cofactor(s,i,j)` (or `sparse_cofactor(s,i,j)`)
+Rank | `rank m` | `rank s` (or `sparse_rank s`)
+Nullspace | `nullspace m` | `nullspace s` (or `sparse_nullspace s`)
 Substitution | `sub(<equations>, m)` | `sub(<equations>, s)`
 Explicit mapping | `map(1 + ~w, m)` | `map(1 + ~w, s)`
 Implicit mapping | `<function> m` | `<function> s`
@@ -102,7 +103,7 @@ Currently, support is in the file `sparselinalg.red`, which needs to be input se
 
 ## TO DO
 
-* Overload all standard matrix operators and allow combinations of dense and sparse matrices in algebraic expressions.
+* Allow combinations of dense and sparse matrices in algebraic expressions.
 * Support for special matrices -- triangular, symmetric, etc. -- via access functions.
 * `MATEIGEN` operator (maybe)
 * More operators from `LINALG` package (maybe)

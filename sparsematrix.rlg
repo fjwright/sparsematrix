@@ -15,7 +15,16 @@ length sd;
 sd;
 
 
-*** 5 × 5 sparse matrix — no nonzero elements 
+[0  0  0  0  0]
+[             ]
+[0  0  0  0  0]
+[             ]
+[0  0  0  0  0]
+[             ]
+[0  0  0  0  0]
+[             ]
+[0  0  0  0  0]
+
 
 
 for i := 1:5 do sd(i,i) := i;
@@ -25,17 +34,16 @@ for i := 1:5 do sd(i,i) := i;
 sd;
 
 
-*** 5 × 5 sparse matrix — 5 nonzero elements: 
+[1  0  0  0  0]
+[             ]
+[0  2  0  0  0]
+[             ]
+[0  0  3  0  0]
+[             ]
+[0  0  0  4  0]
+[             ]
+[0  0  0  0  5]
 
-sd(1,1) := 1
-
-sd(2,2) := 2
-
-sd(3,3) := 3
-
-sd(4,4) := 4
-
-sd(5,5) := 5
 
 
 for i := 1:5 do write sd(i,i) := sd(i,i);
@@ -79,44 +87,29 @@ m := [    ]
 sparsify m;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[a  b]
+[    ]
+[c  d]
 
-?(1,1) := a
-
-?(1,2) := b
-
-?(2,1) := c
-
-?(2,2) := d
 
 
 s := ws;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
-
-s(1,1) := a
-
-s(1,2) := b
-
-s(2,1) := c
-
-s(2,2) := d
+     [a  b]
+s := [    ]
+     [c  d]
 
 
-% Aggregate property:
+
+% Implicit mapping:
 abs s;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[abs(a)  abs(b)]
+[              ]
+[abs(c)  abs(d)]
 
-?(1,1) := abs(a)
-
-?(1,2) := abs(b)
-
-?(2,1) := abs(c)
-
-?(2,2) := abs(d)
 
 depend {a,b,c,d}, x;
 
@@ -124,30 +117,20 @@ depend {a,b,c,d}, x;
 df(s,x);
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[df(a,x)  df(b,x)]
+[                ]
+[df(c,x)  df(d,x)]
 
-?(1,1) := df(a,x)
-
-?(1,2) := df(b,x)
-
-?(2,1) := df(c,x)
-
-?(2,2) := df(d,x)
 
 
 % Substitution:
 sub(a=aa,s);
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[aa  b]
+[     ]
+[c   d]
 
-?(1,1) := aa
-
-?(1,2) := b
-
-?(2,1) := c
-
-?(2,2) := d
 
 
 sparse_random_matrix sr(5,5);
@@ -158,21 +141,26 @@ sparse_random_matrix sr(5,5);
 sparse_trace sr;
 
 
-242
+452
+
+trace sr;
+
+
+452
 
 
 densify sr;
 
 
-[0   0   0   0   22]
+[422   0   0  0   0]
 [                  ]
-[0   0   0   0   0 ]
+[ 0    0   0  0   0]
 [                  ]
-[0   0   0  805  0 ]
+[ 0    0   0  0   0]
 [                  ]
-[0   0   0  242  0 ]
+[ 0   428  0  30  0]
 [                  ]
-[0  351  0   0   0 ]
+[ 0    0   0  0   0]
 
 
 
@@ -180,15 +168,43 @@ densify sr;
 densify sparse_tp sr;
 
 
-[0   0   0    0    0 ]
-[                    ]
-[0   0   0    0   351]
-[                    ]
-[0   0   0    0    0 ]
-[                    ]
-[0   0  805  242   0 ]
-[                    ]
-[22  0   0    0    0 ]
+[422  0  0   0   0]
+[                 ]
+[ 0   0  0  428  0]
+[                 ]
+[ 0   0  0   0   0]
+[                 ]
+[ 0   0  0  30   0]
+[                 ]
+[ 0   0  0   0   0]
+
+
+tp sr;
+
+
+[422  0  0   0   0]
+[                 ]
+[ 0   0  0  428  0]
+[                 ]
+[ 0   0  0   0   0]
+[                 ]
+[ 0   0  0  30   0]
+[                 ]
+[ 0   0  0   0   0]
+
+
+densify tp sr;
+
+
+[422  0  0   0   0]
+[                 ]
+[ 0   0  0  428  0]
+[                 ]
+[ 0   0  0   0   0]
+[                 ]
+[ 0   0  0  30   0]
+[                 ]
+[ 0   0  0   0   0]
 
 
 
@@ -206,25 +222,12 @@ m := [d  e  f]
 s := sparsify m;
 
 
-*** 3 × 3 sparse matrix — 9 nonzero elements: 
+     [a  b  c]
+     [       ]
+s := [d  e  f]
+     [       ]
+     [g  h  i]
 
-s(1,1) := a
-
-s(1,2) := b
-
-s(1,3) := c
-
-s(2,1) := d
-
-s(2,2) := e
-
-s(2,3) := f
-
-s(3,1) := g
-
-s(3,2) := h
-
-s(3,3) := i
 
 det m;
 
@@ -236,7 +239,12 @@ sparse_det s;
 
 a*e*i - a*f*h - b*d*i + b*f*g + c*d*h - c*e*g
 
-if det m = sparse_det s then "OK" else "***** ERROR *****";
+det s;
+
+
+a*e*i - a*f*h - b*d*i + b*f*g + c*d*h - c*e*g
+
+if det m = det s then "OK" else "***** ERROR *****";
 
 
 OK
@@ -262,28 +270,18 @@ m2 := [    ]
 s1 := sparsify m1;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+      [a  b]
+s1 := [    ]
+      [c  d]
 
-s1(1,1) := a
-
-s1(1,2) := b
-
-s1(2,1) := c
-
-s1(2,2) := d
 
 s2 := sparsify m2;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+      [e  f]
+s2 := [    ]
+      [g  h]
 
-s2(1,1) := e
-
-s2(1,2) := f
-
-s2(2,1) := g
-
-s2(2,2) := h
 
 % symbolic;
 % global '(ss1 ss2 ss);
@@ -302,15 +300,10 @@ m1 + m2;
 s1 + s2;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[a + e  b + f]
+[            ]
+[c + g  d + h]
 
-?(1,1) := a + e
-
-?(1,2) := b + f
-
-?(2,1) := c + g
-
-?(2,2) := d + h
 
 2m1 + 3m2;
 
@@ -323,15 +316,10 @@ s1 + s2;
 2s1 + 3s2;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[2*a + 3*e  2*b + 3*f]
+[                    ]
+[2*c + 3*g  2*d + 3*h]
 
-?(1,1) := 2*a + 3*e
-
-?(1,2) := 2*b + 3*f
-
-?(2,1) := 2*c + 3*g
-
-?(2,2) := 2*d + 3*h
 
 
 % Matrix multiplication:
@@ -356,36 +344,20 @@ m4 := [i  j]
 s3 := sparsify m3;
 
 
-*** 2 × 3 sparse matrix — 6 nonzero elements: 
+      [a  b  c]
+s3 := [       ]
+      [d  e  f]
 
-s3(1,1) := a
-
-s3(1,2) := b
-
-s3(1,3) := c
-
-s3(2,1) := d
-
-s3(2,2) := e
-
-s3(2,3) := f
 
 s4 := sparsify m4;
 
 
-*** 3 × 2 sparse matrix — 6 nonzero elements: 
+      [g  h]
+      [    ]
+s4 := [i  j]
+      [    ]
+      [k  l]
 
-s4(1,1) := g
-
-s4(1,2) := h
-
-s4(2,1) := i
-
-s4(2,2) := j
-
-s4(3,1) := k
-
-s4(3,2) := l
 
 m3*m4;
 
@@ -398,15 +370,10 @@ m3*m4;
 s3*s4;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[a*g + b*i + c*k  a*h + b*j + c*l]
+[                                ]
+[d*g + e*i + f*k  d*h + e*j + f*l]
 
-?(1,1) := a*g + b*i + c*k
-
-?(1,2) := a*h + b*j + c*l
-
-?(2,1) := d*g + e*i + f*k
-
-?(2,2) := d*h + e*j + f*l
 
 
 m4*m3;
@@ -422,25 +389,12 @@ m4*m3;
 s4*s3;
 
 
-*** 3 × 3 sparse matrix — 9 nonzero elements: 
+[a*g + d*h  b*g + e*h  c*g + f*h]
+[                               ]
+[a*i + d*j  b*i + e*j  c*i + f*j]
+[                               ]
+[a*k + d*l  b*k + e*l  c*k + f*l]
 
-?(1,1) := a*g + d*h
-
-?(1,2) := b*g + e*h
-
-?(1,3) := c*g + f*h
-
-?(2,1) := a*i + d*j
-
-?(2,2) := b*i + e*j
-
-?(2,3) := c*i + f*j
-
-?(3,1) := a*k + d*l
-
-?(3,2) := b*k + e*l
-
-?(3,3) := c*k + f*l
 
 
 2m1*m3*m4;
@@ -462,19 +416,18 @@ mat((2*(a *g + a*b*i + a*c*k + b*d*g + b*e*i + b*f*k),
 2s1*s3*s4;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+         2
+mat((2*(a *g + a*b*i + a*c*k + b*d*g + b*e*i + b*f*k),
 
-              2
-?(1,1) := 2*(a *g + a*b*i + a*c*k + b*d*g + b*e*i + b*f*k)
+         2
+     2*(a *h + a*b*j + a*c*l + b*d*h + b*e*j + b*f*l)),
 
-              2
-?(1,2) := 2*(a *h + a*b*j + a*c*l + b*d*h + b*e*j + b*f*l)
+                         2      2
+    (2*(a*c*g + b*c*i + c *k + d *g + d*e*i + d*f*k),
 
-                              2      2
-?(2,1) := 2*(a*c*g + b*c*i + c *k + d *g + d*e*i + d*f*k)
+                         2      2
+     2*(a*c*h + b*c*j + c *l + d *h + d*e*j + d*f*l)))
 
-                              2      2
-?(2,2) := 2*(a*c*h + b*c*j + c *l + d *h + d*e*j + d*f*l)
 
 
 m3*m4*m1*3;
@@ -495,18 +448,17 @@ mat((3*(a *g + a*b*i + a*c*h + a*c*k + b*c*j + c *l),
 s3*s4*s1*3;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+         2                                      2
+mat((3*(a *g + a*b*i + a*c*h + a*c*k + b*c*j + c *l),
 
-              2                                      2
-?(1,1) := 3*(a *g + a*b*i + a*c*h + a*c*k + b*c*j + c *l)
+                         2
+     3*(a*b*g + a*d*h + b *i + b*c*k + b*d*j + c*d*l)),
 
-                              2
-?(1,2) := 3*(a*b*g + a*d*h + b *i + b*c*k + b*d*j + c*d*l)
+    (3*(a*d*g + a*e*i + a*f*k + c*d*h + c*e*j + c*f*l),
 
-?(2,1) := 3*(a*d*g + a*e*i + a*f*k + c*d*h + c*e*j + c*f*l)
+                                 2
+     3*(b*d*g + b*e*i + b*f*k + d *h + d*e*j + d*f*l)))
 
-                                      2
-?(2,2) := 3*(b*d*g + b*e*i + b*f*k + d *h + d*e*j + d*f*l)
 
 
 % Positive integer powers:
@@ -521,15 +473,10 @@ m5 := [    ]
 s5 := sparsify m5;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+      [1  2]
+s5 := [    ]
+      [3  4]
 
-s5(1,1) := 1
-
-s5(1,2) := 2
-
-s5(2,1) := 3
-
-s5(2,2) := 4
 
 m5^10;
 
@@ -542,19 +489,14 @@ m5^10;
 s5^10;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[4783807   6972050 ]
+[                  ]
+[10458075  15241882]
 
-?(1,1) := 4783807
-
-?(1,2) := 6972050
-
-?(2,1) := 10458075
-
-?(2,2) := 15241882
 
 
 % Rank:
-% REDUCE manual
+% REDUCE manual example
 rank m3;
 
 
@@ -565,8 +507,13 @@ sparse_rank sparsify m3;
 
 2
 
+rank sparsify m3;
 
-% Wikipedia
+
+2
+
+
+% Wikipedia example
 m6 := mat((1,0,1),(0,1,1),(0,1,1));
 
 
@@ -587,8 +534,13 @@ sparse_rank sparsify m6;
 
 2
 
+rank sparsify m6;
 
-% Wikipedia
+
+2
+
+
+% Wikipedia example
 m6 := mat((1,1,0,2),(-1,-1,0,-2));
 
 
@@ -603,6 +555,11 @@ rank m6;
 1
 
 sparse_rank sparsify m6;
+
+
+1
+
+rank sparsify m6;
 
 
 1
@@ -628,7 +585,7 @@ densify sparse_submatrix(s,2,2);
 [    ]
 [g  i]
 
-
+        % not advertised!
 
 % Cofactors:
 sparse_cofactor(s,1,1);
@@ -636,13 +593,18 @@ sparse_cofactor(s,1,1);
 
 e*i - f*h
 
+cofactor(s,1,1);
+
+
+e*i - f*h
+
 % Determinant via cofactors of first row:
-for j := 1 : 3 sum s(1,j)*sparse_cofactor(s,1,j);
+for j := 1 : 3 sum s(1,j)*cofactor(s,1,j);
 
 
 a*e*i - a*f*h - b*d*i + b*f*g + c*d*h - c*e*g
 
-if ws = sparse_det s then "OK" else "***** ERROR *****";
+if ws = det s then "OK" else "***** ERROR *****";
 
 
 OK
@@ -660,11 +622,10 @@ m5^0;
 s5^0;
 
 
-*** 2 × 2 sparse matrix — 2 nonzero elements: 
+[1  0]
+[    ]
+[0  1]
 
-?(1,1) := 1
-
-?(2,2) := 1
 
 m5^(-1);
 
@@ -679,19 +640,12 @@ m5^(-1);
 s5^(-1);
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[-2    1  ]
+[         ]
+[ 3    -1 ]
+[---  ----]
+[ 2    2  ]
 
-?(1,1) := -2
-
-?(1,2) := 1
-
-           3
-?(2,1) := ---
-           2
-
-           -1
-?(2,2) := ----
-           2
 
 m5^(-1)*m5;
 
@@ -704,11 +658,10 @@ m5^(-1)*m5;
 s5^(-1)*s5;
 
 
-*** 2 × 2 sparse matrix — 2 nonzero elements: 
+[1  0]
+[    ]
+[0  1]
 
-?(1,1) := 1
-
-?(2,2) := 1
 
 if ws = s5^0 then "OK" else "***** ERROR *****";
 
@@ -726,11 +679,10 @@ m5*m5^(-1);
 s5*s5^(-1);
 
 
-*** 2 × 2 sparse matrix — 2 nonzero elements: 
+[1  0]
+[    ]
+[0  1]
 
-?(1,1) := 1
-
-?(2,2) := 1
 
 if ws = s5^0 then "OK" else "***** ERROR *****";
 
@@ -752,23 +704,14 @@ m5^(-2);
 s5^(-2);
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[ 11     -5 ]
+[----   ----]
+[ 2      2  ]
+[           ]
+[ -15    7  ]
+[-----  --- ]
+[  4     4  ]
 
-           11
-?(1,1) := ----
-           2
-
-           -5
-?(1,2) := ----
-           2
-
-           -15
-?(2,1) := -----
-            4
-
-           7
-?(2,2) := ---
-           4
 
 
 % 1*1 zero matrix:
@@ -784,7 +727,8 @@ m0^0;
 sparsify m0;
 
 
-*** 1 × 1 sparse matrix — no nonzero elements 
+[0]
+
 
 sparse_matrix s0(1,1);
 
@@ -792,7 +736,8 @@ sparse_matrix s0(1,1);
 s0;
 
 
-*** 1 × 1 sparse matrix — no nonzero elements 
+[0]
+
 
 densify s0;
 
@@ -803,9 +748,8 @@ densify s0;
 s0^0;
 
 
-*** 1 × 1 sparse matrix — 1 nonzero elements: 
+[1]
 
-?(1,1) := 1
 
 m0^(-1);
 
@@ -828,7 +772,10 @@ m5*m0;
 s5*s0;
 
 
-*** 2 × 2 sparse matrix — no nonzero elements 
+[0  0]
+[    ]
+[0  0]
+
 
 m5/m0;
 
@@ -863,15 +810,10 @@ m5*m0;
 s5*s0;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[42   84 ]
+[        ]
+[126  168]
 
-?(1,1) := 42
-
-?(1,2) := 84
-
-?(2,1) := 126
-
-?(2,2) := 168
 
 m5/m0;
 
@@ -888,26 +830,17 @@ m5/m0;
 s5/s0;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
-
-           1
-?(1,1) := ----
-           42
-
-           1
-?(1,2) := ----
-           21
-
-           1
-?(2,1) := ----
-           14
-
-           2
-?(2,2) := ----
-           21
+[ 1     1  ]
+[----  ----]
+[ 42    21 ]
+[          ]
+[ 1     2  ]
+[----  ----]
+[ 14    21 ]
 
 
-% Map:
+
+% Explicit mapping:
 m := mat((x^2,x^5),(x^4,x^5));
 
 
@@ -921,19 +854,12 @@ m := [      ]
 s := sparsify m;
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+     [ 2   5]
+     [x   x ]
+s := [      ]
+     [ 4   5]
+     [x   x ]
 
-           2
-s(1,1) := x
-
-           5
-s(1,2) := x
-
-           4
-s(2,1) := x
-
-           5
-s(2,2) := x
 
 map(int(~w,x), m);
 
@@ -952,27 +878,16 @@ map(int(~w,x), m);
 map(int(~w,x), s);
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[  3     6 ]
+[ x     x  ]
+[----  ----]
+[ 3     6  ]
+[          ]
+[  5     6 ]
+[ x     x  ]
+[----  ----]
+[ 5     6  ]
 
-            3
-           x
-?(1,1) := ----
-           3
-
-            6
-           x
-?(1,2) := ----
-           6
-
-            5
-           x
-?(2,1) := ----
-           5
-
-            6
-           x
-?(2,2) := ----
-           6
 
 map(1 + ~w, m);
 
@@ -987,19 +902,12 @@ map(1 + ~w, m);
 map(1 + ~w, s);
 
 
-*** 2 × 2 sparse matrix — 4 nonzero elements: 
+[ 2       5    ]
+[x  + 1  x  + 1]
+[              ]
+[ 4       5    ]
+[x  + 1  x  + 1]
 
-           2
-?(1,1) := x  + 1
-
-           5
-?(1,2) := x  + 1
-
-           4
-?(2,1) := x  + 1
-
-           5
-?(2,2) := x  + 1
 
 
 % Nullspace:
@@ -1014,23 +922,10 @@ m := [          ]
 s := sparsify m;
 
 
-*** 2 × 4 sparse matrix — 8 nonzero elements: 
+     [1  2  3  4]
+s := [          ]
+     [5  6  7  8]
 
-s(1,1) := 1
-
-s(1,2) := 2
-
-s(1,3) := 3
-
-s(1,4) := 4
-
-s(2,1) := 5
-
-s(2,2) := 6
-
-s(2,3) := 7
-
-s(2,4) := 8
 
 nullspace mat2list m;
 
@@ -1038,6 +933,11 @@ nullspace mat2list m;
 {{1,0,-3,2},{0,1,-2,1}}
 
 sparse_nullspace s;
+
+
+{{1,0,-3,2},{0,1,-2,1}}
+
+nullspace s;
 
 
 {{1,0,-3,2},{0,1,-2,1}}
@@ -1049,61 +949,56 @@ sparse_random_matrix s(5,10);
 m := densify s;
 
 
-     [ 0   0  0  0   0    0    0   0  0   0 ]
-     [                                      ]
-     [ 0   0  0  0   0    0   135  0  0   0 ]
-     [                                      ]
-m := [257  0  0  0  309   0   528  0  0   0 ]
-     [                                      ]
-     [ 0   0  0  0   0    0    0   0  0   0 ]
-     [                                      ]
-     [ 0   0  0  0   0   400  210  0  0  688]
+     [0  835  718  0   0    0    0   655  0  0]
+     [                                        ]
+     [0   0    0   0   0    0   100   0   0  0]
+     [                                        ]
+m := [0   0    0   0   0    0    0    0   0  0]
+     [                                        ]
+     [0   0    0   0   0    0    0   563  0  0]
+     [                                        ]
+     [0   0    0   0  867  552   0    0   0  0]
 
 
 nullspace mat2list m;
 
 
-{{309,0,0,0,-257,0,0,0,0,0},
+{{1,0,0,0,0,0,0,0,0,0},
 
- {0,1,0,0,0,0,0,0,0,0},
-
- {0,0,1,0,0,0,0,0,0,0},
+ {0,718,-835,0,0,0,0,0,0,0},
 
  {0,0,0,1,0,0,0,0,0,0},
 
- {0,0,0,0,0,43,0,0,0,-25},
+ {0,0,0,0,184,-289,0,0,0,0},
 
- {0,0,0,0,0,0,0,1,0,0},
+ {0,0,0,0,0,0,0,0,1,0},
 
- {0,0,0,0,0,0,0,0,1,0}}
+ {0,0,0,0,0,0,0,0,0,1}}
 
 if second length m - length ws = rank m then "OK" else "***** ERROR *****";
 
 
 OK
 
-sparse_nullspace s;
+nullspace s;
 
 
-{{309,0,0,0,-257,0,0,0,0,0},
+{{1,0,0,0,0,0,0,0,0,0},
 
- {0,1,0,0,0,0,0,0,0,0},
-
- {0,0,1,0,0,0,0,0,0,0},
+ {0,718,-835,0,0,0,0,0,0,0},
 
  {0,0,0,1,0,0,0,0,0,0},
 
- {0,0,0,0,0,43,0,0,0,-25},
+ {0,0,0,0,184,-289,0,0,0,0},
 
- {0,0,0,0,0,0,0,1,0,0},
+ {0,0,0,0,0,0,0,0,1,0},
 
- {0,0,0,0,0,0,0,0,1,0}}
+ {0,0,0,0,0,0,0,0,0,1}}
 
-if second length s - length ws = sparse_rank s then "OK" else "***** ERROR *****";
+if second length s - length ws = rank s then "OK" else "***** ERROR *****";
 
 
 OK
-
 
 
 ;

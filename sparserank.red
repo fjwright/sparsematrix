@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 15:25:05 franc>
+% Time-stamp: <2026-06-03 16:08:11 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -127,6 +127,8 @@ symbolic procedure sparse!-submatrix(u, i, j);
 % by Alan Barnes.
 
 put('cofactor, 'simpfn, 'generic!-simpcofactor); % updates "matrix/cofactor.red"
+flag('(cofactor), 'immediate);
+flag('(cofactor), 'matfn);
 put('matrix, 'cofactorfn, 'simpcofactor);
 put('sparse!-matrix, 'cofactorfn, 'sparse!-simpcofactor);
 
