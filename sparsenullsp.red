@@ -2,7 +2,7 @@ module sparsenullsp;       % Compute the nullspace of a sparse matrix.
 
 % Author: Herbert Melenk <melenk@sc.zib-berlin.de>.
 % Revised for sparse matrices represented as hash tables by FJW.
-% Time-stamp: <2026-05-16 17:14:11 franc>
+% Time-stamp: <2026-06-03 15:21:28 franc>
 
 % Redistribution and use in source and binary forms, with or without
 % modification, are permitted provided that the following conditions
@@ -33,6 +33,17 @@ module sparsenullsp;       % Compute the nullspace of a sparse matrix.
 
 % This file is a reworking of "matrix/nullsp.red" to use hash tables
 % to represent sparse matrices.
+
+put('nullspace, 'psopfn, 'generic!-nullspace!-eval); % updates "matrix/nullsp.red"
+put('matrix, 'nullspacefn, 'nullspace!-eval);
+put('sparse!-matrix, 'nullspacefn, 'sparse!-nullspace!-eval);
+
+symbolic procedure generic!-nullspace!-eval u;
+   % Return the nullspace of a generic matrix,
+   % e.g. either a dense or sparse matrix,
+   % with normal type as fallback.
+   (if nullspacefn then apply1(nullspacefn, u) else nullspace!-eval u)
+      where nullspacefn = get(getrtype car u, 'nullspacefn);
 
 % Algorithm: Rational Gaussian elimination with standard quotients.
 

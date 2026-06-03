@@ -1,7 +1,7 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-22 16:07:41 franc>
+% Time-stamp: <2026-06-03 12:58:53 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -38,13 +38,24 @@ module sparsedet;          % Determinant and trace of a sparse matrix.
 % Determinant
 % %%%%%%%%%%%
 
-put('sparse_det, 'simpfn, 'simpsparse!-det);
+put('det, 'simpfn, 'generic!-simpdet); % updates "matrix/det.red"
+put('matrix, 'detfn, 'simpdet);
+put('sparse!-matrix, 'detfn, 'sparse!-simpdet);
+
+symbolic procedure generic!-simpdet u;
+   % Return the determinant of a generic matrix,
+   % e.g. either a dense or sparse matrix,
+   % with normal type as fallback.
+   (if detfn then apply1(detfn, u) else simpdet u)
+      where detfn = get(getrtype car u, 'detfn);
+
+put('sparse_det, 'simpfn, 'sparse!-simpdet);
 flag('(sparse_det), 'immediate);
 
 % Using reduction to row echelon form (Gaussian elimination).
 % No support for Bareiss algorithm at present!
 
-symbolic procedure simpsparse!-det u;
+symbolic procedure sparse!-simpdet u;
    % Return the determinant of a sparse matrix, cf. det.
    sparse!-detq sparse!-matsm carx(u, 'sparse_det);
 
@@ -71,9 +82,20 @@ symbolic procedure sparse!-detq u;
 % Trace
 % %%%%%
 
-put('sparse_trace, 'simpfn, 'simpsparse!-trace);
+put('trace, 'simpfn, 'generic!-simptrace); % updates "matrix/det.red"
+put('matrix, 'tracefn, 'simptrace);
+put('sparse!-matrix, 'tracefn, 'sparse!-simptrace);
 
-symbolic procedure simpsparse!-trace u;
+symbolic procedure generic!-simptrace u;
+   % Return the trace of a generic matrix,
+   % e.g. either a dense or sparse matrix,
+   % with normal type as fallback.
+   (if tracefn then apply1(tracefn, u) else simptrace u)
+      where tracefn = get(getrtype car u, 'tracefn);
+
+put('sparse_trace, 'simpfn, 'sparse!-simptrace);
+
+symbolic procedure sparse!-simptrace u;
    % Return the trace of a sparse matrix, cf. trace.
    begin scalar m, hash, el, z;
       u := sparse!-matsm carx(u, 'sparse_trace); % (<hash> <m> <n>)

@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-01 17:31:20 franc>
+% Time-stamp: <2026-06-03 12:03:36 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -246,7 +246,7 @@ symbolic procedure set!-sparse!-matelem(u,v);
 % Mapping
 % %%%%%%%
 
-% Explicitly map an operator over the elements of a matrix:
+% Explicitly map an operator over the elements of a sparse matrix:
 
 put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
@@ -254,12 +254,12 @@ symbolic procedure map!-sparse!-mat(f,o);
    'sparse!-mat . map!-sparse!-matrix(cdr o,
       (lambda w; apply1(f,w)));
 
-% Automatically map an operator over the elements of a matrix:
+% Automatically map an operator over the elements of a sparse matrix:
 
 put('sparse!-matrix, 'aggregatefn, 'sparse!-matrixmap);
 put('sparse!-matrix, 'fn, 'matflg);
 
-flag('(sparse_det sparse_trace sparse_cofactor), 'sparse!-matfn);
+flag('(sparse_det sparse_trace sparse_cofactor), 'matfn);
 
 symbolic procedure sparse!-matrixmap(u,v);
    % U = (<function> <sparse matrix>).
@@ -269,7 +269,7 @@ symbolic procedure sparse!-matrixmap(u,v);
    then sparse!-matsm!*1
       map!-sparse!-matrix(sparse!-matsm cadr u,
          (lambda value; simp!*(car u . mk!*sq value . cddr u)), nil)
-   else if flagp(car u, 'sparse!-matfn) then reval2(u,v)
+   else if flagp(car u, 'matfn) then reval2(u,v)
    else typerr(car u, "sparse matrix operator");
 
 

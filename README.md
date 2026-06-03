@@ -1,7 +1,7 @@
 # SPARSEMATRIX: A REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-06-02 17:30:13 franc>
+Time-stamp: <2026-06-03 15:47:08 franc>
 
 A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on the context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix no more than half the elements are nonzero.  A common borderline case is triangular matrices.  (Of course, a dense matrix can be treated as a sparse matrix, and vice versa, which is likely to be less efficient but is useful for testing.)
 
@@ -36,12 +36,12 @@ Dimensions | `length m` | `length s`
 Element access | `m(i,j)` | `s(i,j)`
 Arithmetic | `+ - * / ^` | `+ - * / ^`
 Inverse | `m^(-1)` | `s^(-1)`
-Transpose | `tp m` | `sparse_tp s`
-Trace | `trace m` | `sparse_trace s`
-Determinant | `det m` | `sparse_det s`
-Cofactors | `cofactor(m,i,j)` | `sparse_cofactor(s,i,j)`
-Rank | `rank m` | `sparse_rank s`
-Nullspace | `nullspace m` | `sparse_nullspace s`
+Transpose | `tp m` | `tp s` or `sparse_tp s`
+Trace | `trace m` | `trace s` or `sparse_trace s`
+Determinant | `det m` | `det s` or `sparse_det s`
+Cofactors | `cofactor(m,i,j)` | `cofactor(s,i,j)` or `sparse_cofactor(s,i,j)`
+Rank | `rank m` | `rank s` or `sparse_rank s`
+Nullspace | `nullspace m` | `nullspace s` or `sparse_nullspace s`
 Substitution | `sub(<equations>, m)` | `sub(<equations>, s)`
 Explicit mapping | `map(1 + ~w, m)` | `map(1 + ~w, s)`
 Implicit mapping | `<function> m` | `<function> s`

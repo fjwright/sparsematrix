@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-29 16:16:26 franc>
+% Time-stamp: <2026-06-03 15:31:33 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -206,6 +206,19 @@ symbolic procedure sparse!-addm(u,v);
 % %%%%%%%%%
 % Transpose
 % %%%%%%%%%
+
+% Assume matrix package loaded earlier.
+putd('dense_tp, car x, cdr x) where x = getd 'tp; % original tp function
+
+put('matrix, 'transposefn, 'dense_tp);
+put('sparse!-matrix, 'transposefn, 'sparse_tp);
+
+symbolic procedure tp u;       % updates "matrix/matsm.red"
+   % Return the transpose of a generic matrix,
+   % e.g. either a dense or sparse matrix,
+   % with normal type as fallback.
+   (if transposefn then apply1(transposefn, u) else dense_tp u)
+      where transposefn = get(getrtype car u, 'transposefn);
 
 symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
 
