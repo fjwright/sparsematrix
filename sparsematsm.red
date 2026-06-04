@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 16:38:07 franc>
+% Time-stamp: <2026-06-04 16:47:14 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -34,19 +34,19 @@ module sparsematsm;               % Simplification of sparse matrices.
 % This file is a reworking of "matrix/matsm.red" to use hash tables to
 % represent sparse matrices.
 
-load_package matrix;                    % needed for densify
+load_package matrix;                    % needed for densify, etc.
 
-% The canonical form of an <m>*<n> matrix is
+% The canonical form of an <m>*<n> (dense) matrix is
 %   ((el_11 el_12 ... el_1n)
 %    (el_21 el_22 ... el_2n)
 %    ...
 %    (el_m1 el_m2 ... el_mn))
-% where el_ij is the ij matrix element in SQ form.
+% where el_ij is the (i,j) matrix element in SQ form.
 
 % The canonical form of an <m>*<n> sparse matrix is
 %   (<hash> <m> <n>)
-% where <hash> is a hash table and the ij matrix element is stored in
-% SQ form in the hash table with key (i j).
+% where <hash> is a hash-table and the (i,j) matrix element is stored in
+% SQ form in the hash-table with key (i . j).
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Evaluation and simplification
@@ -209,7 +209,7 @@ symbolic procedure sparse!-addm(u,v);
 
 % Assume matrix package loaded earlier.
 if not getd 'dense_tp then         % to allow this file to be reloaded
-   putd('dense_tp, car x, cdr x) where x = getd 'tp; % original tp function
+   copyd('dense_tp, 'tp);          % original tp function
 
 put('matrix, 'transposefn, 'dense_tp);
 put('sparse!-matrix, 'transposefn, 'sparse_tp);
