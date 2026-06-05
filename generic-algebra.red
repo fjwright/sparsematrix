@@ -7,6 +7,10 @@
 put('matrix, 'evfn, 'generic!-matsm!*); % updates "matrix/matrix.red"
 put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
 
+global '(sparse_matrix_auto_convert);
+share sparse_matrix_auto_convert;
+sparse_matrix_auto_convert := 'matrix; % or sparse_matrix or anything else
+
 symbolic procedure generic!-matsm!*(u, v);
    % Generic matrix expression simplification function.
    % U is an arbitrary matrix expression in algebraic form.
@@ -15,17 +19,26 @@ symbolic procedure generic!-matsm!*(u, v);
    begin scalar type := getrtype u, result;
       put('matrix, 'evfn, 'matsm!*);
       put('sparse!-matrix, 'evfn, 'sparse!-matsm!*);
-      result := if sparse!-check!-rtype(u, type) then
-         if type eq 'matrix then
-            matsm!*(u, v)
-         else if type eq 'sparse!-matrix then
-            sparse!-matsm!*(u, v)
-         else typerr(u, "matrix")
-      else <<
-         % Convert sparse matrices to dense and try again:
-         u := sparse!-densify!-all u;
-         matsm!*(u,v)
-      >>;
+      sparse_matrix_auto_convert := reval sparse_matrix_auto_convert;
+                                        % in case set in algebraic mode!
+      result := if not
+         (sparse_matrix_auto_convert memq '(matrix sparse_matrix)) or
+         sparse!-check!-rtype(u, type) then
+            if type eq 'matrix then
+               matsm!*(u, v)
+            else if type eq 'sparse!-matrix then
+               sparse!-matsm!*(u, v)
+            else typerr(u, "matrix")
+      else
+         if sparse_matrix_auto_convert eq 'matrix then <<
+            % Convert all sparse matrices to dense:
+            u := sparse!-densify!-all u;
+            matsm!*(u,v)
+         >> else if sparse_matrix_auto_convert eq 'sparse_matrix then <<
+            % Convert all dense matrices to sparse:
+            u := sparse!-sparsify!-all u;
+            sparse!-matsm!*(u,v)
+         >>;
       put('matrix, 'evfn, 'generic!-matsm!*);
       put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
       return result;
@@ -46,6 +59,13 @@ symbolic procedure sparse!-densify!-all u;
       if getrtype u eq 'sparse!-matrix then {'densify, u} else u
    else sparse!-densify!-all car u .
       sparse!-densify!-all cdr u;
+
+symbolic procedure sparse!-sparsify!-all u;
+   % Recursively sparsify any demse matrix variables.
+   u and if atom u then
+      if getrtype u eq 'matrix then {'sparsify, u} else u
+   else sparse!-sparsify!-all car u .
+      sparse!-sparsify!-all cdr u;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
