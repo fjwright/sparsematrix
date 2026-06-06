@@ -178,4 +178,23 @@ if second length m - length ws = rank m then "OK" else "***** ERROR *****";
 nullspace s;
 if second length s - length ws = rank s then "OK" else "***** ERROR *****";
 
+% Mixed matrix types in algebraic expressions:
+
+off sparse_matrix_dense_print;          % to show matrix type
+
+m := mat((1,2),(3,4));
+s := sparsify m;
+
+sparse_matrix_auto_convert_mode();
+(2s+m)*m;
+(2m+s)^2;
+
+sparse_matrix_auto_convert_mode sparse;
+(2s+m)*m;
+(2m+s)^2;
+
+sparse_matrix_auto_convert_mode none;
+(2s+m)*m;
+(2m+s)^2;
+
 ;end;
