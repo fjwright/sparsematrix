@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 12:03:36 franc>
+% Time-stamp: <2026-06-06 18:26:14 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -366,6 +366,35 @@ symbolic procedure sparse_random_matrix u;
    end;
 
 rlistat '(sparse_random_matrix);
+
+% %%%%%%%%%%%%%%%%%%%
+% Density of a matrix
+% %%%%%%%%%%%%%%%%%%%
+
+symbolic operator matrix_density;
+
+symbolic procedure matrix_density u;
+   % U must evaluate to a dense or sparse matrix.  Return its density,
+   % namely the proportion of nonzero elements, as a percentage
+   % truncated to the nearest integer.
+   begin scalar type := getrtype u;
+      integer nz;                    % count of nonzero elements
+      return
+         if type eq 'matrix then <<
+            u := matsm u;
+            for each row in u do for each el in row do
+               if numr el then nz := nz + 1;
+            quotient(nz * 100, length u * length car u)
+         >> else if type eq 'sparse!-matrix then <<
+            u := sparse!-matsm u;
+            % Need a count of the hash-table entries here!
+            maphash(car u, (lambda(key,val); nz := nz + 1));
+            quotient(nz * 100, cadr u * caddr u)
+         >>;
+   end;
+
+endmodule;
+
 
 endmodule;
 
