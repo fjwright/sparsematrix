@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-04 16:47:14 franc>
+% Time-stamp: <2026-06-06 17:26:43 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -52,7 +52,92 @@ load_package matrix;                    % needed for densify, etc.
 % Evaluation and simplification
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-put('sparse!-matrix, 'evfn, 'sparse!-matsm!*);
+% Support for mixed matrix types in algebraic expressions:
+
+put('matrix, 'evfn, 'generic!-matsm!*); % updates "matrix/matrix.red"
+put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
+
+global '(sparse!-matrix!-auto!-convert!-mode);
+sparse!-matrix!-auto!-convert!-mode := 'dense;
+
+put('sparse_matrix_auto_convert_mode, 'psopfn,
+   'sparse_matrix_auto_convert_mode);
+
+symbolic procedure sparse_matrix_auto_convert_mode u;
+   % If an argument is supplied then if must be one of the symbols
+   % dense, sparse or none, which sets the mode for automatic matrix
+   % type conversion in algebraic expressions.  Return the previous
+   % mode.
+   begin scalar mode := sparse!-matrix!-auto!-convert!-mode;
+      if u then
+         sparse!-matrix!-auto!-convert!-mode :=
+         if (u := carx(u, 'sparse_matrix_auto_convert_mode)) eq 'none
+         then nil
+         else if u memq '(dense, sparse)
+         then u
+         else rederr "Mode must be dense, sparse, or none";
+      return mode or 'none;
+   end;
+
+symbolic procedure generic!-matsm!*(u, v);
+   % Generic matrix expression simplification function.
+   % U is an arbitrary matrix expression in algebraic form.
+   % Return a matrix expression in tagged algebraic form converted to
+   % dense or sparse representation as appropriate.
+   begin scalar type := getrtype u, result;
+      put('matrix, 'evfn, 'matsm!*);
+      put('sparse!-matrix, 'evfn, 'sparse!-matsm!*);
+      % Errorset to ensure subsequent code runs:
+      result := errorset!*(
+         {'generic!-matsm!*!-internal, mkquote u, mkquote v, mkquote type}, nil);
+      put('matrix, 'evfn, 'generic!-matsm!*);
+      put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
+      if not errorp result then return car result;
+   end;
+
+symbolic procedure generic!-matsm!*!-internal(u, v, type);
+   if null sparse!-matrix!-auto!-convert!-mode or
+      sparse!-check!-rtype(u, type) then
+         if type eq 'matrix then
+            matsm!*(u, v)
+         else if type eq 'sparse!-matrix then
+            sparse!-matsm!*(u, v)
+         else typerr(u, "matrix")
+   else
+      if sparse!-matrix!-auto!-convert!-mode eq 'dense then <<
+         % Convert all sparse matrices to dense:
+         u := sparse!-densify!-all u;
+         matsm!*(u,v)
+      >> else if sparse!-matrix!-auto!-convert!-mode eq 'sparse then <<
+         % Convert all dense matrices to sparse:
+         u := sparse!-sparsify!-all u;
+         sparse!-matsm!*(u,v)
+      >>;
+
+symbolic procedure sparse!-check!-rtype(u, type);
+   % Return t if the type of every matrix in prefix form algebraic
+   % expression U is TYPE, nil otherwise.
+   if null u then t
+   else if atom u then
+      (null x or x eq type) where x = getrtype u
+   else sparse!-check!-rtype(car u, type) and
+      sparse!-check!-rtype(cdr u, type);
+
+symbolic procedure sparse!-densify!-all u;
+   % Recursively densify any sparse matrix variables.
+   u and if atom u then
+      if getrtype u eq 'sparse!-matrix then {'densify, u} else u
+   else sparse!-densify!-all car u .
+      sparse!-densify!-all cdr u;
+
+symbolic procedure sparse!-sparsify!-all u;
+   % Recursively sparsify any demse matrix variables.
+   u and if atom u then
+      if getrtype u eq 'matrix then {'sparsify, u} else u
+   else sparse!-sparsify!-all car u .
+      sparse!-sparsify!-all cdr u;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 symbolic procedure sparse!-matsm!*(u,v);
    % Sparse matrix expression simplification function.
