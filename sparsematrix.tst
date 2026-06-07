@@ -42,6 +42,11 @@ tp sr;
 densify tp sr;
 
 % Determinant:
+m := mat((1,2,3),(4,5,6),(7,8,9));
+s := sparsify m;
+det m;
+sparse_det s;
+det s;
 m := mat((a,b,c),(d,e,f),(g,h,i));
 s := sparsify m;
 det m;

@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-06 18:26:14 franc>
+% Time-stamp: <2026-06-07 18:01:27 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -392,9 +392,6 @@ symbolic procedure matrix_density u;
             quotient(nz * 100, cadr u * caddr u)
          >>;
    end;
-
-endmodule;
-
 
 endmodule;
 

@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-24 15:36:14 franc>
+% Time-stamp: <2026-06-07 17:52:59 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -68,13 +68,13 @@ symbolic procedure sparse!-echelon(hash, m, n, det);
       h := 1,                           % initial pivot row
       k := 1,                           % initial pivot column
       neg;                              % true if odd # row swaps
-      while h <= m and k <= n do
+      while h <= m and k <= n and not (neg eq 'singular) do
       begin scalar i_piv := h, pivot;
          % Find the first (nonzero) pivot below row h in column k:
          while i_piv <= m and null (pivot := gethash(i_piv.k, hash)) do
             i_piv := i_piv + 1;
          if i_piv > m then <<
-            if det then return 'singular;
+            if det then return neg := 'singular;
             % No pivot in this column, pass to next column
             k := k + 1
          >> else <<
