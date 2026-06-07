@@ -185,15 +185,15 @@ off sparse_matrix_dense_print;          % to show matrix type
 m := mat((1,2),(3,4));
 s := sparsify m;
 
-sparse_matrix_auto_convert_mode();
+sparse_matrix_auto_convert_type();
 (2s+m)*m;
 (2m+s)^2;
 
-sparse_matrix_auto_convert_mode sparse;
+sparse_matrix_auto_convert_type sparse;
 (2s+m)*m;
 (2m+s)^2;
 
-sparse_matrix_auto_convert_mode none;
+sparse_matrix_auto_convert_type none;
 (2s+m)*m;
 (2m+s)^2;
 

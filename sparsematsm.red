@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-06 17:26:43 franc>
+% Time-stamp: <2026-06-07 15:59:08 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -57,26 +57,26 @@ load_package matrix;                    % needed for densify, etc.
 put('matrix, 'evfn, 'generic!-matsm!*); % updates "matrix/matrix.red"
 put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
 
-global '(sparse!-matrix!-auto!-convert!-mode);
-sparse!-matrix!-auto!-convert!-mode := 'dense;
+global '(sparse!-matrix!-auto!-convert!-type);
+sparse!-matrix!-auto!-convert!-type := 'dense;
 
-put('sparse_matrix_auto_convert_mode, 'psopfn,
-   'sparse_matrix_auto_convert_mode);
+put('sparse_matrix_auto_convert_type, 'psopfn,
+   'sparse_matrix_auto_convert_type);
 
-symbolic procedure sparse_matrix_auto_convert_mode u;
+symbolic procedure sparse_matrix_auto_convert_type u;
    % If an argument is supplied then if must be one of the symbols
-   % dense, sparse or none, which sets the mode for automatic matrix
+   % dense, sparse or none, which sets the type for automatic matrix
    % type conversion in algebraic expressions.  Return the previous
-   % mode.
-   begin scalar mode := sparse!-matrix!-auto!-convert!-mode;
+   % type.
+   begin scalar type := sparse!-matrix!-auto!-convert!-type;
       if u then
-         sparse!-matrix!-auto!-convert!-mode :=
-         if (u := carx(u, 'sparse_matrix_auto_convert_mode)) eq 'none
+         sparse!-matrix!-auto!-convert!-type :=
+         if (u := carx(u, 'sparse_matrix_auto_convert_type)) eq 'none
          then nil
          else if u memq '(dense, sparse)
          then u
-         else rederr "Mode must be dense, sparse, or none";
-      return mode or 'none;
+         else rederr "Type must be dense, sparse, or none";
+      return type or 'none;
    end;
 
 symbolic procedure generic!-matsm!*(u, v);
@@ -96,7 +96,7 @@ symbolic procedure generic!-matsm!*(u, v);
    end;
 
 symbolic procedure generic!-matsm!*!-internal(u, v, type);
-   if null sparse!-matrix!-auto!-convert!-mode or
+   if null sparse!-matrix!-auto!-convert!-type or
       sparse!-check!-rtype(u, type) then
          if type eq 'matrix then
             matsm!*(u, v)
@@ -104,11 +104,11 @@ symbolic procedure generic!-matsm!*!-internal(u, v, type);
             sparse!-matsm!*(u, v)
          else typerr(u, "matrix")
    else
-      if sparse!-matrix!-auto!-convert!-mode eq 'dense then <<
+      if sparse!-matrix!-auto!-convert!-type eq 'dense then <<
          % Convert all sparse matrices to dense:
          u := sparse!-densify!-all u;
          matsm!*(u,v)
-      >> else if sparse!-matrix!-auto!-convert!-mode eq 'sparse then <<
+      >> else if sparse!-matrix!-auto!-convert!-type eq 'sparse then <<
          % Convert all dense matrices to sparse:
          u := sparse!-sparsify!-all u;
          sparse!-matsm!*(u,v)
