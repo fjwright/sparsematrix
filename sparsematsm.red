@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-07 15:59:08 franc>
+% Time-stamp: <2026-06-08 17:43:03 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -84,35 +84,43 @@ symbolic procedure generic!-matsm!*(u, v);
    % U is an arbitrary matrix expression in algebraic form.
    % Return a matrix expression in tagged algebraic form converted to
    % dense or sparse representation as appropriate.
-   begin scalar type := getrtype u, result;
+   begin scalar result;
       put('matrix, 'evfn, 'matsm!*);
       put('sparse!-matrix, 'evfn, 'sparse!-matsm!*);
       % Errorset to ensure subsequent code runs:
       result := errorset!*(
-         {'generic!-matsm!*!-internal, mkquote u, mkquote v, mkquote type}, nil);
+         {'generic!-matfn, '(function matsm!*), '(function sparse!-matsm!*),
+            mkquote {u, v}, mkquote getrtype u}, nil);
       put('matrix, 'evfn, 'generic!-matsm!*);
       put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
       if not errorp result then return car result;
    end;
 
-symbolic procedure generic!-matsm!*!-internal(u, v, type);
-   if null sparse!-matrix!-auto!-convert!-type or
-      sparse!-check!-rtype(u, type) then
-         if type eq 'matrix then
-            matsm!*(u, v)
-         else if type eq 'sparse!-matrix then
-            sparse!-matsm!*(u, v)
-         else typerr(u, "matrix")
-   else
-      if sparse!-matrix!-auto!-convert!-type eq 'dense then <<
-         % Convert all sparse matrices to dense:
-         u := sparse!-densify!-all u;
-         matsm!*(u,v)
-      >> else if sparse!-matrix!-auto!-convert!-type eq 'sparse then <<
-         % Convert all dense matrices to sparse:
-         u := sparse!-sparsify!-all u;
-         sparse!-matsm!*(u,v)
-      >>;
+symbolic procedure generic!-matfn(matfn, sparse!-matfn, args, type);
+   % Return MATFN or SPARSE!-MATFN as appropriate applied to argument
+   % list ARGS, where (car args) is assumed to involve a generic,
+   % i.e. respectively dense or sparse, matrix expression of initial
+   % rtype TYPE.
+   begin scalar u := car args;
+      return
+         if null sparse!-matrix!-auto!-convert!-type or
+         sparse!-check!-rtype(u, type) then
+            if type eq 'matrix then
+               apply(matfn, args)
+            else if type eq 'sparse!-matrix then
+               apply(sparse!-matfn, args)
+            else typerr(u, "matrix")
+         else
+            if sparse!-matrix!-auto!-convert!-type eq 'dense then <<
+               % Convert all sparse matrices to dense:
+               u := sparse!-densify!-all u;
+               apply(matfn, u . cdr args)
+            >> else if sparse!-matrix!-auto!-convert!-type eq 'sparse then <<
+               % Convert all dense matrices to sparse:
+               u := sparse!-sparsify!-all u;
+               apply(sparse!-matfn, u . cdr args)
+            >>;
+   end;
 
 symbolic procedure sparse!-check!-rtype(u, type);
    % Return t if the type of every matrix in prefix form algebraic
@@ -296,15 +304,10 @@ symbolic procedure sparse!-addm(u,v);
 if not getd 'dense_tp then         % to allow this file to be reloaded
    copyd('dense_tp, 'tp);          % original tp function
 
-put('matrix, 'transposefn, 'dense_tp);
-put('sparse!-matrix, 'transposefn, 'sparse_tp);
-
 symbolic procedure tp u;       % updates "matrix/matsm.red"
-   % Return the transpose of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if transposefn then apply1(transposefn, u) else dense_tp u)
-      where transposefn = get(getrtype u, 'transposefn);
+   % Return the transpose of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function dense_tp, function sparse_tp, {u}, getrtype u);
 
 symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
 

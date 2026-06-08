@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 16:08:11 franc>
+% Time-stamp: <2026-06-08 17:45:04 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -36,15 +36,12 @@ module sparserank;                % Sparse matrix rank, cofactor, etc.
 % %%%%
 
 put('rank, 'psopfn, 'generic!-rank!-eval); % updates "matrix/rank.red"
-put('matrix, 'rankfn, 'rank!-eval);
-put('sparse!-matrix, 'rankfn, 'sparse!-rank!-eval);
 
 symbolic procedure generic!-rank!-eval u;
-   % Return the rank of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if rankfn then apply1(rankfn, u) else rank!-eval u)
-      where rankfn = get(getrtype car u, 'rankfn);
+   % Return the rank of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function rank!-eval,
+      function sparse!-rank!-eval, {u}, getrtype car u);
 
 % The rank code is based on "matrix/rank.red" by Eberhard Schruefer.
 
@@ -129,15 +126,12 @@ symbolic procedure sparse!-submatrix(u, i, j);
 put('cofactor, 'simpfn, 'generic!-simpcofactor); % updates "matrix/cofactor.red"
 flag('(cofactor), 'immediate);
 flag('(cofactor), 'matfn);
-put('matrix, 'cofactorfn, 'simpcofactor);
-put('sparse!-matrix, 'cofactorfn, 'sparse!-simpcofactor);
 
 symbolic procedure generic!-simpcofactor u;
-   % Return the cofactor of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if cofactorfn then apply1(cofactorfn, u) else simpcofactor u)
-      where cofactorfn = get(getrtype car u, 'cofactorfn);
+   % Return the cofactor of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function simpcofactor, function sparse!-simpcofactor,
+      {u}, getrtype car u);
 
 put ('sparse_cofactor, 'simpfn, 'sparse!-simpcofactor);
 flag('(sparse_cofactor), 'immediate);
