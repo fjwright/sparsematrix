@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-08 17:43:03 franc>
+% Time-stamp: <2026-06-09 16:04:46 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -104,6 +104,7 @@ symbolic procedure generic!-matfn(matfn, sparse!-matfn, args, type);
    begin scalar u := car args;
       return
          if null sparse!-matrix!-auto!-convert!-type or
+         sparse!-explicit!-rtype!-p u or
          sparse!-check!-rtype(u, type) then
             if type eq 'matrix then
                apply(matfn, args)
@@ -121,6 +122,14 @@ symbolic procedure generic!-matfn(matfn, sparse!-matfn, args, type);
                apply(sparse!-matfn, u . cdr args)
             >>;
    end;
+
+symbolic procedure sparse!-explicit!-rtype!-p u;
+   % Return t if prefix form algebraic expression U contains either
+   % sparsify or densify, nil otherwise.
+   not atom u and
+      (car u memq '(sparsify densify) or
+         sparse!-explicit!-rtype!-p car u or
+         sparse!-explicit!-rtype!-p cdr u);
 
 symbolic procedure sparse!-check!-rtype(u, type);
    % Return t if the type of every matrix in prefix form algebraic
