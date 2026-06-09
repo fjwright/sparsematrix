@@ -1,7 +1,7 @@
 # SPARSEMATRIX: A REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-06-07 17:20:24 franc>
+Time-stamp: <2026-06-09 16:40:39 franc>
 
 A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered to be *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on the context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix no more than half the elements are nonzero.  A common borderline case is triangular matrices.  (Of course, a dense matrix can be treated as a sparse matrix, and vice versa, which is likely to be less efficient but is useful for testing.)
 
@@ -47,6 +47,8 @@ Matrices in dense and sparse representation can be freely mixed in algebraic exp
 * `densify` converts a matrix from sparse to dense representation, e.g. `d := densify s`
 * `sparsify` converts a matrix from dense to sparse representation, e.g. `s := sparsify d`
 
+Note that using explicit matrix type conversion in an expression disables implicit matrix type conversion for that expression.
+
 ### Matrix output
 
 If the switch `sparse_matrix_dense_print` is `on`, which it is by default, then small matrices in sparse representation are displayed the same as matrices in dense representation (mainly to facilitate testing), where _small_ means having no more than the number of columns specified by the value of the (shared) variable `sparse_matrix_dense_print_colmax`, which is 10 by default.
@@ -58,9 +60,9 @@ See `sparsematrix.rlg` for examples of using the above `SPARSEMATRIX` versions o
 
 The first three of these predicates mirror predicates in the `LINALG` package.
 
-* `sparse_matrix_p`, cf. `LINALG` `matrixp`
-* `sparse_square_matrix_p`, cf. `LINALG` `squarep`
-* `sparse_symmetric_matrix_p`, cf. `LINALG` `symmetricp`
+* `sparse_matrix_p` (cf. `LINALG` `matrixp`)
+* `sparse_square_matrix_p` (cf. `LINALG` `squarep`)
+* `sparse_symmetric_matrix_p` (cf. `LINALG` `symmetricp`)
 * `sparse_skew_symmetric_matrix_p`
 * `sparse_hermitian_matrix_p`
 * `sparse_skew_hermitian_matrix_p`
@@ -82,19 +84,19 @@ Some potentially useful facilities for working with sparse matrices modelled loo
 
 ### Matrix construction:
 
-* `sparse_identity_matrix`, cf. `LINALG` `make_identity`
-* `sparse_band_matrix`, cf. `LINALG` `band_matrix` (with reversed arguments)
+* `sparse_identity_matrix` (cf. `LINALG` `make_identity`)
+* `sparse_band_matrix` (cf. `LINALG` `band_matrix`, but with reversed arguments)
 
 ### Whole matrix manipulation:
 
-* `sparse_matrix_augment`, cf. `LINALG` `matrix_augment`
-* `sparse_block_diagonal_matrix`, cf. `LINALG` `diagonal`
+* `sparse_matrix_augment` (cf. `LINALG` `matrix_augment`)
+* `sparse_block_diagonal_matrix` (cf. `LINALG` `diagonal`)
 
 ### Column manipulation:
 
-* `sparse_select_columns` (synonym `sparse_augment_columns`), cf. `LINALG`  `augment_columns`
-* `sparse_remove_columns`, cf. `LINALG` `remove_columns`
-* `sparse_get_columns`, cf. `LINALG` `get_columns`
+* `sparse_select_columns` (synonym `sparse_augment_columns`, cf. `LINALG`  `augment_columns`)
+* `sparse_remove_columns` (cf. `LINALG` `remove_columns`)
+* `sparse_get_columns` (cf. `LINALG` `get_columns`)
 
 These operators are all more general than those in the `LINALG` package.  The input matrices can use either sparse or dense representation, but the output always uses sparse representation.  Arguments specifying column indices can be a sequence of integers, integer lists or integer intervals, which can be freely intermixed.  Column indices can be negative, meaning count from the right, and intervals can be descending.  The operator `sparse_select_columns` allows columns to be duplicated.
 
