@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-10 16:40:34 franc>
+% Time-stamp: <2026-06-10 17:03:56 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -118,12 +118,12 @@ symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(1000, 1);                     % PSL only accepts 0 & 3 as arg 2!
 #endif
 
-symbolic macro procedure map!-sparse!-matrix u; % (sm, fn, &optional name)
+symbolic macro procedure map!-sparse!-matrix u; % (fn, sm, &optional name)
    {'map!-sparse!-matrix0, cadr u, caddr u, cdddr u and cadddr u};
 
 flag('(map!-sparse!-matrix), 'variadic);
 
-symbolic procedure map!-sparse!-matrix0(sm, fn, name);
+symbolic procedure map!-sparse!-matrix0(fn, sm, name);
    % Iterate over all entries in the canonical sparse matrix form SM
    % and return the result as a new canonical sparse matrix form (with
    % the same dimensions as SM).  The function FN takes one argument
@@ -291,8 +291,9 @@ symbolic procedure map!-sparse!-mat(f,o);
       return 'sparse!-mat . hash . cadr o . caddr o;
    end;
 #else
-   'sparse!-mat . map!-sparse!-matrix(cdr o,
-      (lambda w; apply1(f,w)));
+   'sparse!-mat . map!-sparse!-matrix(
+      (lambda w; apply1(f,w)),
+      cdr o);
 #endif
 
 % Automatically map an operator over the elements of a sparse matrix:
@@ -308,8 +309,9 @@ symbolic procedure sparse!-matrixmap(u,v);
    % The sparse matrix is input and output in tagged algebraic form.
    if flagp(car u, 'matmapfn)
    then sparse!-matsm!*1
-      map!-sparse!-matrix(sparse!-matsm cadr u,
-         (lambda value; simp!*(car u . mk!*sq value . cddr u)), nil)
+      map!-sparse!-matrix(
+         (lambda value; simp!*(car u . mk!*sq value . cddr u)),
+         sparse!-matsm cadr u, nil)
    else if flagp(car u, 'matfn) then reval2(u,v)
    else typerr(car u, "sparse matrix operator");
 

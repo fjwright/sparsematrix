@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-10 16:31:55 franc>
+% Time-stamp: <2026-06-10 17:04:54 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -172,7 +172,7 @@ symbolic procedure sparse!-matsm!*1 u;
    <<
       % We use subs2!* to make sure each element simplified fully.
       u := 'sparse!-mat .
-         map!-sparse!-matrix(u, (lambda x; !*q2a subs2!* x), t);
+         map!-sparse!-matrix((lambda x; !*q2a subs2!* x), u, t);
       !*sub2 := nil;                   % Since all substitutions done.
       u
    >>;
@@ -237,7 +237,7 @@ symbolic procedure sparse!-matsm1(u, name);
       %   car u = (sparse!-mat <hash> <m> <n>)
       % Return a sparse matrix canonical form
       %   (<hash> <m> <n> . <name>):
-      x := map!-sparse!-matrix(cdar u, function xsimp, name);
+      x := map!-sparse!-matrix(function xsimp, cdar u, name);
       go to b;
    d: % Inverse:
       y := sparse!-matsm cadar u;       % y = (<hash> <m> <n>)
@@ -257,8 +257,9 @@ symbolic procedure sparse!-matsm1(u, name);
       else z := apply2(get('sparse!-mat,'lnrsolvefn),y,z);
       subfg!* := x;
       % Make sure there are no power substitutions:
-      z := map!-sparse!-matrix(z, lambda value;
-                               <<!*sub2 := t; subs2 value>>);
+      z := map!-sparse!-matrix(
+         (lambda value; <<!*sub2 := t; subs2 value>>),
+         z);
       go to c;
    e: % y is 1*1 matrix, cf. y = ((el))
       y := gethash(1 . 1, car y); % nil or value of single element as SQ
@@ -370,10 +371,11 @@ symbolic procedure sparse!-multsm(u,v);
    % Return the product of standard quotient U and sparse matrix
    % canonical form V as a new sparse matrix canonical form.
    if u = (1 ./ 1) then v else
-      map!-sparse!-matrix(v,
+      map!-sparse!-matrix(
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         (lambda value; multsq(value, u)));
+         (lambda value; multsq(value, u)),
+         v);
 
 
 % %%%%%%%%%%%%
@@ -388,7 +390,7 @@ symbolic procedure sparse!-matsub(u,v);
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
    'sparse!-mat .
-      map!-sparse!-matrix(cdr v, (lambda value; subeval1(u, value)));
+      map!-sparse!-matrix((lambda value; subeval1(u, value)), cdr v);
 
 
 % %%%%%%%%%%
