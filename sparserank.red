@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-08 17:45:04 franc>
+% Time-stamp: <2026-06-10 16:38:04 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -103,20 +103,22 @@ symbolic procedure sparse!-submatrix(u, i, j);
    % Return the submatrix of sparse matrix u excluding row i and
    % column j.  Sparse matrices are represented as (<hash> <m> <n>).
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(car u, lambda(key, value);
-              begin scalar ii := car key, jj := cdr key;
-                 if ii < i then <<
-                    if jj < j then
-                       puthash(key, hash, value)
-                    else if jj > j then
-                       puthash(ii.(jj-1), hash, value)
-                 >> else if ii > i then <<
-                    if jj < j then
-                       puthash((ii-1).jj, hash, value)
-                    else if jj > j then
-                       puthash((ii-1).(jj-1), hash, value)
-                 >>;
-              end);
+      maphash(
+         (lambda(key, value);
+          begin scalar ii := car key, jj := cdr key;
+             if ii < i then <<
+                if jj < j then
+                   puthash(key, hash, value)
+                else if jj > j then
+                   puthash(ii.(jj-1), hash, value)
+             >> else if ii > i then <<
+                if jj < j then
+                   puthash((ii-1).jj, hash, value)
+                else if jj > j then
+                   puthash((ii-1).(jj-1), hash, value)
+             >>;
+          end),
+         car u);
       return {hash, cadr u - 1, caddr u - 1}
    end;
 

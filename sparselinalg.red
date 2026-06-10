@@ -1,7 +1,7 @@
 module sparselinalg; % Construction and manipulation of sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-02 16:31:24 franc>
+% Time-stamp: <2026-06-10 16:24:43 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -132,9 +132,10 @@ symbolic procedure sparse!-matrix!-augment(u, m);
    begin scalar hash := copyhash caar u,
          n := caddar u;                 % col dim of result so far
       for each el in cdr u do <<
-         maphash(car el,
+         maphash(
             (lambda(key, value);
-            puthash(car key . (n + cdr key), hash, value)));
+            puthash(car key . (n + cdr key), hash, value)),
+            car el);
          n := n + caddr el;
       >>;
       return {hash, m, n};
@@ -175,9 +176,10 @@ symbolic procedure sparse!-block!-diagonal!-matrix u;
       integer dim;                    % row & col dim of result so far
       for each el in u do
          if hash!-table!-p car el then << % sparse matrix canonical form
-            maphash(car el,
+            maphash(
                (lambda(key, value);
-               puthash((dim + car key) . (dim + cdr key), hash, value)));
+               puthash((dim + car key) . (dim + cdr key), hash, value)),
+               car el);
             dim := dim + caddr el;
          >> else <<                     % scalar = 1*1 matrix
             dim := dim + 1;
@@ -259,10 +261,11 @@ symbolic procedure sparse!-select!-columns(mtrx, columns);
             nconc(el, {newcol})
          else alist := {oldcol, newcol} . alist;
       end;
-      maphash(car mtrx,
+      maphash(
          (lambda(key, value);
          for each newcol in cdr assoc(cdr key, alist) do
-            puthash(car key . newcol, hash, value)));
+            puthash(car key . newcol, hash, value)),
+         car mtrx);
       return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
    end;
 
@@ -298,12 +301,13 @@ symbolic procedure sparse!-remove!-columns(mtrx, columns);
       % (old_col_ind . new_col_ind):
       columns := for each oldcol in columns collect
          (oldcol . (newcol := newcol + 1));
-      maphash(car mtrx,
+      maphash(
          (lambda(key, value);
           begin scalar el;
              if (el := assoc(cdr key, columns)) then
                 puthash(car key . cdr el, hash, value);
-          end));
+          end),
+         car mtrx);
       return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
    end;
 
@@ -334,10 +338,11 @@ symbolic procedure sparse!-get!-columns(mtrx, columns);
          else alist := {oldcol, newcol} . alist;
          return mk!-sparse!-matrix!-hash();
       end;
-      maphash(car mtrx,
+      maphash(
          (lambda(key, value);
          for each newcol in cdr assoc(cdr key, alist) do
-            puthash(car key . 1, nth(hashes, newcol), value)));
+            puthash(car key . 1, nth(hashes, newcol), value)),
+         car mtrx);
       return 'list . for each hash in hashes collect
          sparse!-matsm!*1 {hash, m, 1};
    end;

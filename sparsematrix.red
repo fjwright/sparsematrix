@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-07 18:01:27 franc>
+% Time-stamp: <2026-06-10 16:27:48 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -66,14 +66,13 @@ symbolic inline procedure hash!-table!-p u;
 
 #if (not (getd 'maphash))
 % Provided in CSL but not PSL.
-symbolic procedure maphash(hash, fn);
+symbolic procedure maphash(fn, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
-   % This function is the Common Lisp function maphash but with
-   % argument ordering like Standard Lisp map functions.
-   % The Standard Lisp function hashcontents returns a list of pairs
-   % of the form (key . value).
+   % This function is identical to the Common Lisp function maphash.
+   % Note that the Standard Lisp function hashcontents returns a list
+   % of pairs of the form (key . value).
    mapc(hashcontents hash,
       (lambda el; apply2(fn, car el, cdr el)));
 #endif
@@ -83,8 +82,9 @@ symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
    begin scalar newhash := mk!-sparse!-matrix!-hash();
-      maphash(hash,
-         (lambda(key, value); puthash(key, newhash, value)));
+      maphash(
+         (lambda(key, value); puthash(key, newhash, value)),
+         hash);
       return newhash;
    end;
 #endif
@@ -114,7 +114,7 @@ symbolic procedure map!-sparse!-matrix0(sm, fn, name);
    begin scalar hash := mk!-sparse!-matrix!-hash(),
          mapfn := lambda(key, value);
       puthash(key, hash, apply1(fn, value));
-      maphash(car sm, mapfn);
+      maphash(mapfn, car sm);
       if name eq t then name := cdddr sm;
       return hash . cadr sm . caddr sm . name;
    end;
@@ -388,7 +388,7 @@ symbolic procedure matrix_density u;
          >> else if type eq 'sparse!-matrix then <<
             u := sparse!-matsm u;
             % Need a count of the hash-table entries here!
-            maphash(car u, (lambda(key,val); nz := nz + 1));
+            maphash((lambda(key,val); nz := nz + 1), car u);
             quotient(nz * 100, cadr u * caddr u)
          >>;
    end;

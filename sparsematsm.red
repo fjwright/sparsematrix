@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-09 16:04:46 franc>
+% Time-stamp: <2026-06-10 16:31:55 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -293,14 +293,15 @@ symbolic procedure sparse!-addm(u,v);
       begin scalar hash := copyhash car u;
          % Add each nonzero element of sparse matrix V to the new hash
          % table (and ensure the result is nonzero):
-         maphash(car v,
+         maphash(
             (lambda(key, v_val);
              begin scalar u_val;
                 puthash!-nzsq(key, hash,
                    if (u_val := gethash(key, hash)) then
                       addsq(u_val, v_val)
                    else v_val)
-             end));
+             end),
+            car v);
          return {hash, cadr u, caddr u}
       end;
 
@@ -327,9 +328,10 @@ symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix canonical form U =
    % (<hash> <m> <n>) as a new sparse matrix canonical form.
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(car u,
+      maphash(
          (lambda(key, value);
-         puthash(cdr key . car key, hash, value)));
+         puthash(cdr key . car key, hash, value)),
+         car u);
       return {hash, caddr u, cadr u}
    end;
 
@@ -343,10 +345,10 @@ symbolic procedure sparse!-multm(u,v);
    % as a new sparse matrix canonical form.  Assume U and V are
    % conformable, i.e. caddr u = cadr v.
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(car u,
+      maphash(
          (lambda(u_key, u_value);
           begin scalar i := car u_key, k := cdr u_key;
-             maphash(car v,
+             maphash(
                 (lambda(v_key, v_value);
                 if car v_key = k then
                    % The product of this pair of matrix elements is a
@@ -357,8 +359,10 @@ symbolic procedure sparse!-multm(u,v);
                          prod := multsq(u_value, v_value);
                       puthash!-nzsq(i.j, hash,
                          if scaprod then addsq(scaprod, prod) else prod);
-                   end));
-          end));
+                   end),
+                car v);
+          end),
+         car u);
       return {hash, cadr u, caddr v}
    end;
 

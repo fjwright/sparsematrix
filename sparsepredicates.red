@@ -1,7 +1,7 @@
 module sparsepredicates;                % Sparse matrix predicates
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-31 18:08:19 franc>
+% Time-stamp: <2026-06-10 16:36:06 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -75,7 +75,7 @@ symbolic procedure sparse_square_matrix_p u;
 % can stop early!  This could be provided via the Common Lisp macro
 % with-hash-table-iterator.
 
-symbolic procedure maphash!-and(table, fn);
+symbolic procedure maphash!-and(fn, table);
    % TABLE is a hash-table and FN is a predicate taking the arguments
    % KEY, VALUE, TABLE, where KEY and VALUE are properties of each
    % hash-table element.  Return the result of using AND to combine
@@ -85,10 +85,11 @@ symbolic procedure maphash!-and(table, fn);
    % here, or probably more efficiently using the Common Lisp macro
    % with-hash-table-iterator.
    begin scalar result := t;
-      maphash(table,
+      maphash(
          (lambda(key, value);
          result and                     % efficiency hack!
-            (result := apply3(fn, key, value, table))));
+            (result := apply3(fn, key, value, table))),
+         table);
       return result;
    end;
 
@@ -97,7 +98,7 @@ symbolic procedure sparse!-special!-matrix!-p(u, pred);
    % and PRED applied to every nonzero element is true; return nil
    % otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      maphash!-and(car u, pred);
+      maphash!-and(pred, car u);
 
 symbolic procedure sparse_symmetric_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
@@ -152,22 +153,25 @@ symbolic procedure sparse_diagonal_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) diagonal, nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      maphash!-and(car u,
-         (lambda(key, val, ignored); car key = cdr key));
+      maphash!-and(
+         (lambda(key, val, ignored); car key = cdr key),
+         car u);
 
 symbolic procedure sparse_upper_triangular_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) upper triangular, nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      maphash!-and(car u,
-         (lambda(key, val, ignored); car key <= cdr key));
+      maphash!-and(
+         (lambda(key, val, ignored); car key <= cdr key),
+         car u);
 
 symbolic procedure sparse_lower_triangular_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
    % and) lower triangular, nil otherwise.
    eqcar(u, 'sparse!-mat) and cadr(u := cdr u) = caddr u and
-      maphash!-and(car u,
-         (lambda(key, val, ignored); car key >= cdr key));
+      maphash!-and(
+         (lambda(key, val, ignored); car key >= cdr key),
+         car u);
 
 symbolic procedure sparse_identity_matrix_p u;
    % Return t if U is a sparse matrix (algebraic form) that is (square
@@ -181,10 +185,11 @@ symbolic procedure sparse!-identity!-p u;
    % not yet be fully simplified.  Return t if it is an identity
    % matrix, nil otherwise.
    begin scalar result :=
-      maphash!-and(car u,
+      maphash!-and(
          (lambda(key, val, ignored);
          if car key = cdr key then subs2!* val = (1 ./ 1)
-         else numr subs2!* val eq nil));
+         else numr subs2!* val eq nil),
+         car u);
       !*sub2 := nil;                    % since all substitutions done
       return result;
    end;
@@ -214,9 +219,10 @@ symbolic procedure sparse_unitary_matrix_p u;
       u := sparse!-matsm u; % canonical form, SQ elements
       v := sparse!-tp1 u;   % transpose as canonical form, SQ elements
       hash := car v;
-      maphash(hash,         % conjugate v as canonical form, SQ elements
+      maphash(            % conjugate v as canonical form, SQ elements
          (lambda(key,val);
-         puthash(key, hash, sparse!-conjsq val)));
+         puthash(key, hash, sparse!-conjsq val)),
+         hash);
       u := sparse!-multm(u,v);  % A*A^H as canonical form, SQ elements
       return sparse!-identity!-p u;
    end;
