@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-10 16:58:21 franc>
+% Time-stamp: <2026-06-10 17:27:30 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -53,10 +53,11 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Proposed new Standard Lisp functions, implemented in
 % "sl-on-cl.lisp".  The versions below provide a fallback if they are
-% not available.
+% not available.  Note that the Standard Lisp function hashcontents
+% returns a list of pairs of the form (key . value).
 
 #if (not (getd 'hash!-table!-p))
-% Provided in CSL but not PSL.
+% Provided in Common Lisp and CSL but not PSL.
 symbolic inline procedure hash!-table!-p u;
    % This implementation is not reliable, but currently I only need to
    % distinguish a sparse matrix canonical form from a standard
@@ -65,19 +66,17 @@ symbolic inline procedure hash!-table!-p u;
 #endif
 
 #if (not (getd 'maphash))
-% Provided in CSL but not PSL.
+% Provided in Common Lisp and CSL but not PSL.
 symbolic procedure maphash(fn, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
-   % This function is identical to the Common Lisp function maphash.
-   % Note that the Standard Lisp function hashcontents returns a list
-   % of pairs of the form (key . value).
    mapc(hashcontents hash,
       (lambda el; apply2(fn, car el, cdr el)));
 #endif
 
 #if (not (getd 'copyhash))
+% Provided in SL-on-CL only.
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
@@ -87,6 +86,13 @@ symbolic procedure copyhash hash;
          hash);
       return newhash;
    end;
+#endif
+
+#if (not (getd 'hash!-table!-count))
+% Provided in Common Lisp but not CSL or PSL.
+symbolic inline procedure hash!-table!-count hash;
+   % Return the number of entries in the hash-table HASH.
+   length hashcontents hash;
 #endif
 
 % 1000 hash table entries accommodates a 500*500 sparse matrix with
@@ -389,8 +395,7 @@ symbolic procedure matrix_density u;
             quotient(nz * 100, length u * length car u)
          >> else if type eq 'sparse!-matrix then <<
             u := sparse!-matsm u;
-            % Need a count of the hash-table entries here!
-            maphash((lambda(key,val); nz := nz + 1), car u);
+            nz := hash!-table!-count car u;
             quotient(nz * 100, cadr u * caddr u)
          >>;
    end;
