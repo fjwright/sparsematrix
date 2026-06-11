@@ -5,6 +5,7 @@ size := 500$
 % (with some fractional entries):
 sparse_random_matrix sm(size,size);
 for i := 1:size do sm(i,i) := 1/i;
+matrix_density sm;
 % Make a dense matrix copy M:
 m := densify sm$
 % Make a sparse copy S:

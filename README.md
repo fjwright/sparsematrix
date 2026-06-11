@@ -1,7 +1,7 @@
 # SPARSEMATRIX: A REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-06-09 16:40:39 franc>
+Time-stamp: <2026-06-11 18:05:38 franc>
 
 A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered to be *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on the context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix no more than half the elements are nonzero.  A common borderline case is triangular matrices.  (Of course, a dense matrix can be treated as a sparse matrix, and vice versa, which is likely to be less efficient but is useful for testing.)
 
@@ -121,9 +121,10 @@ However, the SPARSE package has a number of issues:
 
 ## TO DO
 
+* Check all operators and predicates accept expressions correctly, i.e. call sparse!-matsm.
 * `MATEIGEN` operator.
 * Support for special matrices -- triangular, symmetric, etc. -- via access functions.
-* More operators from `LINALG` package (maybe).
+* More operators from `LINALG` package (maybe), e.g. row analogues of column manipulations, sub_matrix (i.e. both row nd column manipulation)
 * More operators from `SPARSE` package (maybe).
 * Operators from `NORMFORM` package (maybe).
 
