@@ -1,7 +1,17 @@
-# SPARSEMATRIX: A REDUCE sparse matrix package
+# SPARSEMATRIX: Another REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-06-11 18:05:38 franc>
+Time-stamp: <2026-06-16 17:54:10 franc>
+
+
+## Applicability
+
+**This package is currently under development and hence experimental.**
+
+I wrote it specifically for REDUCE on Common Lisp, and at present it runs only on Common Lisp, i.e. not on PSL or CSL.  This is mainly because it relies heavily on lexical scoping, which Standard Lisp (hence PSL/CSL) does not support.  At some future time I will investigate ways to work around this limitation.  (One of the less appealing ways would be a substantial rewrite.)
+
+
+## Introduction
 
 A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in which most of the elements are zero.  Common examples of sparse matrices are [diagonal](https://en.wikipedia.org/wiki/Diagonal_matrix) and [band](https://en.wikipedia.org/wiki/Band_matrix) matrices.  By contrast, if most of the elements are non-zero, the matrix is considered to be *dense*.  Sparse matrices benefit from being stored using different data structures and manipulated using different algorithms from dense matrices.  Whether it is more efficient to regard a matrix (or more likely a set of matrices) as dense or sparse is ill defined and probably depends on the context, so it may be determinable only by experiment, but it is reasonable to assume that in a sparse matrix no more than half the elements are nonzero.  A common borderline case is triangular matrices.  (Of course, a dense matrix can be treated as a sparse matrix, and vice versa, which is likely to be less efficient but is useful for testing.)
 
@@ -18,21 +28,22 @@ Description | Dense matrix operation | Sparse matrix operation
 ------------|------------------------|------------------------
 Declaration | `matrix d(i,j)` | `sparse_matrix s(i,j)`
 Creation | `d := mat(...)` | `sparse_random_matrix s(i,j)`
-Element access | `d(i,j)` | `s(i,j)`
 
 In the following description, the letter `m` represents any valid matrix expression involving matrices using dense and/or sparse representation, and the letter `s` represents any valid matrix expression involving matrices using only sparse representation.  (In other words, all standard REDUCE matrix operations are generic and accept any mixture of matrix types, but there are also special cases of some operators that accept only matrices in sparse representation.)
 
 Description | Generic matrix operation
 ------------|-------------------------
-Dimensions | `length m`
+Element access | `m(i,j)`
 Arithmetic | `+ - * / ^`
 Inverse | `m^(-1)`
+Dimensions | `length m`
+Determinant | `det m` (or `sparse_det s`)
+Eigenvectors | `mateigen(m,id)` (or `sparse_mateigen(s,id)`)
 Transpose | `tp m` (or `sparse_tp s`)
 Trace | `trace m` (or `sparse_trace s`)
-Determinant | `det m` (or `sparse_det s`)
 Cofactors | `cofactor(m,i,j)` (or `sparse_cofactor(s,i,j)`)
-Rank | `rank m` (or `sparse_rank s`)
 Nullspace | `nullspace m` (or `sparse_nullspace s`)
+Rank | `rank m` (or `sparse_rank s`)
 Substitution | `sub(<equations>, m)`
 Explicit mapping | `map(1 + ~w, m)`
 Implicit mapping | `<function> m`
@@ -116,13 +127,12 @@ However, the SPARSE package has a number of issues:
 * Inverses can only be computed for numerical matrices.  Raising a matrix to the power 0 produces the inverse.  Non-positive powers of matrices in products fail.
 * The REDUCE operators `map`, `sub`, `cofactor` and `nullspace` are not supported.  The aggregate property (that appropriate operators automatically map over a data structure) is not supported.
 * If sparse and dense matrices are both used in an expression then the result appears always to be a sparse matrix.  I think that the result should usually be a dense matrix [BUT THIS NEEDS CHECKING]!
-* The `mateigen` operator is implemented as `spmateigen`, rather than overloading `mateigen`.
+* The `mateigen` operator is implemented only as `spmateigen`, rather than overloading `mateigen`.
 
 
 ## TO DO
 
 * Check all operators and predicates accept expressions correctly, i.e. call sparse!-matsm.
-* `MATEIGEN` operator.
 * Support for special matrices -- triangular, symmetric, etc. -- via access functions.
 * More operators from `LINALG` package (maybe), e.g. row analogues of column manipulations, sub_matrix (i.e. both row nd column manipulation)
 * More operators from `SPARSE` package (maybe).

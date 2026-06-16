@@ -1,9 +1,9 @@
-module sparsemateigen; % Compute eigen-values & vectors of sparse matrices.
+module sparsemateigen; % Compute eigen-values & -vectors of sparse matrices.
 
 % Author: Eberhard Schruefer.
 % Modification: James Davenport and Fran Burstall.
 % Revised for sparse matrices represented as hash-tables by FJW.
-% Time-stamp: <2026-06-16 16:33:07 franc>
+% Time-stamp: <2026-06-16 17:21:44 franc>
 
 % Redistribution and use in source and binary forms, with or without
 % modification, are permitted provided that the following conditions
@@ -35,11 +35,21 @@ module sparsemateigen; % Compute eigen-values & vectors of sparse matrices.
 % This file is a reworking of part of "matrix/glmat.red" to use hash-
 % tables to represent sparse matrices.
 
+% Assume matrix package loaded earlier.
+if not getd 'dense_mateigen then   % to allow this file to be reloaded
+   copyd('dense_mateigen, 'mateigen);   % original tp function
+
+symbolic procedure mateigen(u, eival);  % updates "matrix/glmat.red"
+   % Return the eigen-values & -vectors of a generic, i.e. dense or
+   % sparse, matrix expression U.
+   generic!-matfn(function dense_mateigen, function sparse_mateigen,
+      {u, eival}, getrtype u);
+
 fluid '(!*factor !*sqfree kord!*);
 
-flag('(sparse_mateigen),'opfn);
+flag('(sparse_mateigen), 'opfn);
 
-% flag('(sparse_mateigen),'noval);
+% flag('(sparse_mateigen), 'noval);
 
 symbolic procedure sparse_mateigen(u, eival);
    % U is an algebraic sparse matrix form,
@@ -47,9 +57,6 @@ symbolic procedure sparse_mateigen(u, eival);
    % Return a list of lists:
    %   {{eival-eq1,multiplicity1,eigenvector1},....},
    % where eival-eq is a polynomial and eigenvector is a matrix.
-
-   % ***** eigenvector is currently a DENSE column matrix. *****
-
    begin scalar arbvars,exu,sgn,q,r,s,x,y,z,eivec,!*factor,!*sqfree,
          !*exp,!*rounded;
       integer l;
