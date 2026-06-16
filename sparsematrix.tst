@@ -192,6 +192,14 @@ if second length m - length ws = rank m then "OK" else "***** ERROR *****";
 nullspace s;
 if second length s - length ws = rank s then "OK" else "***** ERROR *****";
 
+% Eigenvalues and eigenvectors:
+
+% REDUCE manual example:
+m := mat((2,-1,1),(0,1,1),(-1,1,1));
+s := sparsify m;
+mateigen(m, eta);
+sparse_mateigen(s, eta);
+
 % Mixed matrix types in algebraic expressions:
 
 off sparse_matrix_dense_print;          % to show matrix type

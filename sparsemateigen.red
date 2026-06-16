@@ -1,9 +1,9 @@
-module sparsemateigen; % Compute eigen-values & vectors of sparse matrix.
+module sparsemateigen; % Compute eigen-values & vectors of sparse matrices.
 
 % Author: Eberhard Schruefer.
 % Modification: James Davenport and Fran Burstall.
-% Revised for sparse matrices represented as hash tables by FJW.
-% Time-stamp: <2026-06-04 18:28:31 franc>
+% Revised for sparse matrices represented as hash-tables by FJW.
+% Time-stamp: <2026-06-16 15:07:28 franc>
 
 % Redistribution and use in source and binary forms, with or without
 % modification, are permitted provided that the following conditions
@@ -32,7 +32,7 @@ module sparsemateigen; % Compute eigen-values & vectors of sparse matrix.
 
 % $Id$
 
-% This file is a reworking of part of "matrix/glmat.red" to use hash
+% This file is a reworking of part of "matrix/glmat.red" to use hash-
 % tables to represent sparse matrices.
 
 fluid '(!*factor !*sqfree kord!*);
@@ -58,6 +58,9 @@ symbolic procedure sparse_mateigen(u, eival);
    % Return a list of lists:
    %   {{eival-eq1,multiplicity1,eigenvector1},....},
    % where eival-eq is a polynomial and eigenvector is a matrix.
+
+   % ***** eigenvector is currently a DENSE column matrix. *****
+
    begin scalar arbvars,exu,sgn,q,r,s,x,y,z,eivec,!*factor,!*sqfree,
          !*exp,!*rounded;
       integer l;
@@ -110,25 +113,31 @@ symbolic procedure sparse_mateigen(u, eival);
 symbolic procedure sparse_mateigen1(u, eival);
    % U is a simplified sparse matrix canonical form, EIVAL an
    % indeterminate naming the eigenvalues.
-   begin scalar q,x,y,z; integer l,lm,m;
-      lm := length car u;               % column dimension
+   begin scalar q,x,y,z, hash := car u,
+         m := cadr u,                   % row dimension
+         n := caddr u;                  % column dimension
       z := 1;
-      u := for each v in u collect <<   % for each row, v
-         y := 1;            % find lcm of denominators of all elements, y
-         for each w in v do y := lcm(y, denr w); % for each element, w
-         m := lm;                                % col index
-         l := l + 1;                    % row index
+      u := for i := 1 : m collect << % for each row in U
+         % y := lcm of all denominators in this row, as SQ:
+         y := 1;
+         for j := 1 : n do
+            (if el and numr el then y := lcm(y, denr el))
+               where el = gethash(i.j, hash);
+         % x := 1 * U(i,1) + ... + i * (U(i,i) - eigen) + ... + n * U(i,n)
+         % multiplied by y, the lcm of all denominators in this row.
+         % (Will solve det = 0, so row scaling is irrelevant!)
          x := nil;
-         for each j in reverse v do <<  % for each element backwards, j
-            if numr j or l = m then
-               x := {m} .* multf(if l = m
-               then
-                  addf(numr j, negf multf(!*k2f eival, denr j))
-               else numr j,
-                     quotf(y, denr j)) .+ x;
-            m := m - 1
-         >>;
-         y := z;
+         for j := n step -1 until 1 do << % for each el in reverse row
+            if (el and numr el) or i = j then
+               x := {j} .* multf(
+                  if i = j then
+                     % Subtract eival from matrix element:
+                     addf(numr el, negf multf(!*k2f eival, denr el))
+                  else
+                     numr el,
+                  quotf(y, denr el)) .+ x;
+         >> where el = gethash(i.j, hash);
+         y := z;                        % y now means something else!
          z := c!:extmult(if null red x then <<
             q := (if p then (car p  . (cdr p + 1)) . delete(p,q)
             else (lc x  . 1) . q) where p = assoc(lc x,q);
