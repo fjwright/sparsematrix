@@ -199,6 +199,13 @@ m := mat((2,-1,1),(0,1,1),(-1,1,1));
 s := sparsify m;
 mateigen(m, eta);
 sparse_mateigen(s, eta);
+sparse_mateigen(s, eta) with off sparse_matrix_dense_print;
+
+% Lipschutz examples:
+s := sparsify mat((4,1,-1),(2,5,-2),(1,1,2));
+sparse_mateigen(s, lam);
+s := sparsify mat((3,-1,1),(7,-5,1),(6,-6,2));
+sparse_mateigen(s, lam);
 
 % Mixed matrix types in algebraic expressions:
 

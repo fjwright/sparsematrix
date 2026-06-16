@@ -3,7 +3,7 @@ module sparsemateigen; % Compute eigen-values & vectors of sparse matrices.
 % Author: Eberhard Schruefer.
 % Modification: James Davenport and Fran Burstall.
 % Revised for sparse matrices represented as hash-tables by FJW.
-% Time-stamp: <2026-06-16 15:07:28 franc>
+% Time-stamp: <2026-06-16 16:33:07 franc>
 
 % Redistribution and use in source and binary forms, with or without
 % modification, are permitted provided that the following conditions
@@ -37,17 +37,6 @@ module sparsemateigen; % Compute eigen-values & vectors of sparse matrices.
 
 fluid '(!*factor !*sqfree kord!*);
 
-global '(!!arbint);
-
-if null !!arbint then !!arbint := 0;
-
-% algebraic operator arbcomplex;
-
-% Done this way since it's also defined in the solve1 module.
-
-deflist('((arbcomplex simpiden)),'simpfn);
-
-
 flag('(sparse_mateigen),'opfn);
 
 % flag('(sparse_mateigen),'noval);
@@ -68,7 +57,7 @@ symbolic procedure sparse_mateigen(u, eival);
       if not(getrtype u eq 'sparse!-matrix) then typerr(u,"sparse matrix");
       eival := !*a2k eival;
       kord!* := eival . kord!*;
-      exu := sparse_mateigen1(sparse!-matsm u,eival);
+      exu := sparse!-mateigen1(sparse!-matsm u,eival);
       q := car exu;
       y := cadr exu;
       z := caddr exu;
@@ -100,9 +89,24 @@ symbolic procedure sparse_mateigen(u, eival);
                if (y=1) or null(k member lpow y) then
                   arbvars := (k . makearbcomplex()) . arbvars;
             sgn := (y=1) or evenp length lpow y;
-            eivec := 'mat . for each k in lpow z collect % REVISE
-               {if x := assoc(k,arbvars) then mvar cdr x
-               else prepsq!* mkgleig(k, y, sgn := not sgn, arbvars)};
+            % eivec := dense column matrix:
+            % eivec := 'mat . for each k in lpow z collect
+            %    {if x := assoc(k,arbvars) then mvar cdr x
+            %    else prepsq!* mkgleig(k, y, sgn := not sgn, arbvars)};
+            % eivec := sparse column matrix:
+            begin scalar hash := mk!-sparse!-matrix!-hash();
+               integer i;               % row index, initially 0
+               for each k in lpow z do
+               begin scalar val;
+                  i := i + 1;
+                  val := if x := assoc(k,arbvars) then
+                     mvar cdr x
+                  else
+                     prepsq!* mkgleig(k, y, sgn := not sgn, arbvars);
+                  if val neq 0 then puthash(i.1, hash, val);
+               end;
+               eivec := {'sparse!-mat, hash, i, 1};
+            end;
             % {square-free factor, multiplicity, eigenvector}:
             {'list, prepsq!*(car j ./ 1), cdr j, eivec}
          >>;
@@ -110,7 +114,7 @@ symbolic procedure sparse_mateigen(u, eival);
       return r
    end;
 
-symbolic procedure sparse_mateigen1(u, eival);
+symbolic procedure sparse!-mateigen1(u, eival);
    % U is a simplified sparse matrix canonical form, EIVAL an
    % indeterminate naming the eigenvalues.
    begin scalar q,x,y,z, hash := car u,
