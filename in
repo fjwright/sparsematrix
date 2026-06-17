@@ -2,9 +2,9 @@
 
 symbolic <<
    global '(filelist);
-   in filelist$
+   in filelist;
    for each file in filelist do
       infile concat2(id2string file, ".red");
->>;
+>>$
 
 end;

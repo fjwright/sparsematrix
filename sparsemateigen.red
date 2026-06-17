@@ -3,7 +3,7 @@ module sparsemateigen; % Compute eigen-values & -vectors of sparse matrices.
 % Author: Eberhard Schruefer.
 % Modification: James Davenport and Fran Burstall.
 % Revised for sparse matrices represented as hash-tables by FJW.
-% Time-stamp: <2026-06-16 17:21:44 franc>
+% Time-stamp: <2026-06-16 18:06:19 franc>
 
 % Redistribution and use in source and binary forms, with or without
 % modification, are permitted provided that the following conditions
@@ -48,8 +48,6 @@ symbolic procedure mateigen(u, eival);  % updates "matrix/glmat.red"
 fluid '(!*factor !*sqfree kord!*);
 
 flag('(sparse_mateigen), 'opfn);
-
-% flag('(sparse_mateigen), 'noval);
 
 symbolic procedure sparse_mateigen(u, eival);
    % U is an algebraic sparse matrix form,

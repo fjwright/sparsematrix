@@ -1,7 +1,7 @@
 # SPARSEMATRIX: Another REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-06-16 17:54:10 franc>
+Time-stamp: <2026-06-17 16:45:03 franc>
 
 
 ## Applicability
@@ -84,9 +84,7 @@ The first three of these predicates mirror predicates in the `LINALG` package.
 * `sparse_orthogonal_matrix_p`
 * `sparse_unitary_matrix_p`
 
-These predicates all take a single argument that can be anything.  They return `true` if the argument evaluates to a sparse matrix with the property implied by the name of the predicate, and `false` otherwise.
-
-Currently, support is in the file `sparsepredicates.red`, which needs to be input separately from the main `SPARSEMATRIX` package.  See `sparsepredicates.rlg` for examples of using the above predicates.
+These predicates all take a single argument that can be anything.  They return `true` if the argument evaluates to a sparse matrix with the property implied by the name of the predicate, and `false` otherwise.  Currently, these predicates are *exact* and do not allow for numerical error in floating-point matrices!  See `sparsepredicates.rlg` for examples of using the above predicates.
 
 
 ## Support for `LINALG` operators
@@ -109,9 +107,7 @@ Some potentially useful facilities for working with sparse matrices modelled loo
 * `sparse_remove_columns` (cf. `LINALG` `remove_columns`)
 * `sparse_get_columns` (cf. `LINALG` `get_columns`)
 
-These operators are all more general than those in the `LINALG` package.  The input matrices can use either sparse or dense representation, but the output always uses sparse representation.  Arguments specifying column indices can be a sequence of integers, integer lists or integer intervals, which can be freely intermixed.  Column indices can be negative, meaning count from the right, and intervals can be descending.  The operator `sparse_select_columns` allows columns to be duplicated.
-
-Currently, support is in the file `sparselinalg.red`, which needs to be input separately from the main `SPARSEMATRIX` package.  See `sparselinalg.rlg` for examples of using the above `SPARSEMATRIX` versions of the `LINALG` operators.
+These operators are all more general than those in the `LINALG` package.  The input matrices can use either sparse or dense representation, but the output always uses sparse representation.  Arguments specifying column indices can be a sequence of integers, integer lists or integer intervals, which can be freely intermixed.  Column indices can be negative, meaning count from the right, and intervals can be descending.  The operator `sparse_select_columns` allows columns to be duplicated.  See `sparselinalg.rlg` for examples of using the above `SPARSEMATRIX` versions of the `LINALG` operators.
 
 
 ## Critique of SPARSE, an alternative REDUCE sparse matrix package
@@ -132,7 +128,7 @@ However, the SPARSE package has a number of issues:
 
 ## TO DO
 
-* Check all operators and predicates accept expressions correctly, i.e. call sparse!-matsm.
+* Check predicates apply substitutions.
 * Support for special matrices -- triangular, symmetric, etc. -- via access functions.
 * More operators from `LINALG` package (maybe), e.g. row analogues of column manipulations, sub_matrix (i.e. both row nd column manipulation)
 * More operators from `SPARSE` package (maybe).
