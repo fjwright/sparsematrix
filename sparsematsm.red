@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-10 17:04:54 franc>
+% Time-stamp: <2026-06-18 15:39:34 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -172,7 +172,7 @@ symbolic procedure sparse!-matsm!*1 u;
    <<
       % We use subs2!* to make sure each element simplified fully.
       u := 'sparse!-mat .
-         map!-sparse!-matrix((lambda x; !*q2a subs2!* x), u, t);
+         map!-sparse!-matrix(function(lambda x; !*q2a subs2!* x), u, t);
       !*sub2 := nil;                   % Since all substitutions done.
       u
    >>;
@@ -258,7 +258,7 @@ symbolic procedure sparse!-matsm1(u, name);
       subfg!* := x;
       % Make sure there are no power substitutions:
       z := map!-sparse!-matrix(
-         (lambda value; <<!*sub2 := t; subs2 value>>),
+         function(lambda value; <<!*sub2 := t; subs2 value>>),
          z);
       go to c;
    e: % y is 1*1 matrix, cf. y = ((el))
@@ -294,7 +294,7 @@ symbolic procedure sparse!-addm(u,v);
       begin scalar hash := copyhash car u;
          % Add each nonzero element of sparse matrix V to the new hash
          % table (and ensure the result is nonzero):
-         maphash(
+         maphash(function
             (lambda(key, v_val);
              begin scalar u_val;
                 puthash!-nzsq(key, hash,
@@ -329,7 +329,7 @@ symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix canonical form U =
    % (<hash> <m> <n>) as a new sparse matrix canonical form.
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(
+      maphash(function
          (lambda(key, value);
          puthash(cdr key . car key, hash, value)),
          car u);
@@ -346,10 +346,10 @@ symbolic procedure sparse!-multm(u,v);
    % as a new sparse matrix canonical form.  Assume U and V are
    % conformable, i.e. caddr u = cadr v.
    begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(
+      maphash(function
          (lambda(u_key, u_value);
           begin scalar i := car u_key, k := cdr u_key;
-             maphash(
+             maphash(function
                 (lambda(v_key, v_value);
                 if car v_key = k then
                    % The product of this pair of matrix elements is a
@@ -374,7 +374,7 @@ symbolic procedure sparse!-multsm(u,v);
       map!-sparse!-matrix(
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         (lambda value; multsq(value, u)),
+         function(lambda value; multsq(value, u)),
          v);
 
 
@@ -390,7 +390,8 @@ symbolic procedure sparse!-matsub(u,v);
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
    'sparse!-mat .
-      map!-sparse!-matrix((lambda value; subeval1(u, value)), cdr v);
+      map!-sparse!-matrix(function(lambda value; subeval1(u, value)),
+         cdr v);
 
 
 % %%%%%%%%%%

@@ -1,7 +1,7 @@
-module sparsematrix;   % Header for sparse matrices using hash tables.
+module sparsematrix;   % STANDARD LISP header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-10 17:03:56 franc>
+% Time-stamp: <2026-06-18 16:49:27 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -86,20 +86,19 @@ symbolic procedure maphash(fn, hash);
    % This function is identical to the Common Lisp function maphash.
    % Note that the Standard Lisp function hashcontents returns a list
    % of pairs of the form (key . value).
-   % mapc(hashcontents hash,
-   %    (lambda el; apply2(fn, car el, cdr el)));
    for each el in hashcontents hash do
       apply2(fn, car el, cdr el);
 #endif
+
+% symbolic macro procedure maphash u; % (fn, hash)
+%    {'mapc, {'hashcontents, caddr u},
+%       {'lambda, '(el), {'apply2, cadr u, '(car el), '(cdr el)}}};
 
 #if (not (getd 'copyhash))
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
    begin scalar newhash := mk!-sparse!-matrix!-hash();
-      % maphash(
-      %    (lambda(key, value); puthash(key, newhash, value)),
-      %    hash);
       for each el in hashcontents hash do
          puthash(car el, newhash, cdr el);
       return newhash;
@@ -113,7 +112,7 @@ symbolic procedure copyhash hash;
 
 symbolic inline procedure mk!-sparse!-matrix!-hash;
 #if (memq 'psl lispsystem!*)
-   mkhash(10, 'equal);                  % OK in both PSL ans CSL!
+   mkhash(10, 'equal);                  % OK in both PSL and CSL!
 #else
    mkhash(1000, 1);                     % PSL only accepts 0 & 3 as arg 2!
 #endif
@@ -133,14 +132,8 @@ symbolic procedure map!-sparse!-matrix0(fn, sm, name);
    % if NAME is non-nil the use it as the name component (last cdr) of
    % the result; otherwise return a proper list.
    begin scalar hash := mk!-sparse!-matrix!-hash();
-#if (memq 'psl lispsystem!*)
       for each el in hashcontents car sm do
          puthash(car el, hash, apply1(fn, cdr el));
-#else
-      scalar mapfn := lambda(key, value);
-         puthash(key, hash, apply1(fn, value));
-      maphash(mapfn, car sm);
-#endif
       if name eq t then name := cdddr sm;
       return hash . cadr sm . caddr sm . name;
    end;
@@ -284,17 +277,17 @@ symbolic procedure set!-sparse!-matelem(u,v);
 put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
 symbolic procedure map!-sparse!-mat(f,o);
-#if (memq 'psl lispsystem!*)
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      for each el in hashcontents cadr o do
-         puthash(car el, hash, apply1(f, cdr el));
-      return 'sparse!-mat . hash . cadr o . caddr o;
-   end;
-#else
+% #if (memq 'psl lispsystem!*)
+%    begin scalar hash := mk!-sparse!-matrix!-hash();
+%       for each el in hashcontents cadr o do
+%          puthash(car el, hash, apply1(f, cdr el));
+%       return 'sparse!-mat . hash . cadr o . caddr o;
+%    end;
+% #else
    'sparse!-mat . map!-sparse!-matrix(
-      (lambda w; apply1(f,w)),
+      function(lambda w; apply1(f,w)),
       cdr o);
-#endif
+% #endif
 
 % Automatically map an operator over the elements of a sparse matrix:
 
@@ -309,9 +302,11 @@ symbolic procedure sparse!-matrixmap(u,v);
    % The sparse matrix is input and output in tagged algebraic form.
    if flagp(car u, 'matmapfn)
    then sparse!-matsm!*1
-      map!-sparse!-matrix(
-         (lambda value; simp!*(car u . mk!*sq value . cddr u)),
-         sparse!-matsm cadr u, nil)
+   begin scalar hash := mk!-sparse!-matrix!-hash(), sm := cadr u;
+      for each el in hashcontents car sparse!-matsm sm do
+         puthash(car el, hash, simp!*(car u . mk!*sq cdr el . cddr u));
+      return hash . caddr sm . cadddr sm . nil;
+   end
    else if flagp(car u, 'matfn) then reval2(u,v)
    else typerr(car u, "sparse matrix operator");
 
@@ -369,10 +364,10 @@ symbolic procedure sparse!-matpri u;
          lprim append(msg, {length alist, "nonzero elements:"});
          % Each alist element has the form ((i . j) . value).
          % Sort by row index and then by column index:
-         alist := sort(alist,
-            lambda(x,y);
-         caar x < caar y or
-            (caar x = caar y and cdar x < cdar y));
+         alist := sort(alist, function
+            (lambda(x,y);
+            caar x < caar y or
+               (caar x = caar y and cdar x < cdar y)));
          for each el in alist do
             assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
       end;
@@ -431,7 +426,7 @@ symbolic procedure matrix_density u;
          >> else if type eq 'sparse!-matrix then <<
             u := sparse!-matsm u;
             % Need a count of the hash-table entries here!
-            maphash((lambda(key,val); nz := nz + 1), car u);
+            maphash(function(lambda(key,val); nz := nz + 1), car u);
             quotient(nz * 100, cadr u * caddr u)
          >>;
    end;
