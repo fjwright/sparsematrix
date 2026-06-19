@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-19 16:49:19 franc>
+% Time-stamp: <2026-06-19 18:05:34 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -72,17 +72,18 @@ symbolic procedure maphash(fn, hash);
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
    mapc(hashcontents hash,
-      (lambda el; apply2(fn, car el, cdr el)));
+      function(lambda el; apply2(fn, car el, cdr el)));
 #endif
 
 #if (not (getd 'copyhash))
 % Provided in SL-on-CL only.
+fluid '(newhash);
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
    begin scalar newhash := mk!-sparse!-matrix!-hash();
       maphash(
-         (lambda(key, value); puthash(key, newhash, value)),
+         function(lambda(key, value); puthash(key, newhash, value)),
          hash);
       return newhash;
    end;
@@ -121,7 +122,11 @@ symbolic inline procedure hash!-table!-count hash;
 % "alg/simp.red")
 
 symbolic inline procedure mk!-sparse!-matrix!-hash;
-   mkhash(1000, 1);
+#if (memq 'psl lispsystem!*)
+   mkhash(10, 'equal); % OK in both PSL and CSL, but PSL displays contents!
+#else
+   mkhash(1000, 3);                     % PSL only accepts 0 & 3 as arg 2!
+#endif
 
 symbolic inline procedure puthash!-nzsq(key, hash, value);
    % Avoid putting a zero SQ entry into a sparse matrix hash table.
@@ -140,6 +145,13 @@ symbolic procedure mat2list m;
       if not eqcar(mm, 'mat) then typerr(m, "matrix");
       return 'list . for each row in cdr mm collect 'list . row;
    end;
+
+% Oddp is defined in SL-on-CL and in "rtools/general.red" in the
+% development system but not in the last snapshot release, revision
+% 7327), build date 08-Mar-2026, so ...
+#if (null (getd 'oddp))
+symbolic inline procedure oddp n;  not evenp n;
+#endif
 
 
 % %%%%%%%%%%%
@@ -336,10 +348,10 @@ symbolic procedure sparse!-matpri u;
          lprim append(msg, {length alist, "nonzero elements:"});
          % Each alist element has the form ((i . j) . value).
          % Sort by row index and then by column index:
-         alist := sort(alist,
-            lambda(x,y);
-         caar x < caar y or
-            (caar x = caar y and cdar x < cdar y));
+         alist := sort(alist, function
+            (lambda(x,y);
+            caar x < caar y or
+               (caar x = caar y and cdar x < cdar y)));
          for each el in alist do
             assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
       end;
