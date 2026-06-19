@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-10 17:27:30 franc>
+% Time-stamp: <2026-06-19 16:49:19 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -88,6 +88,26 @@ symbolic procedure copyhash hash;
    end;
 #endif
 
+% ***** Need a version of maphash!-new that applies only to values. *****
+
+symbolic procedure maphash!-new(fn, hash);
+   % Iterate over all entries in the hash-table HASH and return a new
+   % hash-table.  For each entry, the function FN is called with two
+   % arguments -- oldkey, oldval -- and should return a pair (newkey
+   % . newval).  Oldkey is used to look up oldval in hash-table HASH,
+   % and newkey is used to save newval in the new hash-table.
+   begin scalar newhash := mk!-sparse!-matrix!-hash();
+      maphash(function
+         (lambda(oldkey, oldval);
+          begin scalar
+             oldval := gethash(oldkey, hash),
+             new := apply2(fn, oldkey, oldval);
+             puthash(car new, newhash, cdr new)
+          end),
+         hash);
+      return newhash;
+   end;
+
 #if (not (getd 'hash!-table!-count))
 % Provided in Common Lisp but not CSL or PSL.
 symbolic inline procedure hash!-table!-count hash;
@@ -102,28 +122,6 @@ symbolic inline procedure hash!-table!-count hash;
 
 symbolic inline procedure mk!-sparse!-matrix!-hash;
    mkhash(1000, 1);
-
-symbolic macro procedure map!-sparse!-matrix u; % (fn, sm, &optional name)
-   {'map!-sparse!-matrix0, cadr u, caddr u, cdddr u and cadddr u};
-
-flag('(map!-sparse!-matrix), 'variadic);
-
-symbolic procedure map!-sparse!-matrix0(fn, sm, name);
-   % Iterate over all entries in the canonical sparse matrix form SM
-   % and return the result as a new canonical sparse matrix form (with
-   % the same dimensions as SM).  The function FN takes one argument
-   % and is applied to the value of each matrix element.
-
-   % If NAME eq t then preserve the name component (last cdr) of SM;
-   % if NAME is non-nil the use it as the name component (last cdr) of
-   % the result; otherwise return a proper list.
-   begin scalar hash := mk!-sparse!-matrix!-hash(),
-         mapfn := lambda(key, value);
-      puthash(key, hash, apply1(fn, value));
-      maphash(mapfn, car sm);
-      if name eq t then name := cdddr sm;
-      return hash . cadr sm . caddr sm . name;
-   end;
 
 symbolic inline procedure puthash!-nzsq(key, hash, value);
    % Avoid putting a zero SQ entry into a sparse matrix hash table.
@@ -257,9 +255,11 @@ symbolic procedure set!-sparse!-matelem(u,v);
 put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
 symbolic procedure map!-sparse!-mat(f,o);
-   'sparse!-mat . map!-sparse!-matrix(
-      (lambda w; apply1(f,w)),
-      cdr o);
+   {'sparse!-mat,
+      maphash!-new(function
+         (lambda(key, value); (key . apply1(f, value))),
+         cadr o),
+         caddr o, cadddr o};
 
 % Automatically map an operator over the elements of a sparse matrix:
 
@@ -269,14 +269,16 @@ put('sparse!-matrix, 'fn, 'matflg);
 flag('(sparse_det sparse_trace sparse_cofactor), 'matfn);
 
 symbolic procedure sparse!-matrixmap(u,v);
-   % U = (<function> <sparse matrix>).
+   % U = (<function> <sparse matrix> <other args>).
    % Apply <function> to each element of <sparse matrix>, cf. matrixmap.
    % The sparse matrix is input and output in tagged algebraic form.
    if flagp(car u, 'matmapfn)
    then sparse!-matsm!*1
-      map!-sparse!-matrix(
-         (lambda value; simp!*(car u . mk!*sq value . cddr u)),
-         sparse!-matsm cadr u, nil)
+      ({maphash!-new(function
+         (lambda(key, value);
+         (key . simp!*(car u . mk!*sq value . cddr u))),
+         car sparse!-matsm sm),
+         caddr sm, cadddr sm} where sm = cadr u)
    else if flagp(car u, 'matfn) then reval2(u,v)
    else typerr(car u, "sparse matrix operator");
 
