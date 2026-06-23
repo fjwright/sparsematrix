@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-19 16:47:27 franc>
+% Time-stamp: <2026-06-23 12:45:32 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,10 @@ module sparsematsm;               % Simplification of sparse matrices.
 % POSSIBILITY OF SUCH DAMAGE.
 
 % $Id$
+
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(hash!* k!* u_value!* u!*);
+#endif
 
 % This file is a reworking of "matrix/matsm.red" to use hash tables to
 % represent sparse matrices.
@@ -295,19 +299,19 @@ symbolic procedure sparse!-addm(u,v);
    else
       % Copy each nonzero element of sparse matrix U to a new hash
       % table:
-      begin scalar hash := copyhash car u;
+      begin scalar hash!* := copyhash car u;
          % Add each nonzero element of sparse matrix V to the new hash
          % table (and ensure the result is nonzero):
          maphash(function
             (lambda(key, v_val);
              begin scalar u_val;
-                puthash!-nzsq(key, hash,
-                   if (u_val := gethash(key, hash)) then
+                puthash!-nzsq(key, hash!*,
+                   if (u_val := gethash(key, hash!*)) then
                       addsq(u_val, v_val)
                    else v_val)
              end),
             car v);
-         return {hash, cadr u, caddr u}
+         return {hash!*, cadr u, caddr u}
       end;
 
 
@@ -345,36 +349,36 @@ symbolic procedure sparse!-multm(u,v);
    % Return the product of two sparse matrix canonical forms U and V
    % as a new sparse matrix canonical form.  Assume U and V are
    % conformable, i.e. caddr u = cadr v.
-   begin scalar hash := mk!-sparse!-matrix!-hash();
+   begin scalar hash!* := mk!-sparse!-matrix!-hash();
       maphash(function
-         (lambda(u_key, u_value);
-          begin scalar i := car u_key, k := cdr u_key;
+         (lambda(u_key, u_value!*);
+          begin scalar i := car u_key, k!* := cdr u_key;
              maphash(function
                 (lambda(v_key, v_value);
-                if car v_key = k then
+                if car v_key = k!* then
                    % The product of this pair of matrix elements is a
                    % summand of the scalar product forming the
                    % (i,j)-element of the product matrix.
                    begin scalar j := cdr v_key,
-                         scaprod := gethash(i.j, hash),
-                         prod := multsq(u_value, v_value);
-                      puthash!-nzsq(i.j, hash,
+                         scaprod := gethash(i.j, hash!*),
+                         prod := multsq(u_value!*, v_value);
+                      puthash!-nzsq(i.j, hash!*,
                          if scaprod then addsq(scaprod, prod) else prod);
                    end),
                 car v);
           end),
          car u);
-      return {hash, cadr u, caddr v}
+      return {hash!*, cadr u, caddr v}
    end;
 
-symbolic procedure sparse!-multsm(u,v);
+symbolic procedure sparse!-multsm(u!*, v);
    % Return the product of standard quotient U and sparse matrix
    % canonical form V as a new sparse matrix canonical form.
-   if u = (1 ./ 1) then v else
+   if u!* = (1 ./ 1) then v else
       {maphash!-new(function
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         (lambda(key, value); (key . multsq(value, u))),
+         (lambda(key, value); (key . multsq(value, u!*))),
          car v),
          cadr v, caddr v};
 
@@ -385,14 +389,14 @@ symbolic procedure sparse!-multsm(u,v);
 
 put('sparse!-matrix, 'subfn, 'sparse!-matsub);
 
-symbolic procedure sparse!-matsub(u,v);
+symbolic procedure sparse!-matsub(u!*, v);
    % V is a tagged algebraic sparse matrix form;
    % U is a substitution equation represented as a dotted pair.
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
    {'sparse!-mat,
       maphash!-new(function
-         (lambda(key, value); (key . subeval1(u, value))),
+         (lambda(key, value); (key . subeval1(u!*, value))),
          cadr v),
          caddr v, cadddr v};
 

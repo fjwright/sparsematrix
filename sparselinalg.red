@@ -1,7 +1,7 @@
 module sparselinalg; % Construction and manipulation of sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-10 16:24:43 franc>
+% Time-stamp: <2026-06-23 12:50:35 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,10 @@ module sparselinalg; % Construction and manipulation of sparse matrices
 % POSSIBILITY OF SUCH DAMAGE.
 
 % $Id$
+
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(hash!* n!* dim!* alist!* columns!* hashes!*);
+#endif
 
 % Some potentially useful facilities for working with sparse matrices
 % modelled loosely on LINALG, the REDUCE Linear Algebra Package, by
@@ -129,16 +133,16 @@ symbolic procedure sparse_matrix_augment u;
 symbolic procedure sparse!-matrix!-augment(u, m);
    % Adjoin horizontally a list U of sparse matrix canonical forms all
    % with row dim M, and return a sparse matrix canonical form.
-   begin scalar hash := copyhash caar u,
-         n := caddar u;                 % col dim of result so far
+   begin scalar hash!* := copyhash caar u,
+         n!* := caddar u;               % col dim of result so far
       for each el in cdr u do <<
-         maphash(
+         maphash(function
             (lambda(key, value);
-            puthash(car key . (n + cdr key), hash, value)),
+            puthash(car key . (n!* + cdr key), hash!*, value)),
             car el);
-         n := n + caddr el;
+         n!* := n!* + caddr el;
       >>;
-      return {hash, m, n};
+      return {hash!*, m, n!*};
    end;
 
 % sparse_block_diagonal_matrix
@@ -172,20 +176,20 @@ symbolic procedure sparse_block_diagonal_matrix u;
 symbolic procedure sparse!-block!-diagonal!-matrix u;
    % Adjoin diagonally a list U of square sparse matrix canonical
    % forms or SQs, and return a square sparse matrix canonical form.
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      integer dim;                    % row & col dim of result so far
+   begin scalar hash!* := mk!-sparse!-matrix!-hash();
+      integer dim!*;                  % row & col dim of result so far
       for each el in u do
          if hash!-table!-p car el then << % sparse matrix canonical form
-            maphash(
+            maphash(function
                (lambda(key, value);
-               puthash((dim + car key) . (dim + cdr key), hash, value)),
+               puthash((dim!* + car key) . (dim!* + cdr key), hash!*, value)),
                car el);
-            dim := dim + caddr el;
+            dim!* := dim!* + caddr el;
          >> else <<                     % scalar = 1*1 matrix
-            dim := dim + 1;
-            puthash(dim . dim, hash, el);
+            dim!* := dim!* + 1;
+            puthash(dim!* . dim!*, hash!*, el);
          >>;
-      return {hash, dim, dim};
+      return {hash!*, dim!*, dim!*};
    end;
 
 
@@ -250,23 +254,23 @@ symbolic procedure sparse!-select!-columns(mtrx, columns);
    % MTRX is a sparse matrix canonical form.  COLUMNS is a list of
    % column indices.  Return an algebraic copy of MTRX containing only
    % the specified columns, with the columns correctly re-indexed.
-   begin scalar hash := mk!-sparse!-matrix!-hash(), alist;
+   begin scalar hash!* := mk!-sparse!-matrix!-hash(), alist!*;
       % Convert columns to an alist with elements of the form
       % (old_col_ind new_col_ind_1 new_col_ind_2 ...):
       integer newcol;                   % initialised to 0
       for each oldcol in columns do
       begin scalar el;
          newcol := newcol + 1;
-         if el := assoc(oldcol, alist) then
+         if el := assoc(oldcol, alist!*) then
             nconc(el, {newcol})
-         else alist := {oldcol, newcol} . alist;
+         else alist!* := {oldcol, newcol} . alist!*;
       end;
-      maphash(
+      maphash(function
          (lambda(key, value);
-         for each newcol in cdr assoc(cdr key, alist) do
-            puthash(car key . newcol, hash, value)),
+         for each newcol in cdr assoc(cdr key, alist!*) do
+            puthash(car key . newcol, hash!*, value)),
          car mtrx);
-      return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
+      return sparse!-matsm!*1 {hash!*, cadr mtrx, newcol};
    end;
 
 % sparse_remove_columns
@@ -288,27 +292,27 @@ symbolic procedure sparse_remove_columns u; % (mtrx, columns)
    % the specified columns.
    u and sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
 
-symbolic procedure sparse!-remove!-columns(mtrx, columns);
+symbolic procedure sparse!-remove!-columns(mtrx, columns!*);
    % MTRX is a sparse matrix canonical form.  COLUMNS is a list of
    % column indices.  Return an algebraic copy of MTRX without the
    % specified columns, with the columns correctly re-indexed.
-   begin scalar hash := mk!-sparse!-matrix!-hash();
+   begin scalar hash!* := mk!-sparse!-matrix!-hash();
       integer newcol;           % initialised to 0
       % Convert columns to a selection list:
-      columns := for col := 1 : caddr mtrx join
-         if not member(col, columns) then {col};
+      columns!* := for col := 1 : caddr mtrx join
+         if not member(col, columns!*) then {col};
       % Convert columns to an alist of elements of the form
       % (old_col_ind . new_col_ind):
-      columns := for each oldcol in columns collect
+      columns := for each oldcol in columns!* collect
          (oldcol . (newcol := newcol + 1));
-      maphash(
+      maphash(function
          (lambda(key, value);
           begin scalar el;
-             if (el := assoc(cdr key, columns)) then
-                puthash(car key . cdr el, hash, value);
+             if (el := assoc(cdr key, columns!*)) then
+                puthash(car key . cdr el, hash!*, value);
           end),
          car mtrx);
-      return sparse!-matsm!*1 {hash, cadr mtrx, newcol};
+      return sparse!-matsm!*1 {hash!*, cadr mtrx, newcol};
    end;
 
 % sparse_get_columns
@@ -326,24 +330,24 @@ symbolic procedure sparse!-get!-columns(mtrx, columns);
    % column indices.  Return an algebraic list of the specified
    % columns of MTRX, in the order specified, as algebraic sparse
    % column matrices.
-   begin scalar hashes, alist, m := cadr mtrx;
+   begin scalar hashes!*, alist!*, m := cadr mtrx;
       % Convert columns to an alist with elements of the form
       % (old_col_ind new_col_ind_1 new_col_ind_2 ...):
       integer newcol;                   % initialised to 0
-      hashes := for each oldcol in columns collect
+      hashes!* := for each oldcol in columns collect
       begin scalar el;
          newcol := newcol + 1;
-         if el := assoc(oldcol, alist) then
+         if el := assoc(oldcol, alist!*) then
             nconc(el, {newcol})
-         else alist := {oldcol, newcol} . alist;
+         else alist!* := {oldcol, newcol} . alist!*;
          return mk!-sparse!-matrix!-hash();
       end;
-      maphash(
+      maphash(function
          (lambda(key, value);
-         for each newcol in cdr assoc(cdr key, alist) do
-            puthash(car key . 1, nth(hashes, newcol), value)),
+         for each newcol in cdr assoc(cdr key, alist!*) do
+            puthash(car key . 1, nth(hashes!*, newcol), value)),
          car mtrx);
-      return 'list . for each hash in hashes collect
+      return 'list . for each hash in hashes!* collect
          sparse!-matsm!*1 {hash, m, 1};
    end;
 

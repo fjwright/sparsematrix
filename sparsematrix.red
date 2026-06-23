@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-19 18:05:34 franc>
+% Time-stamp: <2026-06-23 12:43:57 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -47,9 +47,25 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % The rtype of a sparse matrix is sparse-matrix.
 
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(fn!* newhash!* hash!* f!* u!*);
+#endif
+
 % %%%%%%%%%%%%%%%%%
 % Utility functions
 % %%%%%%%%%%%%%%%%%
+
+% 1000 hash table entries accommodates a 500*500 sparse matrix with
+% nonzero diagonal and 500 other nonzero elements.  Also, the REDUCE
+% simplifier uses hash-tables with 1000 elements initially (see
+% "alg/simp.red")
+
+symbolic inline procedure mk!-sparse!-matrix!-hash;
+#if (memq 'psl lispsystem!*)
+   mkhash(10, 'equal); % OK in both PSL and CSL, but PSL displays contents!
+#else
+   mkhash(1000, 3);                     % PSL only accepts 0 & 3 as arg 2!
+#endif
 
 % Proposed new Standard Lisp functions, implemented in
 % "sl-on-cl.lisp".  The versions below provide a fallback if they are
@@ -67,12 +83,12 @@ symbolic inline procedure hash!-table!-p u;
 
 #if (not (getd 'maphash))
 % Provided in Common Lisp and CSL but not PSL.
-symbolic procedure maphash(fn, hash);
+symbolic procedure maphash(fn!*, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
    mapc(hashcontents hash,
-      function(lambda el; apply2(fn, car el, cdr el)));
+      function(lambda el; apply2(fn!*, car el, cdr el)));
 #endif
 
 #if (not (getd 'copyhash))
@@ -81,32 +97,32 @@ fluid '(newhash);
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
-   begin scalar newhash := mk!-sparse!-matrix!-hash();
+   begin scalar newhash!* := mk!-sparse!-matrix!-hash();
       maphash(
-         function(lambda(key, value); puthash(key, newhash, value)),
+         function(lambda(key, value); puthash(key, newhash!*, value)),
          hash);
-      return newhash;
+      return newhash!*;
    end;
 #endif
 
 % ***** Need a version of maphash!-new that applies only to values. *****
 
-symbolic procedure maphash!-new(fn, hash);
+symbolic procedure maphash!-new(fn!*, hash!*);
    % Iterate over all entries in the hash-table HASH and return a new
    % hash-table.  For each entry, the function FN is called with two
    % arguments -- oldkey, oldval -- and should return a pair (newkey
    % . newval).  Oldkey is used to look up oldval in hash-table HASH,
    % and newkey is used to save newval in the new hash-table.
-   begin scalar newhash := mk!-sparse!-matrix!-hash();
+   begin scalar newhash!* := mk!-sparse!-matrix!-hash();
       maphash(function
          (lambda(oldkey, oldval);
           begin scalar
-             oldval := gethash(oldkey, hash),
-             new := apply2(fn, oldkey, oldval);
-             puthash(car new, newhash, cdr new)
+             oldval := gethash(oldkey, hash!*),
+             new := apply2(fn!*, oldkey, oldval);
+             puthash(car new, newhash!*, cdr new)
           end),
-         hash);
-      return newhash;
+         hash!*);
+      return newhash!*;
    end;
 
 #if (not (getd 'hash!-table!-count))
@@ -114,18 +130,6 @@ symbolic procedure maphash!-new(fn, hash);
 symbolic inline procedure hash!-table!-count hash;
    % Return the number of entries in the hash-table HASH.
    length hashcontents hash;
-#endif
-
-% 1000 hash table entries accommodates a 500*500 sparse matrix with
-% nonzero diagonal and 500 other nonzero elements.  Also, the REDUCE
-% simplifier uses hash-tables with 1000 elements initially (see
-% "alg/simp.red")
-
-symbolic inline procedure mk!-sparse!-matrix!-hash;
-#if (memq 'psl lispsystem!*)
-   mkhash(10, 'equal); % OK in both PSL and CSL, but PSL displays contents!
-#else
-   mkhash(1000, 3);                     % PSL only accepts 0 & 3 as arg 2!
 #endif
 
 symbolic inline procedure puthash!-nzsq(key, hash, value);
@@ -266,10 +270,10 @@ symbolic procedure set!-sparse!-matelem(u,v);
 
 put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
-symbolic procedure map!-sparse!-mat(f,o);
+symbolic procedure map!-sparse!-mat(f!*,o);
    {'sparse!-mat,
       maphash!-new(function
-         (lambda(key, value); (key . apply1(f, value))),
+         (lambda(key, value); (key . apply1(f!*, value))),
          cadr o),
          caddr o, cadddr o};
 
@@ -280,19 +284,19 @@ put('sparse!-matrix, 'fn, 'matflg);
 
 flag('(sparse_det sparse_trace sparse_cofactor), 'matfn);
 
-symbolic procedure sparse!-matrixmap(u,v);
+symbolic procedure sparse!-matrixmap(u!*, v);
    % U = (<function> <sparse matrix> <other args>).
    % Apply <function> to each element of <sparse matrix>, cf. matrixmap.
    % The sparse matrix is input and output in tagged algebraic form.
-   if flagp(car u, 'matmapfn)
+   if flagp(car u!*, 'matmapfn)
    then sparse!-matsm!*1
       ({maphash!-new(function
          (lambda(key, value);
-         (key . simp!*(car u . mk!*sq value . cddr u))),
+         (key . simp!*(car u!* . mk!*sq value . cddr u!*))),
          car sparse!-matsm sm),
          caddr sm, cadddr sm} where sm = cadr u)
-   else if flagp(car u, 'matfn) then reval2(u,v)
-   else typerr(car u, "sparse matrix operator");
+   else if flagp(car u!*, 'matfn) then reval2(u!*, v)
+   else typerr(car u!*, "sparse matrix operator");
 
 
 % %%%%%%%%
