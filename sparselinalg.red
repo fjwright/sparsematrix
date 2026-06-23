@@ -1,7 +1,7 @@
 module sparselinalg; % Construction and manipulation of sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 12:50:35 franc>
+% Time-stamp: <2026-06-23 15:26:25 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -303,7 +303,7 @@ symbolic procedure sparse!-remove!-columns(mtrx, columns!*);
          if not member(col, columns!*) then {col};
       % Convert columns to an alist of elements of the form
       % (old_col_ind . new_col_ind):
-      columns := for each oldcol in columns!* collect
+      columns!* := for each oldcol in columns!* collect
          (oldcol . (newcol := newcol + 1));
       maphash(function
          (lambda(key, value);

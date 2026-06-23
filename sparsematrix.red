@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 12:43:57 franc>
+% Time-stamp: <2026-06-23 15:21:23 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -294,7 +294,7 @@ symbolic procedure sparse!-matrixmap(u!*, v);
          (lambda(key, value);
          (key . simp!*(car u!* . mk!*sq value . cddr u!*))),
          car sparse!-matsm sm),
-         caddr sm, cadddr sm} where sm = cadr u)
+         caddr sm, cadddr sm} where sm = cadr u!*)
    else if flagp(car u!*, 'matfn) then reval2(u!*, v)
    else typerr(car u!*, "sparse matrix operator");
 

@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 12:45:32 franc>
+% Time-stamp: <2026-06-23 15:44:39 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -32,7 +32,7 @@ module sparsematsm;               % Simplification of sparse matrices.
 % $Id$
 
 #if (not (memq 'common!-lisp lispsystem!*))
-fluid '(hash!* k!* u_value!* u!*);
+fluid '(hash!* k!* u_value!* u!* i!* v!*);
 #endif
 
 % This file is a reworking of "matrix/matsm.red" to use hash tables to
@@ -345,14 +345,14 @@ symbolic procedure sparse!-tp1 u;
 % Multiplication
 % %%%%%%%%%%%%%%
 
-symbolic procedure sparse!-multm(u,v);
+symbolic procedure sparse!-multm(u, v!*);
    % Return the product of two sparse matrix canonical forms U and V
    % as a new sparse matrix canonical form.  Assume U and V are
    % conformable, i.e. caddr u = cadr v.
    begin scalar hash!* := mk!-sparse!-matrix!-hash();
       maphash(function
          (lambda(u_key, u_value!*);
-          begin scalar i := car u_key, k!* := cdr u_key;
+          begin scalar i!* := car u_key, k!* := cdr u_key;
              maphash(function
                 (lambda(v_key, v_value);
                 if car v_key = k!* then
@@ -360,15 +360,15 @@ symbolic procedure sparse!-multm(u,v);
                    % summand of the scalar product forming the
                    % (i,j)-element of the product matrix.
                    begin scalar j := cdr v_key,
-                         scaprod := gethash(i.j, hash!*),
+                         scaprod := gethash(i!*.j, hash!*),
                          prod := multsq(u_value!*, v_value);
-                      puthash!-nzsq(i.j, hash!*,
+                      puthash!-nzsq(i!*.j, hash!*,
                          if scaprod then addsq(scaprod, prod) else prod);
                    end),
-                car v);
+                car v!*);
           end),
          car u);
-      return {hash!*, cadr u, caddr v}
+      return {hash!*, cadr u, caddr v!*}
    end;
 
 symbolic procedure sparse!-multsm(u!*, v);

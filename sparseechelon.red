@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 15:14:07 franc>
+% Time-stamp: <2026-06-23 15:25:06 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -225,11 +225,11 @@ symbolic procedure sparse!-lnrsolve(u, v);
             car v);
          caddr v
       >> else <<                        % augment U with a unit matrix
-         for i := 1 : m do puthash(i . (i + m!*), hash!*, 1 ./ 1);
-         m
+         for i := 1 : m!* do puthash(i . (i + m!*), hash!*, 1 ./ 1);
+         m!*
       >>;
       % Reduce hash (destructively) to row canonical form:
-      sing := sparse!-echelon(hash, m!*, m!* + n, t);
+      sing := sparse!-echelon(hash!*, m!*, m!* + n, t);
       if sing eq 'singular then
          rerror(sparse!-matrix, 13, "Singular sparse matrix");
       sparse!-canonical(hash!*, m!*, m!* + n);
@@ -239,7 +239,7 @@ symbolic procedure sparse!-lnrsolve(u, v);
          (lambda(key, value);
          if cdr key > m!* then
             puthash(car key . (cdr key - m!*), newhash!*, value)),
-         hash);
+         hash!*);
       return {newhash!*, m!*, n};
    end;
 
