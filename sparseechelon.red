@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-18 15:44:01 franc>
+% Time-stamp: <2026-06-23 15:14:07 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -30,6 +30,10 @@ module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 % POSSIBILITY OF SUCH DAMAGE.
 
 % $Id$
+
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(hash!* m!* newhash!*);
+#endif
 
 put('sparse_echelon, 'rtypefn, 'getrtypecar); % declares algebraic operator
 
@@ -212,31 +216,31 @@ symbolic procedure sparse!-lnrsolve(u, v);
    % matrix.  Use reduction of the augmented matrix to row canonical
    % form.  Assume U is m*m and V is m*n, so the product is m*n, and
    % all matrices are represented as sparse matrix canonical forms.
-   begin scalar hash := copyhash car u,
-         m := cadr u, n, sing, newhash;
+   begin scalar hash!* := copyhash car u,
+         m!* := cadr u, n, sing, newhash!*;
       n := if v then <<                 % augment U with V
          maphash(function
             (lambda(key, value);
-            puthash(car key . (cdr key + m), hash, value)),
+            puthash(car key . (cdr key + m!*), hash!*, value)),
             car v);
          caddr v
       >> else <<                        % augment U with a unit matrix
-         for i := 1 : m do puthash(i . (i + m), hash, 1 ./ 1);
+         for i := 1 : m do puthash(i . (i + m!*), hash!*, 1 ./ 1);
          m
       >>;
       % Reduce hash (destructively) to row canonical form:
-      sing := sparse!-echelon(hash, m, m + n, t);
+      sing := sparse!-echelon(hash, m!*, m!* + n, t);
       if sing eq 'singular then
          rerror(sparse!-matrix, 13, "Singular sparse matrix");
-      sparse!-canonical(hash, m, m + n);
+      sparse!-canonical(hash!*, m!*, m!* + n);
       % Extract the product or inverse matrix:
-      newhash := mk!-sparse!-matrix!-hash();
+      newhash!* := mk!-sparse!-matrix!-hash();
       maphash(function
          (lambda(key, value);
-         if cdr key > m then
-            puthash(car key . (cdr key - m), newhash, value)),
+         if cdr key > m!* then
+            puthash(car key . (cdr key - m!*), newhash!*, value)),
          hash);
-      return {newhash, m, n};
+      return {newhash!*, m!*, n};
    end;
 
 endmodule;
