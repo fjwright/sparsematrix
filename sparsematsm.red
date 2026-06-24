@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-24 15:53:53 franc>
+% Time-stamp: <2026-06-24 16:06:19 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -243,9 +243,8 @@ symbolic procedure sparse!-matsm1(u, name);
       %   car u = (sparse!-mat <hash> <m> <n>)
       % Return a sparse matrix canonical form
       %   (<hash> <m> <n> . <name>):
-      x := (maphash!-new!-values(function
-         (lambda value; xsimp value),
-         car sm) . cadr sm . caddr sm . name) where sm = cdar u;
+      x := (maphash!-new!-values(function xsimp, car sm) .
+         cadr sm . caddr sm . name) where sm = cdar u;
       go to b;
    d: % Inverse:
       y := sparse!-matsm cadar u;       % y = (<hash> <m> <n>)
@@ -337,7 +336,7 @@ symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix canonical form U =
    % (<hash> <m> <n>) as a new sparse matrix canonical form.
    {maphash!-new(function
-      (lambda(key,value); (cdr key . car key) . value),
+      (lambda(key, value); (cdr key . car key) . value),
       car u), caddr u, cadr u};
 
 

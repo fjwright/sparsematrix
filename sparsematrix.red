@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-24 15:54:38 franc>
+% Time-stamp: <2026-06-24 16:00:41 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -281,12 +281,9 @@ symbolic procedure set!-sparse!-matelem(u,v);
 
 put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
-symbolic procedure map!-sparse!-mat(f!*,o);
-   {'sparse!-mat,
-      maphash!-new!-values(function
-         (lambda value; apply1(f!*, value)),
-         cadr o),
-         caddr o, cadddr o};
+symbolic procedure map!-sparse!-mat(f, o);
+   {'sparse!-mat, maphash!-new!-values(f, cadr o),
+      caddr o, cadddr o};
 
 % Automatically map an operator over the elements of a sparse matrix:
 
