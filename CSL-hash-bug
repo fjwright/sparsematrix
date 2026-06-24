@@ -1,0 +1,37 @@
+2: lisp;
+
+nil
+
+3* h := mkhash(10, 3);
+
+#H(3 0 61 [~ ~ ~ ~ ~ ~ ~ ~] [~ ~ ~ ~ ~ ~ ~ ~])
+
+4* hashcontents h;
+
+nil
+
+5* puthash('foo, h, 'bar);
+
+bar
+
+6* h;
+
+#H(3 1 61 [~ foo ~ ~ ~ ~ ~ ~] [~ bar ~ ~ ~ ~ ~ ~])
+
+7* hashcontents h;
+
+((foo . bar))
+
+8* remhash('foo, h);
+
+t
+
+9* h;
+
+#H(3 1 61 [~ + ~ ~ ~ ~ ~ ~] [~ ~ ~ ~ ~ ~ ~ ~])
+
+10* hashcontents h;
+
+((+ . ~))
+
+11*
