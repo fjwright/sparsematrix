@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 15:21:23 franc>
+% Time-stamp: <2026-06-24 15:29:11 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -48,7 +48,7 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 % The rtype of a sparse matrix is sparse-matrix.
 
 #if (not (memq 'common!-lisp lispsystem!*))
-fluid '(fn!* newhash!* hash!* f!* u!*);
+fluid '(fn!* newhash!* f!* u!*);
 #endif
 
 % %%%%%%%%%%%%%%%%%
@@ -87,13 +87,22 @@ symbolic procedure maphash(fn!*, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
-   mapc(hashcontents hash,
-      function(lambda el; apply2(fn!*, car el, cdr el)));
+   % mapc(hashcontents hash,
+   %    function(lambda el; apply2(fn!*, car el, cdr el)));
+   % The above definition doesn't work well in PSL, so...
+   for each el in hashcontents hash do
+      apply2(fn, car el, cdr el);
+#endif
+
+#if (not (getd 'hash!-table!-count))
+% Provided in Common Lisp but not CSL or PSL.
+symbolic inline procedure hash!-table!-count hash;
+   % Return the number of entries in the hash-table HASH.
+   length hashcontents hash;
 #endif
 
 #if (not (getd 'copyhash))
 % Provided in SL-on-CL only.
-fluid '(newhash);
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
@@ -105,32 +114,34 @@ symbolic procedure copyhash hash;
    end;
 #endif
 
-% ***** Need a version of maphash!-new that applies only to values. *****
-
-symbolic procedure maphash!-new(fn!*, hash!*);
+symbolic procedure maphash!-new(fn!*, hash);
    % Iterate over all entries in the hash-table HASH and return a new
-   % hash-table.  For each entry, the function FN is called with two
-   % arguments -- oldkey, oldval -- and should return a pair (newkey
-   % . newval).  Oldkey is used to look up oldval in hash-table HASH,
-   % and newkey is used to save newval in the new hash-table.
+   % hash-table.  For each entry in HASH, the function FN is called
+   % with two arguments -- oldkey, oldval -- and should return a pair
+   % (newkey . newval).  Oldkey is the key used to look up an entry
+   % with value oldval in hash-table HASH, and newkey is the key used
+   % to save newval in the new hash-table.
    begin scalar newhash!* := mk!-sparse!-matrix!-hash();
       maphash(function
          (lambda(oldkey, oldval);
-          begin scalar
-             oldval := gethash(oldkey, hash!*),
-             new := apply2(fn!*, oldkey, oldval);
-             puthash(car new, newhash!*, cdr new)
-          end),
-         hash!*);
+         puthash(car new, newhash!*, cdr new) where
+            new = apply2(fn!*, oldkey, oldval)),
+         hash);
       return newhash!*;
    end;
 
-#if (not (getd 'hash!-table!-count))
-% Provided in Common Lisp but not CSL or PSL.
-symbolic inline procedure hash!-table!-count hash;
-   % Return the number of entries in the hash-table HASH.
-   length hashcontents hash;
-#endif
+symbolic procedure maphash!-new!-values(fn!*, hash);
+   % Iterate over all entries in the hash-table HASH and return a new
+   % hash-table.  For each entry in HASH, the function FN is called
+   % with the entry value as its single argument and its return value
+   % is used as the entry value in the new hash-table.
+   begin scalar newhash!* := mk!-sparse!-matrix!-hash();
+      maphash(function
+         (lambda(key, val);
+         puthash(key, newhash!*, apply1(fn!*, val))),
+         hash);
+      return newhash!*;
+   end;
 
 symbolic inline procedure puthash!-nzsq(key, hash, value);
    % Avoid putting a zero SQ entry into a sparse matrix hash table.
