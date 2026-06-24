@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-24 16:00:41 franc>
+% Time-stamp: <2026-06-24 16:19:05 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -83,7 +83,7 @@ symbolic inline procedure hash!-table!-p u;
 
 #if (not (getd 'maphash))
 % Provided in Common Lisp and CSL but not PSL.
-symbolic procedure maphash(fn!*, hash);
+symbolic procedure maphash(fn, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
