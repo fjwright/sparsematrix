@@ -1,7 +1,7 @@
-module sparsematrix;   % Header for sparse matrices using hash tables.
+module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-24 15:29:11 franc>
+% Time-stamp: <2026-06-24 15:54:38 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,17 +31,17 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % $Id$
 
-% This file is a reworking of "matrix/matrix.red" to use hash tables
+% This file is a reworking of "matrix/matrix.red" to use hash-tables
 % to represent sparse matrices.
 
 % The representation of a sparse matrix is
 %   (sparse-mat <hash> <m> <n> . <name>),
-% where <hash> is a hash table, <m> is the maximum row index (row
+% where <hash> is a hash-table, <m> is the maximum row index (row
 % dimension), <n> is the maximum column index (column dimension), and
 % <name> is either the name of the sparse matrix (an identifier) to be
 % used by the print routine or nil if it has no name.
 
-% Matrix elements are stored in the hash table under the key
+% Matrix elements are stored in the hash-table under the key
 %   (<i> . <j>),
 % where <i> is the row index and <j> is the column index.
 
@@ -55,7 +55,7 @@ fluid '(fn!* newhash!* f!* u!*);
 % Utility functions
 % %%%%%%%%%%%%%%%%%
 
-% 1000 hash table entries accommodates a 500*500 sparse matrix with
+% 1000 hash-table entries accommodates a 500*500 sparse matrix with
 % nonzero diagonal and 500 other nonzero elements.  Also, the REDUCE
 % simplifier uses hash-tables with 1000 elements initially (see
 % "alg/simp.red")
@@ -283,8 +283,8 @@ put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
 symbolic procedure map!-sparse!-mat(f!*,o);
    {'sparse!-mat,
-      maphash!-new(function
-         (lambda(key, value); (key . apply1(f!*, value))),
+      maphash!-new!-values(function
+         (lambda value; apply1(f!*, value)),
          cadr o),
          caddr o, cadddr o};
 
@@ -301,9 +301,8 @@ symbolic procedure sparse!-matrixmap(u!*, v);
    % The sparse matrix is input and output in tagged algebraic form.
    if flagp(car u!*, 'matmapfn)
    then sparse!-matsm!*1
-      ({maphash!-new(function
-         (lambda(key, value);
-         (key . simp!*(car u!* . mk!*sq value . cddr u!*))),
+      ({maphash!-new!-values(function
+         (lambda value; simp!*(car u!* . mk!*sq value . cddr u!*)),
          car sparse!-matsm sm),
          caddr sm, cadddr sm} where sm = cadr u!*)
    else if flagp(car u!*, 'matfn) then reval2(u!*, v)

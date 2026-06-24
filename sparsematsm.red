@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 15:44:39 franc>
+% Time-stamp: <2026-06-24 15:53:53 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -176,8 +176,8 @@ symbolic procedure sparse!-matsm!*1 u;
    <<
       % We use subs2!* to make sure each element simplified fully.
       u := 'sparse!-mat .
-         maphash!-new(function
-            (lambda(key, value); (key . !*q2a subs2!* value)),
+         maphash!-new!-values(function
+            (lambda value; !*q2a subs2!* value),
             car u) . cadr u . caddr u . cdddr u;
       !*sub2 := nil;                   % Since all substitutions done.
       u
@@ -243,8 +243,8 @@ symbolic procedure sparse!-matsm1(u, name);
       %   car u = (sparse!-mat <hash> <m> <n>)
       % Return a sparse matrix canonical form
       %   (<hash> <m> <n> . <name>):
-      x := (maphash!-new(function
-         (lambda(key, value); (key . xsimp value)),
+      x := (maphash!-new!-values(function
+         (lambda value; xsimp value),
          car sm) . cadr sm . caddr sm . name) where sm = cdar u;
       go to b;
    d: % Inverse:
@@ -265,8 +265,8 @@ symbolic procedure sparse!-matsm1(u, name);
       else z := apply2(get('sparse!-mat,'lnrsolvefn),y,z);
       subfg!* := x;
       % Make sure there are no power substitutions:
-      z := {maphash!-new(function
-         (lambda(key, value); (key . <<!*sub2 := t; subs2 value>>)),
+      z := {maphash!-new!-values(function
+         (lambda value; <<!*sub2 := t; subs2 value>>),
          car z), cadr z, caddr z};
       go to c;
    e: % y is 1*1 matrix, cf. y = ((el))
@@ -375,10 +375,10 @@ symbolic procedure sparse!-multsm(u!*, v);
    % Return the product of standard quotient U and sparse matrix
    % canonical form V as a new sparse matrix canonical form.
    if u!* = (1 ./ 1) then v else
-      {maphash!-new(function
+      {maphash!-new!-values(function
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         (lambda(key, value); (key . multsq(value, u!*))),
+         (lambda value; multsq(value, u!*)),
          car v),
          cadr v, caddr v};
 
@@ -395,8 +395,8 @@ symbolic procedure sparse!-matsub(u!*, v);
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
    {'sparse!-mat,
-      maphash!-new(function
-         (lambda(key, value); (key . subeval1(u!*, value))),
+      maphash!-new!-values(function
+         (lambda value; subeval1(u!*, value)),
          cadr v),
          caddr v, cadddr v};
 
