@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-25 12:05:57 franc>
+% Time-stamp: <2026-06-25 16:15:08 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -64,6 +64,17 @@ module sparsematrix;   % Header for sparse matrices using hash-tables.
 % running on Common Lisp, because they do not need to be Common Lisp
 % special variables.
 
+% One problem with this approach to emulating lexical scoping in
+% Standard Lisp is that the scope does not nest: fluid variables are
+% global in scope.  Therefore, distinct "lexically-scoped" variables
+% should have distinct names to avoid different variables with the
+% same name clashing.  This happened in PSL when I implemented maphash
+% using mapc and a lambda expression, so I used a foreach loop and
+% avoided the need for lexical scoping.  A more general solution would
+% be to precede each lexically-scoped variable with the name of the
+% procedure in which it is local.  But this gets messy and doesn't
+% seem to be necessary in general!
+
 #if (not (memq 'common!-lisp lispsystem!*))
 fluid '(fn!* newhash!* u!*);
 #endif
@@ -96,15 +107,12 @@ symbolic inline procedure hash!-table!-p u;
 
 #if (not (getd 'maphash))
 % Provided in Common Lisp and CSL but not PSL.
-symbolic procedure maphash(fn!*, hash);
+symbolic procedure maphash(fn, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
-   mapc(hashcontents hash,
-      function(lambda el; apply2(fn!*, car el, cdr el)));
-   % The above definition doesn't work well in PSL, so...
-   % for each el in hashcontents hash do
-   %    apply2(fn, car el, cdr el);
+   for each el in hashcontents hash do
+      apply2(fn, car el, cdr el);
 #endif
 
 #if (not (getd 'hash!-table!-count))
