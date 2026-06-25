@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-24 16:19:05 franc>
+% Time-stamp: <2026-06-25 12:05:57 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -47,8 +47,25 @@ module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % The rtype of a sparse matrix is sparse-matrix.
 
+% %%%%%%%%%%%%%%%%%%%%%%
+% Remark on coding style
+% %%%%%%%%%%%%%%%%%%%%%%
+
+% It seems natural to perform operations on sparse matrices by mapping
+% lambda expressions over the entries in hash-tables, using maphash
+% and functions derived from it.  To carry additional information, it
+% is often necessary to use variables that are global to the lambda
+% expressions but local to their containing functions, which is
+% elegantly supported by lexical scoping in Common Lisp.  However,
+% Standard Lisp proper does not provide lexical scoping, so it is
+% necessary to treat all variables that are global to lambda
+% expressions as Standard Lisp fluid variables.  I append * to the
+% names of all such variables and declare them fluid only when not
+% running on Common Lisp, because they do not need to be Common Lisp
+% special variables.
+
 #if (not (memq 'common!-lisp lispsystem!*))
-fluid '(fn!* newhash!* f!* u!*);
+fluid '(fn!* newhash!* u!*);
 #endif
 
 % %%%%%%%%%%%%%%%%%
@@ -61,11 +78,7 @@ fluid '(fn!* newhash!* f!* u!*);
 % "alg/simp.red")
 
 symbolic inline procedure mk!-sparse!-matrix!-hash;
-#if (memq 'psl lispsystem!*)
-   mkhash(10, 'equal); % OK in both PSL and CSL, but PSL displays contents!
-#else
-   mkhash(1000, 3);                     % PSL only accepts 0 & 3 as arg 2!
-#endif
+   mkhash(1000, 'equal);
 
 % Proposed new Standard Lisp functions, implemented in
 % "sl-on-cl.lisp".  The versions below provide a fallback if they are
@@ -83,15 +96,15 @@ symbolic inline procedure hash!-table!-p u;
 
 #if (not (getd 'maphash))
 % Provided in Common Lisp and CSL but not PSL.
-symbolic procedure maphash(fn, hash);
+symbolic procedure maphash(fn!*, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
-   % mapc(hashcontents hash,
-   %    function(lambda el; apply2(fn!*, car el, cdr el)));
+   mapc(hashcontents hash,
+      function(lambda el; apply2(fn!*, car el, cdr el)));
    % The above definition doesn't work well in PSL, so...
-   for each el in hashcontents hash do
-      apply2(fn, car el, cdr el);
+   % for each el in hashcontents hash do
+   %    apply2(fn, car el, cdr el);
 #endif
 
 #if (not (getd 'hash!-table!-count))

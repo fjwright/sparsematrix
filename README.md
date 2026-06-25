@@ -1,14 +1,9 @@
 # SPARSEMATRIX: Another REDUCE sparse matrix package
 
 **[Francis Wright](https://sites.google.com/site/fjwcentaur)**<br/>
-Time-stamp: <2026-06-17 16:45:03 franc>
-
-
-## Applicability
+Time-stamp: <2026-06-25 15:20:59 franc>
 
 **This package is currently under development and hence experimental.**
-
-I wrote it specifically for REDUCE on Common Lisp, and at present it runs only on Common Lisp, i.e. not on PSL or CSL.  This is mainly because it relies heavily on lexical scoping, which Standard Lisp (hence PSL/CSL) does not support.  At some future time I will investigate ways to work around this limitation.  (One of the less appealing ways would be a substantial rewrite.)
 
 
 ## Introduction
@@ -17,7 +12,9 @@ A [*sparse matrix*](https://en.wikipedia.org/wiki/Sparse_matrix) is a matrix in 
 
 The REDUCE MATRIX package implicitly assumes dense matrices.  SPARSEMATRIX is a re-implementation of the MATRIX package to support sparse matrices.  It uses hash-tables to store matrix elements, and the canonical form for a sparse matrix (henceforth referred to as *sparse representation*) is a LISP list of the form `(<hash> <m> <n>)`, where `<hash>` is a hash-table, `<m>` is the number of rows (row dimension), and `<n>` is the number of columns (column dimension).  Only nonzero elements should be stored in the hash-table and all missing elements are implicitly zero.  By contrast, the canonical form for a dense matrix (henceforth referred to as *dense representation*) is a LISP list of rows of the form `(<row_1> <row_2> ... <row_m>)`, where each `<row_i>` is a list of the matrix elements in the *i-th* row.  The algorithms used in the SPARSEMATRIX package try to avoid accessing implicitly-zero (i.e. non-stored) matrix elements, whereas the algorithms used in the MATRIX package always run through all matrix elements.  Results obtained using the `MATRIX` and `SPARSEMATRIX` packages should be identical (apart from memory use and time), and the test files compare the results of using them both.
 
-In tests using large sparse matrices (500&times;500 matrices with 1000 nonzero rational number elements &ndash; 0.4% density), the `SPARSEMATRIX` package is very much faster than the `MATRIX` package for addition and multiplication, and faster for inversion and determinant.
+In tests (on Steel Bank Common Lisp) using large sparse matrices (500&times;500 matrices with 1000 nonzero rational number elements &ndash; 0.4% density), the `SPARSEMATRIX` package is very much faster than the `MATRIX` package for addition and multiplication, and faster for inversion and determinant.
+
+I wrote this package specifically to experiment with hash-table support in REDUCE on Common Lisp, and then ported it to PSL and CSL.  The code naturally relies heavily on lexical scoping, which Common Lisp uses but on Standard Lisp (hence PSL/CSL) has to be emulated by declaring lexically-scoped variables to be `fluid`.  Hash-table access is based on the functions provided by Common Lisp, which are different in PSL/CSL, and different between PSL and CSL, so I have implemented any missing Common Lisp functions that I need using what is available in PSL/CSL.
 
 
 ## Supported matrix operations
