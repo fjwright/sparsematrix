@@ -10,9 +10,9 @@ on errcont;
 % cf. LINALG make_identity
 
 sparse_identity_matrix();
-*** sparse_identity_matrix called with 0 instead of 1 arguments 
 
 
+***** Wrong number of arguments to sparse_identity_matrix 
 
 sparse_identity_matrix x;
 

@@ -7,7 +7,7 @@ on errcont;
 % sparse_identity_matrix
 % cf. LINALG make_identity
 
-% sparse_identity_matrix();               % Crashes PSL if compiled!
+sparse_identity_matrix();
 sparse_identity_matrix x;
 sparse_identity_matrix 3;
 

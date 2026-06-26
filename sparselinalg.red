@@ -1,7 +1,7 @@
 module sparselinalg; % Construction and manipulation of sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-26 11:21:45 franc>
+% Time-stamp: <2026-06-26 12:07:36 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -59,13 +59,13 @@ symbolic procedure sparse!-reval!&flatten u;
 % sparse_identity_matrix
 % cf. LINALG make_identity
 
+put('sparse_identity_matrix, 'psopfn, 'sparse_identity_matrix);
 put('sparse_identity_matrix, 'rtypefn, 'quotesparse!-matrix);
-                                        % declares algebraic operator
 
-symbolic procedure sparse_identity_matrix(dim);
+symbolic procedure sparse_identity_matrix u; % (dim)
    % DIM is a positive integer.  Return a DIM*DIM sparse identity
    % matrix.
-   begin scalar hash;
+   begin scalar dim := reval carx(u, "sparse_identity_matrix"), hash;
       if not(fixp dim and dim > 0) then typerr(dim, "matrix dimension");
       hash := mk!-sparse!-matrix!-hash();
       for i := 1 : dim do puthash(i.i, hash, 1);
