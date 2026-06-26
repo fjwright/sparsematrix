@@ -1,7 +1,7 @@
 module sparselinalg; % Construction and manipulation of sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 15:26:25 franc>
+% Time-stamp: <2026-06-26 11:21:45 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -39,6 +39,14 @@ fluid '(hash!* n!* dim!* alist!* columns!* hashes!*);
 % modelled loosely on LINALG, the REDUCE Linear Algebra Package, by
 % Matt Rebbeck.
 
+symbolic procedure safe!-cdr x;
+   % This function is not currently provided in mainstream REDUCE.
+   % (The file "alg/general.red" containing this definition is not
+   % included in the build.)  It is provided in REDUCE on Common Lisp
+   % and flagged lose.  (It is aliased to cdr, because Common Lisp cdr
+   % is safe.)
+   if atom x then nil else cdr x;
+
 symbolic procedure sparse!-reval!&flatten u;
    % Reval and flatten a list that may include REDUCE lists.
    for each el in revlis u join
@@ -51,8 +59,8 @@ symbolic procedure sparse!-reval!&flatten u;
 % sparse_identity_matrix
 % cf. LINALG make_identity
 
-symbolic operator sparse_identity_matrix;
 put('sparse_identity_matrix, 'rtypefn, 'quotesparse!-matrix);
+                                        % declares algebraic operator
 
 symbolic procedure sparse_identity_matrix(dim);
    % DIM is a positive integer.  Return a DIM*DIM sparse identity
@@ -267,7 +275,7 @@ symbolic procedure sparse!-select!-columns(mtrx, columns);
       end;
       maphash(function
          (lambda(key, value);
-         for each newcol in cdr assoc(cdr key, alist!*) do
+         for each newcol in safe!-cdr assoc(cdr key, alist!*) do
             puthash(car key . newcol, hash!*, value)),
          car mtrx);
       return sparse!-matsm!*1 {hash!*, cadr mtrx, newcol};
@@ -344,7 +352,7 @@ symbolic procedure sparse!-get!-columns(mtrx, columns);
       end;
       maphash(function
          (lambda(key, value);
-         for each newcol in cdr assoc(cdr key, alist!*) do
+         for each newcol in safe!-cdr assoc(cdr key, alist!*) do
             puthash(car key . 1, nth(hashes!*, newcol), value)),
          car mtrx);
       return 'list . for each hash in hashes!* collect

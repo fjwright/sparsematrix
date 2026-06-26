@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-23 15:25:06 franc>
+% Time-stamp: <2026-06-26 11:09:15 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,8 @@ module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 fluid '(hash!* m!* newhash!*);
 #endif
 
-put('sparse_echelon, 'rtypefn, 'getrtypecar); % declares algebraic operator
+put('sparse_echelon, 'rtypefn, 'quotesparse!-matrix);
+                                        % declares algebraic operator
 
 symbolic procedure sparse_echelon u;
    % Return the sparse matrix in row echelon form.
@@ -137,7 +138,8 @@ symbolic procedure sparse!-add!-to!-el(hash, i_j, value);
       puthash!-nzsq(i_j, hash, value);
    end;
 
-put('sparse_canonical, 'rtypefn, 'getrtypecar); % declares algebraic operator
+put('sparse_canonical, 'rtypefn, 'quotesparse!-matrix);
+                                        % declares algebraic operator
 
 symbolic procedure sparse_canonical u;
    % Return the sparse matrix in row canonical form.
