@@ -36,8 +36,12 @@ sparse_identity_matrix 3;
 sparse_band_matrix();
 
 
+***** Wrong number of arguments to sparse_band_matrix 
+
 sparse_band_matrix(3);
 
+
+***** Wrong number of arguments to sparse_band_matrix 
 
 sparse_band_matrix(3,1);
 
@@ -155,6 +159,8 @@ s := [3  4]
 sparse_matrix_augment();
 
 
+***** Wrong number of arguments to sparse_matrix_augment 
+
 sparse_matrix_augment(42);
 
 
@@ -206,6 +212,8 @@ sparse_matrix_augment({m, 2s}, {2m, 3s});
 
 sparse_block_diagonal_matrix();
 
+
+***** Wrong number of arguments to sparse_block_diagonal_matrix 
 
 sparse_block_diagonal_matrix(42);
 
@@ -301,20 +309,17 @@ sparse_block_diagonal_matrix({m, 2s}, {2m, 3s});
 sparse_select_columns();
 
 
+***** Wrong number of arguments to sparse_select_columns 
+
 sparse_select_columns(42);
 
 
-***** 42 invalid as matrix
+***** Wrong number of arguments to sparse_select_columns 
 
 sparse_select_columns(s1);
 
 
-[0]
-[ ]
-[0]
-[ ]
-[0]
-
+***** Wrong number of arguments to sparse_select_columns 
 
 sparse_select_columns(s1, 2);
 
@@ -393,20 +398,17 @@ sparse_select_columns(s1, 3 .. 4);
 sparse_remove_columns();
 
 
+***** Wrong number of arguments to sparse_remove_columns 
+
 sparse_remove_columns(42);
 
 
-***** 42 invalid as matrix
+***** Wrong number of arguments to sparse_remove_columns 
 
 sparse_remove_columns(s1);
 
 
-[1  2  2   4 ]
-[            ]
-[3  4  6   8 ]
-[            ]
-[5  6  10  12]
-
+***** Wrong number of arguments to sparse_remove_columns 
 
 sparse_remove_columns(s1, 2);
 
@@ -485,15 +487,17 @@ sparse_remove_columns(s1, 3 .. 4);
 sparse_get_columns();
 
 
+***** Wrong number of arguments to sparse_get_columns 
+
 sparse_get_columns(42);
 
 
-***** 42 invalid as matrix
+***** Wrong number of arguments to sparse_get_columns 
 
 sparse_get_columns(s1);
 
 
-{}
+***** Wrong number of arguments to sparse_get_columns 
 
 sparse_get_columns(s1, 2);
 

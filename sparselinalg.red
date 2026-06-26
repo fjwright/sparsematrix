@@ -1,7 +1,7 @@
 module sparselinalg; % Construction and manipulation of sparse matrices
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-26 12:07:36 franc>
+% Time-stamp: <2026-06-26 17:34:49 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -65,7 +65,9 @@ put('sparse_identity_matrix, 'rtypefn, 'quotesparse!-matrix);
 symbolic procedure sparse_identity_matrix u; % (dim)
    % DIM is a positive integer.  Return a DIM*DIM sparse identity
    % matrix.
-   begin scalar dim := reval carx(u, "sparse_identity_matrix"), hash;
+   if length u neq 1 then
+      rederr "Wrong number of arguments to sparse_identity_matrix"
+   else begin scalar dim := reval car u, hash;
       if not(fixp dim and dim > 0) then typerr(dim, "matrix dimension");
       hash := mk!-sparse!-matrix!-hash();
       for i := 1 : dim do puthash(i.i, hash, 1);
@@ -84,8 +86,9 @@ symbolic procedure sparse_band_matrix u; % (dim, scalars)
    % or lists thereof.  Return a DIM*DIM sparse matrix with the n
    % scalars in the order specified in each row i in columns from j =
    % i - fix((n-1)/2) to j + n.  Normally, n will be odd.
-   u and cdr u and
-   begin scalar dim := reval car u, n, j0, hash;
+   if length u < 2 then
+      rederr "Wrong number of arguments to sparse_band_matrix"
+   else begin scalar dim := reval car u, n, j0, hash;
       if not(fixp dim and dim > 0) then typerr(dim, "matrix dimension");
       for each el in (u := sparse!-reval!&flatten cdr u) do
          if getrtype el then typerr(el, "scalar");
@@ -114,11 +117,13 @@ put('sparse_matrix_augment, 'psopfn, 'sparse_matrix_augment);
 put('sparse_matrix_augment, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure sparse_matrix_augment u;
-   % Accept any number of arguments that are either sparse or dense
+   % Accept one or more arguments that are either sparse or dense
    % matrices, or lists thereof, where all matrices must have the same
    % number of rows.  The result is the matrices adjoined horizontally
    % in the order specified, as a sparse matrix.
-   u and begin scalar m;   % common row dimension
+   if length u < 1 then
+      rederr "Wrong number of arguments to sparse_matrix_augment"
+   else begin scalar m;   % common row dimension
       % Build a list of sparse matrix canonical forms:
       u := for each el in sparse!-reval!&flatten u collect sparse!-matsm
          begin scalar newm, mtrx :=
@@ -160,12 +165,14 @@ put('sparse_block_diagonal_matrix, 'psopfn, 'sparse_block_diagonal_matrix);
 put('sparse_block_diagonal_matrix, 'rtypefn, 'quotesparse!-matrix);
 
 symbolic procedure sparse_block_diagonal_matrix u;
-   % Accept any number of arguments that are either sparse or dense
+   % Accept one or more arguments that are either sparse or dense
    % matrices or scalars, or lists thereof, where all matrices must be
    % square.  Scalars are treated as 1*1 matrices.  The result is the
    % matrices adjoined into a block diagonal matrix in the order
    % specified, as a square sparse matrix.
-   u and <<
+   if length u < 1 then
+      rederr "Wrong number of arguments to sparse_block_diagonal_matrix"
+   else <<
       % Build a list of sparse matrix canonical forms or SQs:
       u := for each el in sparse!-reval!&flatten u collect
          begin scalar rtype := getrtype el;
@@ -224,7 +231,10 @@ symbolic procedure sparse_select_columns u; % (mtrx, columns)
    % a-1, a-2, ..., b'.  Return an algebraic sparse matrix copy of
    % MTRX containing only the specified columns in the order
    % specified; duplicate column indices are respected.
-   u and sparse!-process!-mtrx!&cols(u, function sparse!-select!-columns);
+   if length u < 2 then
+      rederr "Wrong number of arguments to sparse_select_columns"
+   else
+      sparse!-process!-mtrx!&cols(u, function sparse!-select!-columns);
 
 symbolic procedure sparse!-index!-check(idx, n);
    if fixp idx and not zerop idx and abs idx <= n then
@@ -298,7 +308,10 @@ symbolic procedure sparse_remove_columns u; % (mtrx, columns)
    % .. b', if b < a then the interval is expanded as `a, a-1, a-2,
    % ..., b'.  Return an algebraic sparse matrix copy of MTRX without
    % the specified columns.
-   u and sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
+   if length u < 2 then
+      rederr "Wrong number of arguments to sparse_remove_columns"
+   else
+      sparse!-process!-mtrx!&cols(u, function sparse!-remove!-columns);
 
 symbolic procedure sparse!-remove!-columns(mtrx, columns!*);
    % MTRX is a sparse matrix canonical form.  COLUMNS is a list of
@@ -331,7 +344,10 @@ put('sparse_get_columns, 'psopfn, 'sparse_get_columns);
 symbolic procedure sparse_get_columns u; % (mtrx, columns)
    % Like sparse_select_columns, but returns a list of sparse column
    % matrices.
-   u and sparse!-process!-mtrx!&cols(u, function sparse!-get!-columns);
+   if length u < 2 then
+      rederr "Wrong number of arguments to sparse_get_columns"
+   else
+      sparse!-process!-mtrx!&cols(u, function sparse!-get!-columns);
 
 symbolic procedure sparse!-get!-columns(mtrx, columns);
    % MTRX is a sparse matrix canonical form.  COLUMNS is a list of
@@ -343,13 +359,13 @@ symbolic procedure sparse!-get!-columns(mtrx, columns);
       % (old_col_ind new_col_ind_1 new_col_ind_2 ...):
       integer newcol;                   % initialised to 0
       hashes!* := for each oldcol in columns collect
-      begin scalar el;
-         newcol := newcol + 1;
-         if el := assoc(oldcol, alist!*) then
-            nconc(el, {newcol})
-         else alist!* := {oldcol, newcol} . alist!*;
-         return mk!-sparse!-matrix!-hash();
-      end;
+         begin scalar el;
+            newcol := newcol + 1;
+            if el := assoc(oldcol, alist!*) then
+               nconc(el, {newcol})
+            else alist!* := {oldcol, newcol} . alist!*;
+            return mk!-sparse!-matrix!-hash();
+         end;
       maphash(function
          (lambda(key, value);
          for each newcol in safe!-cdr assoc(cdr key, alist!*) do
