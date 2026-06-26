@@ -6,13 +6,19 @@ length sd;
 
 sd;
 
+matrix_density sd;
+
 for i := 1:5 do sd(i,i) := i;
 
 sd;
 
+matrix_density sd;
+
 for i := 1:5 do write sd(i,i) := sd(i,i);
 
 densify sd;
+
+matrix_density ws;
 
 m := mat((a,b),(c,d));
 
@@ -29,6 +35,7 @@ df(s,x);
 sub(a=aa,s);
 
 sparse_random_matrix sr(5,5);
+matrix_density sr;
 
 % Trace:
 sparse_trace sr;
@@ -42,6 +49,11 @@ tp sr;
 densify tp sr;
 
 % Determinant:
+m := mat((1,2,3),(4,5,6),(7,8,9));
+s := sparsify m;
+det m;
+sparse_det s;
+det s;
 m := mat((a,b,c),(d,e,f),(g,h,i));
 s := sparsify m;
 det m;
@@ -172,10 +184,46 @@ sparse_nullspace s;
 nullspace s;
 
 sparse_random_matrix s(5,10);
+matrix_density s;
 m := densify s;
+matrix_density m;
 nullspace mat2list m;
 if second length m - length ws = rank m then "OK" else "***** ERROR *****";
 nullspace s;
 if second length s - length ws = rank s then "OK" else "***** ERROR *****";
+
+% Eigenvalues and eigenvectors:
+
+% REDUCE manual example:
+m := mat((2,-1,1),(0,1,1),(-1,1,1));
+s := sparsify m;
+mateigen(m, eta);
+sparse_mateigen(s, eta);
+off sparse_matrix_dense_print;          % to show matrix type
+sparse_mateigen(s, eta);
+
+% Lipschutz examples using generic mateigen:
+s := sparsify mat((4,1,-1),(2,5,-2),(1,1,2));
+mateigen(s, lam);
+s := sparsify mat((3,-1,1),(7,-5,1),(6,-6,2));
+mateigen(s, lam);
+
+% Mixed matrix types in algebraic expressions:
+
+
+m := mat((1,2),(3,4));
+s := sparsify m;
+
+sparse_matrix_auto_convert_type();
+(2s+m)*m;
+(2m+s)^2;
+
+sparse_matrix_auto_convert_type sparse;
+(2s+m)*m;
+(2m+s)^2;
+
+sparse_matrix_auto_convert_type none;
+(2s+m)*m;
+(2m+s)^2;
 
 ;end;

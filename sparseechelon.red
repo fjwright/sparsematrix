@@ -1,7 +1,7 @@
 module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-05-24 15:36:14 franc>
+% Time-stamp: <2026-06-26 11:09:15 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,7 +31,12 @@ module sparseechelon;    % Reduce a sparse matrix to row echelon form.
 
 % $Id$
 
-put('sparse_echelon, 'rtypefn, 'getrtypecar); % declares algebraic operator
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(hash!* m!* newhash!*);
+#endif
+
+put('sparse_echelon, 'rtypefn, 'quotesparse!-matrix);
+                                        % declares algebraic operator
 
 symbolic procedure sparse_echelon u;
    % Return the sparse matrix in row echelon form.
@@ -68,13 +73,13 @@ symbolic procedure sparse!-echelon(hash, m, n, det);
       h := 1,                           % initial pivot row
       k := 1,                           % initial pivot column
       neg;                              % true if odd # row swaps
-      while h <= m and k <= n do
+      while h <= m and k <= n and not (neg eq 'singular) do
       begin scalar i_piv := h, pivot;
          % Find the first (nonzero) pivot below row h in column k:
          while i_piv <= m and null (pivot := gethash(i_piv.k, hash)) do
             i_piv := i_piv + 1;
          if i_piv > m then <<
-            if det then return 'singular;
+            if det then return neg := 'singular;
             % No pivot in this column, pass to next column
             k := k + 1
          >> else <<
@@ -133,7 +138,8 @@ symbolic procedure sparse!-add!-to!-el(hash, i_j, value);
       puthash!-nzsq(i_j, hash, value);
    end;
 
-put('sparse_canonical, 'rtypefn, 'getrtypecar); % declares algebraic operator
+put('sparse_canonical, 'rtypefn, 'quotesparse!-matrix);
+                                        % declares algebraic operator
 
 symbolic procedure sparse_canonical u;
    % Return the sparse matrix in row canonical form.
@@ -212,29 +218,31 @@ symbolic procedure sparse!-lnrsolve(u, v);
    % matrix.  Use reduction of the augmented matrix to row canonical
    % form.  Assume U is m*m and V is m*n, so the product is m*n, and
    % all matrices are represented as sparse matrix canonical forms.
-   begin scalar hash := copyhash car u,
-         m := cadr u, n, sing, newhash;
+   begin scalar hash!* := copyhash car u,
+         m!* := cadr u, n, sing, newhash!*;
       n := if v then <<                 % augment U with V
-         maphash(car v,
+         maphash(function
             (lambda(key, value);
-            puthash(car key . (cdr key + m), hash, value)));
+            puthash(car key . (cdr key + m!*), hash!*, value)),
+            car v);
          caddr v
       >> else <<                        % augment U with a unit matrix
-         for i := 1 : m do puthash(i . (i + m), hash, 1 ./ 1);
-         m
+         for i := 1 : m!* do puthash(i . (i + m!*), hash!*, 1 ./ 1);
+         m!*
       >>;
       % Reduce hash (destructively) to row canonical form:
-      sing := sparse!-echelon(hash, m, m + n, t);
+      sing := sparse!-echelon(hash!*, m!*, m!* + n, t);
       if sing eq 'singular then
          rerror(sparse!-matrix, 13, "Singular sparse matrix");
-      sparse!-canonical(hash, m, m + n);
+      sparse!-canonical(hash!*, m!*, m!* + n);
       % Extract the product or inverse matrix:
-      newhash := mk!-sparse!-matrix!-hash();
-      maphash(hash,
+      newhash!* := mk!-sparse!-matrix!-hash();
+      maphash(function
          (lambda(key, value);
-         if cdr key > m then
-            puthash(car key . (cdr key - m), newhash, value)));
-      return {newhash, m, n};
+         if cdr key > m!* then
+            puthash(car key . (cdr key - m!*), newhash!*, value)),
+         hash!*);
+      return {newhash!*, m!*, n};
    end;
 
 endmodule;

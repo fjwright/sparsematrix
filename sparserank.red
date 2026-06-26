@@ -1,7 +1,7 @@
 module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 16:08:11 franc>
+% Time-stamp: <2026-06-23 15:58:16 franc>
 % Created: May 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,20 +31,21 @@ module sparserank;                % Sparse matrix rank, cofactor, etc.
 
 % $Id$
 
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(hash!* i!* j!*);
+#endif
+
 % %%%%
 % Rank
 % %%%%
 
 put('rank, 'psopfn, 'generic!-rank!-eval); % updates "matrix/rank.red"
-put('matrix, 'rankfn, 'rank!-eval);
-put('sparse!-matrix, 'rankfn, 'sparse!-rank!-eval);
 
 symbolic procedure generic!-rank!-eval u;
-   % Return the rank of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if rankfn then apply1(rankfn, u) else rank!-eval u)
-      where rankfn = get(getrtype car u, 'rankfn);
+   % Return the rank of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function rank!-eval,
+      function sparse!-rank!-eval, {u}, getrtype car u);
 
 % The rank code is based on "matrix/rank.red" by Eberhard Schruefer.
 
@@ -102,25 +103,27 @@ symbolic procedure sparse_submatrix(u, i, j);
       rerror(sparse!-matrix, 24, {"Sparse matrix column number",j,"out of range"})
    else 'sparse!-mat . sparse!-submatrix(cdr u, i, j);
 
-symbolic procedure sparse!-submatrix(u, i, j);
+symbolic procedure sparse!-submatrix(u, i!*, j!*);
    % Return the submatrix of sparse matrix u excluding row i and
    % column j.  Sparse matrices are represented as (<hash> <m> <n>).
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(car u, lambda(key, value);
-              begin scalar ii := car key, jj := cdr key;
-                 if ii < i then <<
-                    if jj < j then
-                       puthash(key, hash, value)
-                    else if jj > j then
-                       puthash(ii.(jj-1), hash, value)
-                 >> else if ii > i then <<
-                    if jj < j then
-                       puthash((ii-1).jj, hash, value)
-                    else if jj > j then
-                       puthash((ii-1).(jj-1), hash, value)
-                 >>;
-              end);
-      return {hash, cadr u - 1, caddr u - 1}
+   begin scalar hash!* := mk!-sparse!-matrix!-hash();
+      maphash(function
+         (lambda(key, value);
+          begin scalar ii := car key, jj := cdr key;
+             if ii < i!* then <<
+                if jj < j!* then
+                   puthash(key, hash!*, value)
+                else if jj > j!* then
+                   puthash(ii.(jj-1), hash!*, value)
+             >> else if ii > i!* then <<
+                if jj < j!* then
+                   puthash((ii-1).jj, hash!*, value)
+                else if jj > j!* then
+                   puthash((ii-1).(jj-1), hash!*, value)
+             >>;
+          end),
+         car u);
+      return {hash!*, cadr u - 1, caddr u - 1}
    end;
 
 % The following cofactor code is based partly on "matrix/cofactor.red"
@@ -129,15 +132,12 @@ symbolic procedure sparse!-submatrix(u, i, j);
 put('cofactor, 'simpfn, 'generic!-simpcofactor); % updates "matrix/cofactor.red"
 flag('(cofactor), 'immediate);
 flag('(cofactor), 'matfn);
-put('matrix, 'cofactorfn, 'simpcofactor);
-put('sparse!-matrix, 'cofactorfn, 'sparse!-simpcofactor);
 
 symbolic procedure generic!-simpcofactor u;
-   % Return the cofactor of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if cofactorfn then apply1(cofactorfn, u) else simpcofactor u)
-      where cofactorfn = get(getrtype car u, 'cofactorfn);
+   % Return the cofactor of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function simpcofactor, function sparse!-simpcofactor,
+      {u}, getrtype car u);
 
 put ('sparse_cofactor, 'simpfn, 'sparse!-simpcofactor);
 flag('(sparse_cofactor), 'immediate);

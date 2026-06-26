@@ -5,7 +5,8 @@ symbolic <<
 
    in filelist$
 
-   for each file in filelist do evload {file};
+   for each file in filelist do
+      evload {concat2("fasldir/", id2string file)};
 >>$
 
 end;

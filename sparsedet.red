@@ -1,7 +1,7 @@
 module sparsedet;          % Determinant and trace of a sparse matrix.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 12:58:53 franc>
+% Time-stamp: <2026-06-08 17:49:11 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -39,15 +39,12 @@ module sparsedet;          % Determinant and trace of a sparse matrix.
 % %%%%%%%%%%%
 
 put('det, 'simpfn, 'generic!-simpdet); % updates "matrix/det.red"
-put('matrix, 'detfn, 'simpdet);
-put('sparse!-matrix, 'detfn, 'sparse!-simpdet);
 
 symbolic procedure generic!-simpdet u;
-   % Return the determinant of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if detfn then apply1(detfn, u) else simpdet u)
-      where detfn = get(getrtype car u, 'detfn);
+   % Return the determinant of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function simpdet, function sparse!-simpdet,
+      {u}, getrtype car u);
 
 put('sparse_det, 'simpfn, 'sparse!-simpdet);
 flag('(sparse_det), 'immediate);
@@ -83,15 +80,12 @@ symbolic procedure sparse!-detq u;
 % %%%%%
 
 put('trace, 'simpfn, 'generic!-simptrace); % updates "matrix/det.red"
-put('matrix, 'tracefn, 'simptrace);
-put('sparse!-matrix, 'tracefn, 'sparse!-simptrace);
 
 symbolic procedure generic!-simptrace u;
-   % Return the trace of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if tracefn then apply1(tracefn, u) else simptrace u)
-      where tracefn = get(getrtype car u, 'tracefn);
+   % Return the trace of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function simptrace, function sparse!-simptrace,
+      {u}, getrtype car u);
 
 put('sparse_trace, 'simpfn, 'sparse!-simptrace);
 

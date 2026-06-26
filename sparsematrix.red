@@ -1,7 +1,7 @@
-module sparsematrix;   % Header for sparse matrices using hash tables.
+module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 12:03:36 franc>
+% Time-stamp: <2026-06-25 16:15:08 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,32 +31,73 @@ module sparsematrix;   % Header for sparse matrices using hash tables.
 
 % $Id$
 
-% This file is a reworking of "matrix/matrix.red" to use hash tables
+% This file is a reworking of "matrix/matrix.red" to use hash-tables
 % to represent sparse matrices.
 
 % The representation of a sparse matrix is
 %   (sparse-mat <hash> <m> <n> . <name>),
-% where <hash> is a hash table, <m> is the maximum row index (row
+% where <hash> is a hash-table, <m> is the maximum row index (row
 % dimension), <n> is the maximum column index (column dimension), and
 % <name> is either the name of the sparse matrix (an identifier) to be
 % used by the print routine or nil if it has no name.
 
-% Matrix elements are stored in the hash table under the key
+% Matrix elements are stored in the hash-table under the key
 %   (<i> . <j>),
 % where <i> is the row index and <j> is the column index.
 
 % The rtype of a sparse matrix is sparse-matrix.
 
+% %%%%%%%%%%%%%%%%%%%%%%
+% Remark on coding style
+% %%%%%%%%%%%%%%%%%%%%%%
+
+% It seems natural to perform operations on sparse matrices by mapping
+% lambda expressions over the entries in hash-tables, using maphash
+% and functions derived from it.  To carry additional information, it
+% is often necessary to use variables that are global to the lambda
+% expressions but local to their containing functions, which is
+% elegantly supported by lexical scoping in Common Lisp.  However,
+% Standard Lisp proper does not provide lexical scoping, so it is
+% necessary to treat all variables that are global to lambda
+% expressions as Standard Lisp fluid variables.  I append * to the
+% names of all such variables and declare them fluid only when not
+% running on Common Lisp, because they do not need to be Common Lisp
+% special variables.
+
+% One problem with this approach to emulating lexical scoping in
+% Standard Lisp is that the scope does not nest: fluid variables are
+% global in scope.  Therefore, distinct "lexically-scoped" variables
+% should have distinct names to avoid different variables with the
+% same name clashing.  This happened in PSL when I implemented maphash
+% using mapc and a lambda expression, so I used a foreach loop and
+% avoided the need for lexical scoping.  A more general solution would
+% be to precede each lexically-scoped variable with the name of the
+% procedure in which it is local.  But this gets messy and doesn't
+% seem to be necessary in general!
+
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(fn!* newhash!* u!*);
+#endif
+
 % %%%%%%%%%%%%%%%%%
 % Utility functions
 % %%%%%%%%%%%%%%%%%
 
+% 1000 hash-table entries accommodates a 500*500 sparse matrix with
+% nonzero diagonal and 500 other nonzero elements.  Also, the REDUCE
+% simplifier uses hash-tables with 1000 elements initially (see
+% "alg/simp.red")
+
+symbolic inline procedure mk!-sparse!-matrix!-hash;
+   mkhash(1000, 'equal);
+
 % Proposed new Standard Lisp functions, implemented in
 % "sl-on-cl.lisp".  The versions below provide a fallback if they are
-% not available.
+% not available.  Note that the Standard Lisp function hashcontents
+% returns a list of pairs of the form (key . value).
 
 #if (not (getd 'hash!-table!-p))
-% Provided in CSL but not PSL.
+% Provided in Common Lisp and CSL but not PSL.
 symbolic inline procedure hash!-table!-p u;
    % This implementation is not reliable, but currently I only need to
    % distinguish a sparse matrix canonical form from a standard
@@ -65,58 +106,62 @@ symbolic inline procedure hash!-table!-p u;
 #endif
 
 #if (not (getd 'maphash))
-% Provided in CSL but not PSL.
-symbolic procedure maphash(hash, fn);
+% Provided in Common Lisp and CSL but not PSL.
+symbolic procedure maphash(fn, hash);
    % Iterate over all entries in the hash-table HASH and return nil.
    % For each entry, the function FN is called with two arguments --
    % the key and the value of that entry.
-   % This function is the Common Lisp function maphash but with
-   % argument ordering like Standard Lisp map functions.
-   % The Standard Lisp function hashcontents returns a list of pairs
-   % of the form (key . value).
-   mapc(hashcontents hash,
-      (lambda el; apply2(fn, car el, cdr el)));
+   for each el in hashcontents hash do
+      apply2(fn, car el, cdr el);
+#endif
+
+#if (not (getd 'hash!-table!-count))
+% Provided in Common Lisp but not CSL or PSL.
+symbolic inline procedure hash!-table!-count hash;
+   % Return the number of entries in the hash-table HASH.
+   length hashcontents hash;
 #endif
 
 #if (not (getd 'copyhash))
+% Provided in SL-on-CL only.
 symbolic procedure copyhash hash;
    % Copy each element of hash table HASH to a new hash table and
    % return the latter.
-   begin scalar newhash := mk!-sparse!-matrix!-hash();
-      maphash(hash,
-         (lambda(key, value); puthash(key, newhash, value)));
-      return newhash;
+   begin scalar newhash!* := mk!-sparse!-matrix!-hash();
+      maphash(
+         function(lambda(key, value); puthash(key, newhash!*, value)),
+         hash);
+      return newhash!*;
    end;
 #endif
 
-% 1000 hash table entries accommodates a 500*500 sparse matrix with
-% nonzero diagonal and 500 other nonzero elements.  Also, the REDUCE
-% simplifier uses hash-tables with 1000 elements initially (see
-% "alg/simp.red")
+symbolic procedure maphash!-new(fn!*, hash);
+   % Iterate over all entries in the hash-table HASH and return a new
+   % hash-table.  For each entry in HASH, the function FN is called
+   % with two arguments -- oldkey, oldval -- and should return a pair
+   % (newkey . newval).  Oldkey is the key used to look up an entry
+   % with value oldval in hash-table HASH, and newkey is the key used
+   % to save newval in the new hash-table.
+   begin scalar newhash!* := mk!-sparse!-matrix!-hash();
+      maphash(function
+         (lambda(oldkey, oldval);
+         puthash(car new, newhash!*, cdr new) where
+            new = apply2(fn!*, oldkey, oldval)),
+         hash);
+      return newhash!*;
+   end;
 
-symbolic inline procedure mk!-sparse!-matrix!-hash;
-   mkhash(1000, 1);
-
-symbolic macro procedure map!-sparse!-matrix u; % (sm, fn, &optional name)
-   {'map!-sparse!-matrix0, cadr u, caddr u, cdddr u and cadddr u};
-
-flag('(map!-sparse!-matrix), 'variadic);
-
-symbolic procedure map!-sparse!-matrix0(sm, fn, name);
-   % Iterate over all entries in the canonical sparse matrix form SM
-   % and return the result as a new canonical sparse matrix form (with
-   % the same dimensions as SM).  The function FN takes one argument
-   % and is applied to the value of each matrix element.
-
-   % If NAME eq t then preserve the name component (last cdr) of SM;
-   % if NAME is non-nil the use it as the name component (last cdr) of
-   % the result; otherwise return a proper list.
-   begin scalar hash := mk!-sparse!-matrix!-hash(),
-         mapfn := lambda(key, value);
-      puthash(key, hash, apply1(fn, value));
-      maphash(car sm, mapfn);
-      if name eq t then name := cdddr sm;
-      return hash . cadr sm . caddr sm . name;
+symbolic procedure maphash!-new!-values(fn!*, hash);
+   % Iterate over all entries in the hash-table HASH and return a new
+   % hash-table.  For each entry in HASH, the function FN is called
+   % with the entry value as its single argument and its return value
+   % is used as the entry value in the new hash-table.
+   begin scalar newhash!* := mk!-sparse!-matrix!-hash();
+      maphash(function
+         (lambda(key, val);
+         puthash(key, newhash!*, apply1(fn!*, val))),
+         hash);
+      return newhash!*;
    end;
 
 symbolic inline procedure puthash!-nzsq(key, hash, value);
@@ -136,6 +181,13 @@ symbolic procedure mat2list m;
       if not eqcar(mm, 'mat) then typerr(m, "matrix");
       return 'list . for each row in cdr mm collect 'list . row;
    end;
+
+% Oddp is defined in SL-on-CL and in "rtools/general.red" in the
+% development system but not in the last snapshot release, revision
+% 7327), build date 08-Mar-2026, so ...
+#if (null (getd 'oddp))
+symbolic inline procedure oddp n;  not evenp n;
+#endif
 
 
 % %%%%%%%%%%%
@@ -250,9 +302,9 @@ symbolic procedure set!-sparse!-matelem(u,v);
 
 put('sparse!-mat, 'mapfn, 'map!-sparse!-mat);
 
-symbolic procedure map!-sparse!-mat(f,o);
-   'sparse!-mat . map!-sparse!-matrix(cdr o,
-      (lambda w; apply1(f,w)));
+symbolic procedure map!-sparse!-mat(f, o);
+   {'sparse!-mat, maphash!-new!-values(f, cadr o),
+      caddr o, cadddr o};
 
 % Automatically map an operator over the elements of a sparse matrix:
 
@@ -261,16 +313,18 @@ put('sparse!-matrix, 'fn, 'matflg);
 
 flag('(sparse_det sparse_trace sparse_cofactor), 'matfn);
 
-symbolic procedure sparse!-matrixmap(u,v);
-   % U = (<function> <sparse matrix>).
+symbolic procedure sparse!-matrixmap(u!*, v);
+   % U = (<function> <sparse matrix> <other args>).
    % Apply <function> to each element of <sparse matrix>, cf. matrixmap.
    % The sparse matrix is input and output in tagged algebraic form.
-   if flagp(car u, 'matmapfn)
+   if flagp(car u!*, 'matmapfn)
    then sparse!-matsm!*1
-      map!-sparse!-matrix(sparse!-matsm cadr u,
-         (lambda value; simp!*(car u . mk!*sq value . cddr u)), nil)
-   else if flagp(car u, 'matfn) then reval2(u,v)
-   else typerr(car u, "sparse matrix operator");
+      ({maphash!-new!-values(function
+         (lambda value; simp!*(car u!* . mk!*sq value . cddr u!*)),
+         car sparse!-matsm sm),
+         caddr sm, cadddr sm} where sm = cadr u!*)
+   else if flagp(car u!*, 'matfn) then reval2(u!*, v)
+   else typerr(car u!*, "sparse matrix operator");
 
 
 % %%%%%%%%
@@ -326,10 +380,10 @@ symbolic procedure sparse!-matpri u;
          lprim append(msg, {length alist, "nonzero elements:"});
          % Each alist element has the form ((i . j) . value).
          % Sort by row index and then by column index:
-         alist := sort(alist,
-            lambda(x,y);
-         caar x < caar y or
-            (caar x = caar y and cdar x < cdar y));
+         alist := sort(alist, function
+            (lambda(x,y);
+            caar x < caar y or
+               (caar x = caar y and cdar x < cdar y)));
          for each el in alist do
             assgnpri(cdr el, {{cdddr u or '!?, caar el, cdar el}}, 'only);
       end;
@@ -366,6 +420,31 @@ symbolic procedure sparse_random_matrix u;
    end;
 
 rlistat '(sparse_random_matrix);
+
+% %%%%%%%%%%%%%%%%%%%
+% Density of a matrix
+% %%%%%%%%%%%%%%%%%%%
+
+symbolic operator matrix_density;
+
+symbolic procedure matrix_density u;
+   % U must evaluate to a dense or sparse matrix.  Return its density,
+   % namely the proportion of nonzero elements, as a percentage
+   % truncated to the nearest integer.
+   begin scalar type := getrtype u;
+      integer nz;                    % count of nonzero elements
+      return
+         if type eq 'matrix then <<
+            u := matsm u;
+            for each row in u do for each el in row do
+               if numr el then nz := nz + 1;
+            quotient(nz * 100, length u * length car u)
+         >> else if type eq 'sparse!-matrix then <<
+            u := sparse!-matsm u;
+            nz := hash!-table!-count car u;
+            quotient(nz * 100, cadr u * caddr u)
+         >>;
+   end;
 
 endmodule;
 

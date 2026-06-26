@@ -6,8 +6,9 @@ symbolic <<
    in filelist$
 
    for each file in filelist do <<
-      faslout file;
-      infile concat2(id2string file, ".red");
+      file := id2string file;
+      faslout concat2("fasldir/", file);
+      infile concat2(file, ".red");
       faslend;
    >>;
 >>;

@@ -1,7 +1,7 @@
 module sparsematsm;               % Simplification of sparse matrices.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-03 16:38:07 franc>
+% Time-stamp: <2026-06-26 11:10:15 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -31,28 +31,134 @@ module sparsematsm;               % Simplification of sparse matrices.
 
 % $Id$
 
+#if (not (memq 'common!-lisp lispsystem!*))
+fluid '(hash!* k!* u_value!* u!* i!* v!*);
+#endif
+
 % This file is a reworking of "matrix/matsm.red" to use hash tables to
 % represent sparse matrices.
 
-load_package matrix;                    % needed for densify
+load_package matrix;                    % needed for densify, etc.
 
-% The canonical form of an <m>*<n> matrix is
+% The canonical form of an <m>*<n> (dense) matrix is
 %   ((el_11 el_12 ... el_1n)
 %    (el_21 el_22 ... el_2n)
 %    ...
 %    (el_m1 el_m2 ... el_mn))
-% where el_ij is the ij matrix element in SQ form.
+% where el_ij is the (i,j) matrix element in SQ form.
 
 % The canonical form of an <m>*<n> sparse matrix is
 %   (<hash> <m> <n>)
-% where <hash> is a hash table and the ij matrix element is stored in
-% SQ form in the hash table with key (i j).
+% where <hash> is a hash-table and the (i,j) matrix element is stored in
+% SQ form in the hash-table with key (i . j).
 
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Evaluation and simplification
 % %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-put('sparse!-matrix, 'evfn, 'sparse!-matsm!*);
+% Support for mixed matrix types in algebraic expressions:
+
+put('matrix, 'evfn, 'generic!-matsm!*); % updates "matrix/matrix.red"
+put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
+
+global '(sparse!-matrix!-auto!-convert!-type);
+sparse!-matrix!-auto!-convert!-type := 'dense;
+
+put('sparse_matrix_auto_convert_type, 'psopfn,
+   'sparse_matrix_auto_convert_type);
+
+symbolic procedure sparse_matrix_auto_convert_type u;
+   % If an argument is supplied then if must be one of the symbols
+   % dense, sparse or none, which sets the type for automatic matrix
+   % type conversion in algebraic expressions.  Return the previous
+   % type.
+   begin scalar type := sparse!-matrix!-auto!-convert!-type;
+      if u then
+         sparse!-matrix!-auto!-convert!-type :=
+         if (u := carx(u, 'sparse_matrix_auto_convert_type)) eq 'none
+         then nil
+         else if u memq '(dense, sparse)
+         then u
+         else rederr "Type must be dense, sparse, or none";
+      return type or 'none;
+   end;
+
+symbolic procedure generic!-matsm!*(u, v);
+   % Generic matrix expression simplification function.
+   % U is an arbitrary matrix expression in algebraic form.
+   % Return a matrix expression in tagged algebraic form converted to
+   % dense or sparse representation as appropriate.
+   begin scalar result;
+      put('matrix, 'evfn, 'matsm!*);
+      put('sparse!-matrix, 'evfn, 'sparse!-matsm!*);
+      % Errorset to ensure subsequent code runs:
+      result := errorset!*(
+         {'generic!-matfn, '(function matsm!*), '(function sparse!-matsm!*),
+            mkquote {u, v}, mkquote getrtype u}, nil);
+      put('matrix, 'evfn, 'generic!-matsm!*);
+      put('sparse!-matrix, 'evfn, 'generic!-matsm!*);
+      if not errorp result then return car result;
+   end;
+
+symbolic procedure generic!-matfn(matfn, sparse!-matfn, args, type);
+   % Return MATFN or SPARSE!-MATFN as appropriate applied to argument
+   % list ARGS, where (car args) is assumed to involve a generic,
+   % i.e. respectively dense or sparse, matrix expression of initial
+   % rtype TYPE.
+   begin scalar u := car args;
+      return
+         if null sparse!-matrix!-auto!-convert!-type or
+         sparse!-explicit!-rtype!-p u or
+         sparse!-check!-rtype(u, type) then
+            if type eq 'matrix then
+               apply(matfn, args)
+            else if type eq 'sparse!-matrix then
+               apply(sparse!-matfn, args)
+            else typerr(u, "matrix")
+         else
+            if sparse!-matrix!-auto!-convert!-type eq 'dense then <<
+               % Convert all sparse matrices to dense:
+               u := sparse!-densify!-all u;
+               apply(matfn, u . cdr args)
+            >> else if sparse!-matrix!-auto!-convert!-type eq 'sparse then <<
+               % Convert all dense matrices to sparse:
+               u := sparse!-sparsify!-all u;
+               apply(sparse!-matfn, u . cdr args)
+            >>;
+   end;
+
+symbolic procedure sparse!-explicit!-rtype!-p u;
+   % Return t if prefix form algebraic expression U contains either
+   % sparsify or densify, nil otherwise.
+   not atom u and
+      (car u memq '(sparsify densify) or
+         sparse!-explicit!-rtype!-p car u or
+         sparse!-explicit!-rtype!-p cdr u);
+
+symbolic procedure sparse!-check!-rtype(u, type);
+   % Return t if the type of every matrix in prefix form algebraic
+   % expression U is TYPE, nil otherwise.
+   if null u then t
+   else if atom u then
+      (null x or x eq type) where x = getrtype u
+   else sparse!-check!-rtype(car u, type) and
+      sparse!-check!-rtype(cdr u, type);
+
+symbolic procedure sparse!-densify!-all u;
+   % Recursively densify any sparse matrix variables.
+   u and if atom u then
+      if getrtype u eq 'sparse!-matrix then {'densify, u} else u
+   else sparse!-densify!-all car u .
+      sparse!-densify!-all cdr u;
+
+symbolic procedure sparse!-sparsify!-all u;
+   % Recursively sparsify any demse matrix variables.
+   u and if atom u then
+      if getrtype u eq 'matrix then {'sparsify, u} else u
+   else sparse!-sparsify!-all car u .
+      sparse!-sparsify!-all cdr u;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 symbolic procedure sparse!-matsm!*(u,v);
    % Sparse matrix expression simplification function.
@@ -70,7 +176,9 @@ symbolic procedure sparse!-matsm!*1 u;
    <<
       % We use subs2!* to make sure each element simplified fully.
       u := 'sparse!-mat .
-         map!-sparse!-matrix(u, (lambda x; !*q2a subs2!* x), t);
+         maphash!-new!-values(function
+            (lambda value; !*q2a subs2!* value),
+            car u) . cadr u . caddr u . cdddr u;
       !*sub2 := nil;                   % Since all substitutions done.
       u
    >>;
@@ -135,7 +243,8 @@ symbolic procedure sparse!-matsm1(u, name);
       %   car u = (sparse!-mat <hash> <m> <n>)
       % Return a sparse matrix canonical form
       %   (<hash> <m> <n> . <name>):
-      x := map!-sparse!-matrix(cdar u, function xsimp, name);
+      x := (maphash!-new!-values(function xsimp, car sm) .
+         cadr sm . caddr sm . name) where sm = cdar u;
       go to b;
    d: % Inverse:
       y := sparse!-matsm cadar u;       % y = (<hash> <m> <n>)
@@ -155,8 +264,9 @@ symbolic procedure sparse!-matsm1(u, name);
       else z := apply2(get('sparse!-mat,'lnrsolvefn),y,z);
       subfg!* := x;
       % Make sure there are no power substitutions:
-      z := map!-sparse!-matrix(z, lambda value;
-                               <<!*sub2 := t; subs2 value>>);
+      z := {maphash!-new!-values(function
+         (lambda value; <<!*sub2 := t; subs2 value>>),
+         car z), cadr z, caddr z};
       go to c;
    e: % y is 1*1 matrix, cf. y = ((el))
       y := gethash(1 . 1, car y); % nil or value of single element as SQ
@@ -188,18 +298,19 @@ symbolic procedure sparse!-addm(u,v);
    else
       % Copy each nonzero element of sparse matrix U to a new hash
       % table:
-      begin scalar hash := copyhash car u;
+      begin scalar hash!* := copyhash car u;
          % Add each nonzero element of sparse matrix V to the new hash
          % table (and ensure the result is nonzero):
-         maphash(car v,
+         maphash(function
             (lambda(key, v_val);
              begin scalar u_val;
-                puthash!-nzsq(key, hash,
-                   if (u_val := gethash(key, hash)) then
+                puthash!-nzsq(key, hash!*,
+                   if (u_val := gethash(key, hash!*)) then
                       addsq(u_val, v_val)
                    else v_val)
-             end));
-         return {hash, cadr u, caddr u}
+             end),
+            car v);
+         return {hash!*, cadr u, caddr u}
       end;
 
 
@@ -209,70 +320,66 @@ symbolic procedure sparse!-addm(u,v);
 
 % Assume matrix package loaded earlier.
 if not getd 'dense_tp then         % to allow this file to be reloaded
-   putd('dense_tp, car x, cdr x) where x = getd 'tp; % original tp function
-
-put('matrix, 'transposefn, 'dense_tp);
-put('sparse!-matrix, 'transposefn, 'sparse_tp);
+   copyd('dense_tp, 'tp);          % original tp function
 
 symbolic procedure tp u;       % updates "matrix/matsm.red"
-   % Return the transpose of a generic matrix,
-   % e.g. either a dense or sparse matrix,
-   % with normal type as fallback.
-   (if transposefn then apply1(transposefn, u) else dense_tp u)
-      where transposefn = get(getrtype u, 'transposefn);
+   % Return the transpose of a generic, i.e. dense or sparse, matrix
+   % expression U.
+   generic!-matfn(function dense_tp, function sparse_tp, {u}, getrtype u);
 
 symbolic procedure sparse_tp u; sparse!-tp1 sparse!-matsm u;
 
-put('sparse_tp, 'rtypefn, 'getrtypecar); % declares algebraic operator
+put('sparse_tp, 'rtypefn, 'quotesparse!-matrix); % declares algebraic operator
 % flag('(sparse_tp), 'sparse!-matflg);
 
 symbolic procedure sparse!-tp1 u;
    % Return the transpose of the sparse matrix canonical form U =
    % (<hash> <m> <n>) as a new sparse matrix canonical form.
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(car u,
-         (lambda(key, value);
-         puthash(cdr key . car key, hash, value)));
-      return {hash, caddr u, cadr u}
-   end;
+   {maphash!-new(function
+      (lambda(key, value); (cdr key . car key) . value),
+      car u), caddr u, cadr u};
 
 
 % %%%%%%%%%%%%%%
 % Multiplication
 % %%%%%%%%%%%%%%
 
-symbolic procedure sparse!-multm(u,v);
+symbolic procedure sparse!-multm(u, v!*);
    % Return the product of two sparse matrix canonical forms U and V
    % as a new sparse matrix canonical form.  Assume U and V are
    % conformable, i.e. caddr u = cadr v.
-   begin scalar hash := mk!-sparse!-matrix!-hash();
-      maphash(car u,
-         (lambda(u_key, u_value);
-          begin scalar i := car u_key, k := cdr u_key;
-             maphash(car v,
+   begin scalar hash!* := mk!-sparse!-matrix!-hash();
+      maphash(function
+         (lambda(u_key, u_value!*);
+          begin scalar i!* := car u_key, k!* := cdr u_key;
+             maphash(function
                 (lambda(v_key, v_value);
-                if car v_key = k then
+                if car v_key = k!* then
                    % The product of this pair of matrix elements is a
                    % summand of the scalar product forming the
                    % (i,j)-element of the product matrix.
                    begin scalar j := cdr v_key,
-                         scaprod := gethash(i.j, hash),
-                         prod := multsq(u_value, v_value);
-                      puthash!-nzsq(i.j, hash,
+                         scaprod := gethash(i!*.j, hash!*),
+                         prod := multsq(u_value!*, v_value);
+                      puthash!-nzsq(i!*.j, hash!*,
                          if scaprod then addsq(scaprod, prod) else prod);
-                   end));
-          end));
-      return {hash, cadr u, caddr v}
+                   end),
+                car v!*);
+          end),
+         car u);
+      return {hash!*, cadr u, caddr v!*}
    end;
 
-symbolic procedure sparse!-multsm(u,v);
+symbolic procedure sparse!-multsm(u!*, v);
    % Return the product of standard quotient U and sparse matrix
    % canonical form V as a new sparse matrix canonical form.
-   if u = (1 ./ 1) then v else
-      map!-sparse!-matrix(v,
+   if u!* = (1 ./ 1) then v else
+      {maphash!-new!-values(function
          % Ordering of multsq arguments to preserve the ordering of
          % noncom scalars in matrix elements!
-         (lambda value; multsq(value, u)));
+         (lambda value; multsq(value, u!*)),
+         car v),
+         cadr v, caddr v};
 
 
 % %%%%%%%%%%%%
@@ -281,13 +388,16 @@ symbolic procedure sparse!-multsm(u,v);
 
 put('sparse!-matrix, 'subfn, 'sparse!-matsub);
 
-symbolic procedure sparse!-matsub(u,v);
+symbolic procedure sparse!-matsub(u!*, v);
    % V is a tagged algebraic sparse matrix form;
    % U is a substitution equation represented as a dotted pair.
    % Return a new tagged algebraic sparse matrix form with
    % substitution U applied to every element, cf. matsub.
-   'sparse!-mat .
-      map!-sparse!-matrix(cdr v, (lambda value; subeval1(u, value)));
+   {'sparse!-mat,
+      maphash!-new!-values(function
+         (lambda value; subeval1(u!*, value)),
+         cadr v),
+         caddr v, cadddr v};
 
 
 % %%%%%%%%%%
