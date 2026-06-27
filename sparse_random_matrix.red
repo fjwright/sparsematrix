@@ -4,19 +4,28 @@
 % A sparse analogue of the LINALG random_matrix operator but with more
 % flexibility without using switches.
 
-% sparse_random_matrix(m, n, types), ... where types can be one or
-% more of:
+% sparse_random_matrix(m, n, types), where types can be one or more
+% of:
 
 % Number type:
+
+%   By default, a random integer r is generated in the range lo <= r <
+%   hi, where lo = -limit, hi = limit, and limit = 1000.
+
+%   The first positive integer resets limit to that value.
+%   Alternatively, the first interval with integer endpoints of the
+%   form lo .. hi, with lo < hi, resets lo and hi to those values.  To
+%   obtain positive matrix elements use lo = 1; it doesn't makes sense
+%   to use lo = 0 in a sparse matrix because 0 elements will be
+%   essentially ignored!
 
 %   rational; default is integer
 %   complex; default is real
 
-%   The first positive integer specifies a limit, default 1000,
-%   meaning that random integers r are generated in the range 0 <= r <
-%   limit.  A random rational number is a quotient of such random
-%   integers.  A random complex number has real and imaginary parts
-%   that are such random integer or rational numbers.
+%   A random rational number is a quotient of a random integer num in
+%   the range lo <= num < hi and a random integer den in the range 0 <
+%   den < hi.  A random complex number has real and imaginary parts
+%   that are random integer or rational numbers.
 
 % Matrix type:
 
@@ -38,7 +47,8 @@ symbolic procedure sparse_random_matrix u; % (m n types)
    % containing (M+N)/2 random positive integers.
    if length u < 2 then
       rederr "Wrong number of arguments to sparse_random_matrix"
-   else begin scalar m, n, hash, types, i, j, limit := 1000,
+   else
+   begin scalar m, n, hash, types, i, j, lo := -1000, hi := 1000,
          realvalue, value;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
@@ -47,31 +57,44 @@ symbolic procedure sparse_random_matrix u; % (m n types)
       hash := mk!-sparse!-matrix!-hash();
       types := cddr u;                % list of types
 
-      begin scalar tps := types, tp;
-         while tps and not numberp car tps do tps := cdr tps;
-         if tps and (tp := car tps) > 0 then limit := tp;
+      begin scalar tps := types, tp, lo1, hi1;
+         while tps do
+            if fixp (tp := car tps) and tp > 0
+            then << lo := -tp;  hi := tp;  tps := nil >>
+            else if eqcar(tp, '!*interval!*) and fixp(lo1 := cadr tp)
+               and fixp(hi1 := caddr tp) and lo1 < hi1
+            then << lo := lo1;  hi := hi1;  tps := nil >>
+            else tps := cdr tps;
       end;
 
       realvalue := if 'rational memq types then
-         (lambda(); {'quotient, random limit, den!-value limit})
+         (lambda(); {'quotient, num!-value(lo, hi), den!-value hi})
       else
-         (lambda(); random limit);
+         (lambda(); num!-value(lo, hi));
       value := if 'complex memq types then
          (lambda (); {'plus, apply(realvalue, nil),
             {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
-      print integervalue; print realvalue; print value;
+      % print realvalue; print value;
 
       % Now assign some elements:
-      for count := 1 : fix((m+n)/2) do <<
-         i := random(m) + 1;
-         j := random(n) + 1;
-         puthash(i.j, hash, apply(value, nil));
-      >>;
+      for count := 1 : fix((m+n)/2) do
+         begin scalar val := apply(value, nil);
+            % Filter out 0 values:
+            if null numr simp val then return;
+            i := random(m) + 1;
+            j := random(n) + 1;
+            puthash(i.j, hash, val);
+         end;
       return {'sparse!-mat, hash, m, n}
    end;
 
+symbolic procedure num!-value(lo, hi);
+   % Return a random integer r such that lo <= r < hi.
+   lo + random(hi - lo);
+
 symbolic procedure den!-value limit;
-   random(limit-1) + 1;
+   % Return a random positive integer less than limit.
+   1 + random(limit - 1);
 
 end;
