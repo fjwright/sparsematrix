@@ -29,12 +29,16 @@
 
 % Matrix type:
 
+%   density = <positive rational number>; an integer is interpreted as
+%   a percentage.  The default density assigns values to a number of
+%   elements equal to the mean matrix dimension.
+
 %   diagonal, band(number), upper, lower,
 %   symmetric, anti_symmetric/skew_symmetric,
 %   hermitian, anti_hermitian/skew_hermitian
 %   invertible
 
-% Repeated or invalid types are silently ignored.
+% Repeated or invalid types may be silently ignored.
 
 remprop('sparse_random_matrix, 'stat);  % TEMPORARY!
 
@@ -48,7 +52,8 @@ symbolic procedure sparse_random_matrix u; % (m n types)
    if length u < 2 then
       rederr "Wrong number of arguments to sparse_random_matrix"
    else
-   begin scalar m, n, hash, types, i, j, lo := -1000, hi := 1000,
+   begin scalar m, n, hash, types, i, j,
+         lo := -1000, hi := 1000, density, maxcount,
          realvalue, value;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
@@ -66,6 +71,21 @@ symbolic procedure sparse_random_matrix u; % (m n types)
             then << lo := lo1;  hi := hi1;  tps := nil >>
             else tps := cdr tps;
       end;
+      begin scalar tps := types, tp;
+      while tps do
+         if eqcar(tp := car tps, 'equal) and cadr tp eq 'density
+         then <<
+            density := caddr tp;
+            if fixp density then        % percentage
+               density := {'quotient, density, 100}
+            else if not eqcar(density, 'quotient) then
+               typerr(density, "sparse random matrix density");
+            tps := nil
+         >> else tps := cdr tps;
+      end;
+      maxcount := if density then
+         numr simp {'fix, {'times, density, m, n}} or 0
+      else (m+n)/2;                     % integer division
 
       realvalue := if 'rational memq types then
          (lambda(); {'quotient, num!-value(lo, hi), den!-value hi})
@@ -78,7 +98,7 @@ symbolic procedure sparse_random_matrix u; % (m n types)
       % print realvalue; print value;
 
       % Now assign some elements:
-      for count := 1 : fix((m+n)/2) do
+      for count := 1 : maxcount do
          begin scalar val := apply(value, nil);
             % Filter out 0 values:
             if null numr simp val then return;
