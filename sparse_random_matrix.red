@@ -27,16 +27,20 @@
 %   den < hi.  A random complex number has real and imaginary parts
 %   that are random integer or rational numbers.
 
-% Matrix type:
+% Matrix density:
 
 %   density = <positive rational number>; an integer is interpreted as
 %   a percentage.  The default density assigns values to a number of
 %   elements equal to the mean matrix dimension.
 
+% Square matrix types -- ignored if the matrix is not square:
+
+%   invertible; assigns 1 to any diagonal elements that would
+%   otherwise be zero.
+
 %   diagonal, band(number), upper, lower,
 %   symmetric, anti_symmetric/skew_symmetric,
 %   hermitian, anti_hermitian/skew_hermitian
-%   invertible
 
 % Repeated or invalid types may be silently ignored.
 
@@ -61,7 +65,7 @@ symbolic procedure sparse_random_matrix u; % (m n types)
       if not fixp n or n <= 0 then typerr(n, "positive integer");
       hash := mk!-sparse!-matrix!-hash();
       types := cddr u;                % list of types
-
+      % Set number range:
       begin scalar tps := types, tp, lo1, hi1;
          while tps do
             if fixp (tp := car tps) and tp > 0
@@ -71,6 +75,7 @@ symbolic procedure sparse_random_matrix u; % (m n types)
             then << lo := lo1;  hi := hi1;  tps := nil >>
             else tps := cdr tps;
       end;
+      % Set density:
       begin scalar tps := types, tp;
       while tps do
          if eqcar(tp := car tps, 'equal) and cadr tp eq 'density
@@ -86,7 +91,7 @@ symbolic procedure sparse_random_matrix u; % (m n types)
       maxcount := if density then
          numr simp {'fix, {'times, density, m, n}} or 0
       else (m+n)/2;                     % integer division
-
+      % Set element value function:
       realvalue := if 'rational memq types then
          (lambda(); {'quotient, num!-value(lo, hi), den!-value hi})
       else
@@ -95,7 +100,6 @@ symbolic procedure sparse_random_matrix u; % (m n types)
          (lambda (); {'plus, apply(realvalue, nil),
             {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
-      % print realvalue; print value;
 
       % Now assign some elements:
       for count := 1 : maxcount do
@@ -106,6 +110,15 @@ symbolic procedure sparse_random_matrix u; % (m n types)
             j := random(n) + 1;
             puthash(i.j, hash, val);
          end;
+
+      if m neq n then
+         return {'sparse!-mat, hash, m, n};
+
+      if 'invertible memq types then
+         for i := 1 : m do
+            if not gethash(i.i, hash) then
+               puthash(i.i, hash, 1);
+
       return {'sparse!-mat, hash, m, n}
    end;
 
