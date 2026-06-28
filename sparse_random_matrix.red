@@ -101,15 +101,23 @@ symbolic procedure sparse_random_matrix u; % (m n types)
             {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
 
-      % Now assign some elements:
-      for count := 1 : maxcount do
-         begin scalar val := apply(value, nil);
-            % Filter out 0 values:
-            if null numr simp val then return;
-            i := random(m) + 1;
-            j := random(n) + 1;
-            puthash(i.j, hash, val);
-         end;
+      % Assign random values to random elements:
+      begin scalar !*diagonal, !*upper, !*lower;
+         if m = n then
+            if 'diagonal memq types then !*diagonal := t
+            else if 'upper memq types then !*upper := t
+            else if 'lower memq types then !*lower := t;
+         for count := 1 : maxcount do
+            begin scalar val;
+               i := random(m) + 1;
+               j := if !*diagonal then i else random(n) + 1;
+               if (!*upper and j < i) or (!*lower and j > i) then return;
+               % Filter out 0 values:
+               repeat val := apply(value, nil)
+                  until numr simp val;
+               puthash(i.j, hash, val);
+            end;
+      end;
 
       if m neq n then
          return {'sparse!-mat, hash, m, n};
