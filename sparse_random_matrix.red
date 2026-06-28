@@ -38,11 +38,13 @@
 %   invertible; assigns 1 to any diagonal elements that would
 %   otherwise be zero.
 
-%   diagonal, band(number), upper, lower,
-%   symmetric, anti_symmetric/skew_symmetric,
-%   hermitian, anti_hermitian/skew_hermitian
+%   At most one of the following mutually-exclusive types:
 
-% Repeated or invalid types may be silently ignored.
+%   diagonal, band(number), upper, lower,
+%   symmetric, anti/skew_symmetric,
+%   hermitian, anti/skew_hermitian
+
+% Most repeated or invalid types are silently ignored.
 
 remprop('sparse_random_matrix, 'stat);  % TEMPORARY!
 
@@ -56,8 +58,11 @@ symbolic procedure sparse_random_matrix u; % (m n types)
    if length u < 2 then
       rederr "Wrong number of arguments to sparse_random_matrix"
    else
-   begin scalar m, n, hash, types, i, j,
+   begin scalar m, n, hash, types,
          lo := -1000, hi := 1000, density, maxcount,
+         !*diagonal, !*upper, !*lower,
+         !*symmetric, !*anti_symmetric,
+         !*hermitian, !*anti_hermitian,
          realvalue, value;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
@@ -77,56 +82,68 @@ symbolic procedure sparse_random_matrix u; % (m n types)
       end;
       % Set density:
       begin scalar tps := types, tp;
-      while tps do
-         if eqcar(tp := car tps, 'equal) and cadr tp eq 'density
-         then <<
-            density := caddr tp;
-            if fixp density then        % percentage
-               density := {'quotient, density, 100}
-            else if not eqcar(density, 'quotient) then
-               typerr(density, "sparse random matrix density");
-            tps := nil
-         >> else tps := cdr tps;
+         while tps do
+            if eqcar(tp := car tps, 'equal) and cadr tp eq 'density
+            then <<
+               density := caddr tp;
+               if fixp density then        % percentage
+                  density := {'quotient, density, 100}
+               else if not eqcar(density, 'quotient) then
+                  typerr(density, "sparse random matrix density");
+               tps := nil
+            >> else tps := cdr tps;
       end;
       maxcount := if density then
          numr simp {'fix, {'times, density, m, n}} or 0
       else (m+n)/2;                     % integer division
+      % Set matrix type:
+      if m = n then
+         if 'diagonal memq types then !*diagonal := t
+         else if 'upper memq types then !*upper := t
+         else if 'lower memq types then !*lower := t
+         else if 'symmetric memq types then !*symmetric := t
+         else if 'anti_symmetric memq types
+            or 'skew_symmetric memq types then
+               !*anti_symmetric := t
+         else if 'hermitian memq types then !*hermitian := t
+         else if 'anti_hermitian memq types
+            or 'skew_hermitian memq types then
+               !*anti_hermitian := t;
       % Set element value function:
       realvalue := if 'rational memq types then
          (lambda(); {'quotient, num!-value(lo, hi), den!-value hi})
       else
          (lambda(); num!-value(lo, hi));
-      value := if 'complex memq types then
-         (lambda (); {'plus, apply(realvalue, nil),
-            {'times, 'i, apply(realvalue, nil)}})
+      value := if 'complex memq types
+         or !*hermitian or !*anti_hermitian then
+            (lambda (); {'plus, apply(realvalue, nil),
+               {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
-
       % Assign random values to random elements:
-      begin scalar !*diagonal, !*upper, !*lower;
-         if m = n then
-            if 'diagonal memq types then !*diagonal := t
-            else if 'upper memq types then !*upper := t
-            else if 'lower memq types then !*lower := t;
-         for count := 1 : maxcount do
-            begin scalar val;
-               i := random(m) + 1;
-               j := if !*diagonal then i else random(n) + 1;
-               if (!*upper and j < i) or (!*lower and j > i) then return;
-               % Filter out 0 values:
-               repeat val := apply(value, nil)
-                  until numr simp val;
-               puthash(i.j, hash, val);
-            end;
-      end;
-
-      if m neq n then
-         return {'sparse!-mat, hash, m, n};
-
-      if 'invertible memq types then
+      for count := 1 : maxcount do
+         begin scalar i, j, val;
+            i := random(m) + 1;
+            j := if !*diagonal then i else random(n) + 1;
+            if (!*upper and j < i) or (!*lower and j > i) then return;
+            if !*anti_symmetric and i = j then return;
+            % Filter out 0 values:
+            repeat val := apply(value, nil)
+               until numr simp val;
+            puthash(i.j, hash, val);
+            if !*symmetric then puthash(j.i, hash, val)
+            else if !*anti_symmetric then puthash(j.i, hash, -val)
+            else if !*hermitian then
+               if i = j then puthash(j.i, hash, {'repart, val})
+               else puthash(j.i, hash, {'conj, val})
+            else if !*anti_hermitian then
+               if i = j then puthash(j.i, hash, {'times, 'i, {'impart, val}})
+               else puthash(j.i, hash, {'minus, {'conj, val}});
+         end;
+      if m = n and not !*anti_symmetric and 'invertible memq types then
          for i := 1 : m do
             if not gethash(i.i, hash) then
-               puthash(i.i, hash, 1);
-
+               if !*anti_hermitian then puthash(i.i, hash, 'i)
+               else puthash(i.i, hash, 1);
       return {'sparse!-mat, hash, m, n}
    end;
 
