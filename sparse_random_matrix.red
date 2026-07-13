@@ -63,7 +63,7 @@ symbolic procedure sparse_random_matrix u; % (m n types)
          !*diagonal, !*upper, !*lower,
          !*symmetric, !*anti_symmetric,
          !*hermitian, !*anti_hermitian,
-         realvalue, value;
+         band, bandspread, realvalue, value;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
       n := reval_without_mod cadr u;
@@ -109,6 +109,9 @@ symbolic procedure sparse_random_matrix u; % (m n types)
          else if 'anti_hermitian memq types
             or 'skew_hermitian memq types then
                !*anti_hermitian := t;
+      % Set band matrix type:
+      for each type in types do
+         if eqcar(type, 'band) then band := cadr type;
       % Set element value function:
       realvalue := if 'rational memq types then
          (lambda(); {'quotient, num!-value(lo, hi), den!-value hi})
@@ -120,7 +123,18 @@ symbolic procedure sparse_random_matrix u; % (m n types)
                {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
       % Assign random values to random elements:
-      for count := 1 : maxcount do
+      bandspread := (band-1)/2;
+      if band then
+         for i := 1 : m do
+            for j := i - bandspread : i + bandspread do
+               if 1 <= j and j <= n then
+               begin scalar val;
+                  % Filter out 0 values:
+                  repeat val := apply(value, nil)
+                     until numr simp val;
+                  puthash(i.j, hash, val);
+               end
+      else for count := 1 : maxcount do
          begin scalar i, j, val;
             i := random(m) + 1;
             j := if !*diagonal then i else random(n) + 1;
@@ -156,3 +170,9 @@ symbolic procedure den!-value limit;
    1 + random(limit - 1);
 
 end;
+
+% TO DO:
+
+% Merge all type processing into one loop and apply first of any mutually-exclusive type sets?
+% Don't apply density to special matrix types, which are already sparse by definition?
+% Add identifier type.
