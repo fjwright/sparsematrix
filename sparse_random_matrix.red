@@ -48,14 +48,20 @@
 
 remprop('sparse_random_matrix, 'stat);  % TEMPORARY!
 
-put('sparse_random_matrix, 'psopfn, 'sparse_random_matrix);
 put('sparse_random_matrix, 'rtypefn, 'quotesparse!-matrix);
-% put('sparse_random_matrix, 'formfn, 'form_sparse_random_matrix);
+put('sparse_random_matrix, 'formfn, 'form_sparse_random_matrix);
 
-% symbolic procedure form_sparse_random_matrix(u,vars,mode);
-%    form1(u,vars,mode);
+symbolic procedure form_sparse_random_matrix(u, vars, mode);
+   % Allow symmetric as an argument (even though it is a keyword).
+   begin scalar args := cadr u . caddr u .
+      for each arg in cdddr u collect
+         if eqcar(arg, 'symmetric) then ''symmetric else arg;
+      return form1('eval_sparse_random_matrix . args, vars, mode);
+   end;
 
-symbolic procedure sparse_random_matrix u; % (m n types)
+put('eval_sparse_random_matrix, 'psopfn, 'eval_sparse_random_matrix);
+
+symbolic procedure eval_sparse_random_matrix u; % (m n types)
    % M and N must evaluate to positive integers.  TYPES is an optional
    % sequence of type identifiers.  Return an M*N sparse matrix
    % containing (M+N)/2 random positive integers.

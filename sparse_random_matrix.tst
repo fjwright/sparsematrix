@@ -17,7 +17,7 @@ sparse_random_matrix(5, 5, 10, band);   % error?
 sparse_random_matrix(5, 5, 10, band 3);
 sparse_random_matrix(5, 5, 10, upper);
 sparse_random_matrix(5, 5, 10, lower);
-sparse_random_matrix(5, 5, 10, 'symmetric); % note quote!
+sparse_random_matrix(5, 5, 10, symmetric);
 sparse_random_matrix(5, 5, 10, anti_symmetric);
 sparse_random_matrix(5, 5, 10, hermitian);
 sparse_random_matrix(5, 5, 10, anti_hermitian);
