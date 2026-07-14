@@ -29,8 +29,8 @@
 
 % Matrix density:
 
-%   density = <positive rational number>; an integer is interpreted as
-%   a percentage.  The default density assigns values to a number of
+%   density = <positive real number>; an integer is interpreted as a
+%   percentage.  The default density assigns values to a number of
 %   elements equal to the mean matrix dimension.
 
 % Square matrix types -- ignored if the matrix is not square:
@@ -50,6 +50,10 @@ remprop('sparse_random_matrix, 'stat);  % TEMPORARY!
 
 put('sparse_random_matrix, 'psopfn, 'sparse_random_matrix);
 put('sparse_random_matrix, 'rtypefn, 'quotesparse!-matrix);
+% put('sparse_random_matrix, 'formfn, 'form_sparse_random_matrix);
+
+% symbolic procedure form_sparse_random_matrix(u,vars,mode);
+%    form1(u,vars,mode);
 
 symbolic procedure sparse_random_matrix u; % (m n types)
    % M and N must evaluate to positive integers.  TYPES is an optional
@@ -86,10 +90,14 @@ symbolic procedure sparse_random_matrix u; % (m n types)
             if eqcar(tp := car tps, 'equal) and cadr tp eq 'density
             then <<
                density := caddr tp;
-               if fixp density then        % percentage
-                  density := {'quotient, density, 100}
-               else if not eqcar(density, 'quotient) then
-                  typerr(density, "sparse random matrix density");
+               if fixp density and      % percentage
+                  0 < density and density <= 100 then
+                     density := {'quotient, density, 100}
+               else if eqcar(density, '!:dn!:) and % non-negative float
+                  cddr density < 0 then
+                     density := {'quotient, cadr density, 10^(-cddr density)}
+               else if not eqcar(density, 'quotient) % fraction
+               then typerr(density, "sparse random matrix density");
                tps := nil
             >> else tps := cdr tps;
       end;
@@ -123,8 +131,8 @@ symbolic procedure sparse_random_matrix u; % (m n types)
                {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
       % Assign random values to random elements:
-      bandspread := (band-1)/2;
-      if band then
+      if band then <<
+         bandspread := (band-1)/2;
          for i := 1 : m do
             for j := i - bandspread : i + bandspread do
                if 1 <= j and j <= n then
@@ -134,7 +142,7 @@ symbolic procedure sparse_random_matrix u; % (m n types)
                      until numr simp val;
                   puthash(i.j, hash, val);
                end
-      else for count := 1 : maxcount do
+      >> else for count := 1 : maxcount do
          begin scalar i, j, val;
             i := random(m) + 1;
             j := if !*diagonal then i else random(n) + 1;
@@ -176,3 +184,5 @@ end;
 % Merge all type processing into one loop and apply first of any mutually-exclusive type sets?
 % Don't apply density to special matrix types, which are already sparse by definition?
 % Add identifier type.
+% Dense type that allows random zeros?
+% Allow density = n or density(n), band = n or band(n)?
