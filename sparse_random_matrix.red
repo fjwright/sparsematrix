@@ -1,22 +1,43 @@
-% sparse_random_matrix
+module sparse_random_matrix;
 % cf. LINALG sparse_random_matrix
 
 % A sparse analogue of the LINALG random_matrix operator but with more
 % flexibility without using switches.
 
-% sparse_random_matrix(m, n, types), where types can be one or more
-% of:
+% sparse_random_matrix(m, n, types), where n is optional and types can
+% be zero or more of the following.
+
+% Allowed types -- at most one of each of the following
+% mutually-exclusive type classes, where the actual input is shown in
+% upper case:
+
+% Element type:
+%   either numeric: default, or specified by
+%     range: LIMIT(N) where n is a positive integer or LO .. HI where
+%     lo, hi are integers and lo < hi
+%     RATIONAL: keyword
+%     COMPLEX: keyword
+%   or SYMBOL: keyword
+
+% Density:
+%   DENSITY(N), where n is a positive integer, rational or float
+
+% Matrix type (only if square) -- at most one of the following
+% mutually-exclusive type:
+%   DIAGONAL, BAND(N) where n is a positive integer,
+%   UPPER, LOWER,
+%   SYMMETRIC, ANTI/SKEW_SYMMETRIC,
+%   HERMITIAN, ANTI/SKEW_HERMITIAN
+
+%   INVERTIBLE
 
 % Number type:
 
 %   By default, a random integer r is generated in the range lo <= r <
-%   hi, where lo = -limit, hi = limit, and limit = 1000.
+%   hi, where lo = -lim, hi = lim, and lim = 1000.
 
-%   The first positive integer resets limit to that value.
-%   Alternatively, the first interval with integer endpoints of the
-%   form lo .. hi, with lo < hi, resets lo and hi to those values.  To
-%   obtain positive matrix elements use lo = 1; it doesn't makes sense
-%   to use lo = 0 in a sparse matrix because 0 elements will be
+%   To obtain positive matrix elements use lo = 1; it doesn't makes
+%   sense to use lo = 0 in a sparse matrix because 0 elements will be
 %   essentially ignored!
 
 %   rational; default is integer
@@ -29,22 +50,20 @@
 
 % Matrix density:
 
-%   density = <positive real number>; an integer is interpreted as a
-%   percentage.  The default density assigns values to a number of
+%   An integer is interpreted as a percentage, whereas a rational or
+%   float is interpreted as a fraction, so 100, 1/1 and 1.0 all mean
+%   the same.  The default density assigns values to a number of
 %   elements equal to the mean matrix dimension.
 
 % Square matrix types -- ignored if the matrix is not square:
 
-%   invertible; assigns 1 to any diagonal elements that would
+%   invertible: assigns 1 to any diagonal elements that would
 %   otherwise be zero.
 
-%   At most one of the following mutually-exclusive types:
+%   band(n): creates a band matrix with n nonzero elements in each row
+%   centred about the main diagonal.
 
-%   diagonal, band(number), upper, lower,
-%   symmetric, anti/skew_symmetric,
-%   hermitian, anti/skew_hermitian
-
-% Most repeated or invalid types are silently ignored.
+%   upper, lower: create upper and lower triangular matrices.
 
 remprop('sparse_random_matrix, 'stat);  % TEMPORARY!
 
@@ -55,47 +74,62 @@ symbolic procedure form_sparse_random_matrix(u, vars, mode);
    % Allow symmetric as an argument (even though it is a keyword).
    begin scalar args := cadr u . caddr u .
       for each arg in cdddr u collect
-         if eqcar(arg, 'symmetric) then ''symmetric else arg;
+         if eqcar(arg, 'symmetric) then ''symmetric
+         else if eqcar(arg, 'limit) then mkquote mkquote arg
+         else arg;
       return form1('eval_sparse_random_matrix . args, vars, mode);
    end;
 
 put('eval_sparse_random_matrix, 'psopfn, 'eval_sparse_random_matrix);
 
+fluid '(diagonal upper lower symm anti_symm herm anti_herm);
+global '(sparse_random_matrix_types);
+sparse_random_matrix_types := {('diagonal . 'diagonal), ('upper . 'upper),
+   ('lower . 'lower), ('symmetric . 'symm),
+   ('anti_symmetric . 'anti_symm), ('skew_symmetric . 'anti_symm),
+   ('hermitian . 'herm), ('anti_hermitian . 'anti_herm),
+   ('skew_hermitian . 'anti_herm)};
+
 symbolic procedure eval_sparse_random_matrix u; % (m n types)
-   % M and N must evaluate to positive integers.  TYPES is an optional
-   % sequence of type identifiers.  Return an M*N sparse matrix
-   % containing (M+N)/2 random positive integers.
-   if length u < 2 then
+   % M must evaluate to a positive integer.  N is optional and if
+   % specified must evaluate to a positive integer; it defaults to the
+   % value of M.  TYPES is an optional sequence of type specifiers.
+   % Return an M*N sparse matrix containing by default (M+N)/2 random
+   % positive integers.
+   if null u then
       rederr "Wrong number of arguments to sparse_random_matrix"
    else
-   begin scalar m, n, hash, types,
-         lo := -1000, hi := 1000, density, maxcount,
-         !*diagonal, !*upper, !*lower,
-         !*symmetric, !*anti_symmetric,
-         !*hermitian, !*anti_hermitian,
-         band, bandspread, realvalue, value;
+   begin scalar m, n, hash, element_type, matrix_type, tp,
+         lo := -1000, hi := 1000, density, rational, complex, symbol,
+         diagonal, band, upper, lower,
+         symm, anti_symm, herm, anti_herm, invertible,
+         maxcount, bandspread, realvalue, value;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
-      n := reval_without_mod cadr u;
-      if not fixp n or n <= 0 then typerr(n, "positive integer");
+      if null(u := cdr u) then n := m else <<
+         n := reval_without_mod car u;
+         if fixp n and n > 0 then u := cdr u else n := m;
+      >>;
       hash := mk!-sparse!-matrix!-hash();
-      types := cddr u;                % list of types
-      % Set number range:
-      begin scalar tps := types, tp, lo1, hi1;
-         while tps do
-            if fixp (tp := car tps) and tp > 0
-            then << lo := -tp;  hi := tp;  tps := nil >>
-            else if eqcar(tp, '!*interval!*) and fixp(lo1 := cadr tp)
-               and fixp(hi1 := caddr tp) and lo1 < hi1
-            then << lo := lo1;  hi := hi1;  tps := nil >>
-            else tps := cdr tps;
-      end;
-      % Set density:
-      begin scalar tps := types, tp;
-         while tps do
-            if eqcar(tp := car tps, 'equal) and cadr tp eq 'density
-            then <<
-               density := caddr tp;
+      % Process types:
+      for each type in u do
+         if pairp type then             % functional type form
+         begin scalar fn := car type;
+            if fn eq 'limit then <<
+               if element_type then
+                  rederr "Element type already set";
+               if not (fixp(hi := cadr type) and hi > 0) then
+                  typerr(type, "sparse random matrix element limit");
+               lo := -hi; element_type := 'numeric;
+            >> else if fn eq '!*interval!* then <<
+               if element_type then
+                  rederr "Element type already set";
+               if not (fixp(lo := cadr type) and fixp(hi := caddr type)
+                  and lo < hi) then
+                     typerr(type, "sparse random matrix element range");
+               element_type := 'numeric;
+            >> else if fn eq 'density then <<
+               density := cadr type;
                if fixp density and      % percentage
                   0 < density and density <= 100 then
                      density := {'quotient, density, 100}
@@ -103,36 +137,52 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                   cddr density < 0 then
                      density := {'quotient, cadr density, 10^(-cddr density)}
                else if not eqcar(density, 'quotient) % fraction
-               then typerr(density, "sparse random matrix density");
-               tps := nil
-            >> else tps := cdr tps;
-      end;
+               then typerr(type, "sparse random matrix density");
+            >> else if fn eq 'band then << % band matrix type
+               if matrix_type then
+                  rederr "Matrix type already set";
+               if not (fixp(band := cadr type) and band > 0) then
+                  typerr(type, "sparse random matrix band type");
+               matrix_type := t;
+            >> else typerr(type, "sparse random matrix type");
+         end else if idp type then <<   % keyword type form
+            if type eq 'rational then <<
+               if element_type eq 'symbolic then
+                  rederr "Element type already set";
+               rational := t;
+               element_type := 'numeric;
+            >> else if type eq 'complex then <<
+               if element_type eq 'symbolic then
+                  rederr "Element type already set";
+               complex := t;
+               element_type := 'numeric;
+            >> else if type eq 'symbol then <<
+               if element_type eq 'numeric then
+                  rederr "Element type already set";
+               symbol := t;
+               element_type := 'symbolic;
+            >> else if tp := assoc(type, sparse_random_matrix_types) then <<
+               if m neq n then rederr "Matrix must be square";
+               if matrix_type then rederr "Matrix type already set";
+               set(cdr tp, t);
+               matrix_type := t;
+            >> else if type eq 'invertible then <<
+               if m neq n then rederr "Matrix must be square";
+               if invertible then rederr "Matrix type already set";
+               invertible := t;
+            >> else typerr(type, "sparse random matrix type");
+         >> else typerr(type, "sparse random matrix type");
+
       maxcount := if density then
          numr simp {'fix, {'times, density, m, n}} or 0
       else (m+n)/2;                     % integer division
-      % Set matrix type:
-      if m = n then
-         if 'diagonal memq types then !*diagonal := t
-         else if 'upper memq types then !*upper := t
-         else if 'lower memq types then !*lower := t
-         else if 'symmetric memq types then !*symmetric := t
-         else if 'anti_symmetric memq types
-            or 'skew_symmetric memq types then
-               !*anti_symmetric := t
-         else if 'hermitian memq types then !*hermitian := t
-         else if 'anti_hermitian memq types
-            or 'skew_hermitian memq types then
-               !*anti_hermitian := t;
-      % Set band matrix type:
-      for each type in types do
-         if eqcar(type, 'band) then band := cadr type;
+
       % Set element value function:
-      realvalue := if 'rational memq types then
+      realvalue := if rational then
          (lambda(); {'quotient, num!-value(lo, hi), den!-value hi})
       else
          (lambda(); num!-value(lo, hi));
-      value := if 'complex memq types
-         or !*hermitian or !*anti_hermitian then
+      value := if complex or herm or anti_herm then
             (lambda (); {'plus, apply(realvalue, nil),
                {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
@@ -151,26 +201,26 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
       >> else for count := 1 : maxcount do
          begin scalar i, j, val;
             i := random(m) + 1;
-            j := if !*diagonal then i else random(n) + 1;
-            if (!*upper and j < i) or (!*lower and j > i) then return;
-            if !*anti_symmetric and i = j then return;
+            j := if diagonal then i else random(n) + 1;
+            if (upper and j < i) or (lower and j > i) then return;
+            if anti_symm and i = j then return;
             % Filter out 0 values:
             repeat val := apply(value, nil)
                until numr simp val;
             puthash(i.j, hash, val);
-            if !*symmetric then puthash(j.i, hash, val)
-            else if !*anti_symmetric then puthash(j.i, hash, -val)
-            else if !*hermitian then
+            if symm then puthash(j.i, hash, val)
+            else if anti_symm then puthash(j.i, hash, -val)
+            else if herm then
                if i = j then puthash(j.i, hash, {'repart, val})
                else puthash(j.i, hash, {'conj, val})
-            else if !*anti_hermitian then
+            else if anti_herm then
                if i = j then puthash(j.i, hash, {'times, 'i, {'impart, val}})
                else puthash(j.i, hash, {'minus, {'conj, val}});
          end;
-      if m = n and not !*anti_symmetric and 'invertible memq types then
+      if m = n and not anti_symm and invertible then
          for i := 1 : m do
             if not gethash(i.i, hash) then
-               if !*anti_hermitian then puthash(i.i, hash, 'i)
+               if anti_herm then puthash(i.i, hash, 'i)
                else puthash(i.i, hash, 1);
       return {'sparse!-mat, hash, m, n}
    end;
@@ -183,12 +233,12 @@ symbolic procedure den!-value limit;
    % Return a random positive integer less than limit.
    1 + random(limit - 1);
 
+endmodule;
+
 end;
 
 % TO DO:
 
-% Merge all type processing into one loop and apply first of any mutually-exclusive type sets?
+% Fully implement symbol type.
 % Don't apply density to special matrix types, which are already sparse by definition?
-% Add identifier type.
 % Dense type that allows random zeros?
-% Allow density = n or density(n), band = n or band(n)?
