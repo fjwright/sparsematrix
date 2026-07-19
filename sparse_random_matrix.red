@@ -13,18 +13,19 @@ module sparse_random_matrix;
 
 % Element type:
 %   either numeric: default, or specified by
-%     range: LIMIT(N) where n is a positive integer or LO .. HI where
+%     range: LIMIT=N where n is a positive integer or LO .. HI where
 %     lo, hi are integers and lo < hi
 %     RATIONAL: keyword
 %     COMPLEX: keyword
 %   or SYMBOL: keyword
 
 % Density:
-%   DENSITY(N), where n is a positive integer, rational or float
+%   DENSITY=N, where n is a positive integer, rational or float
 
 % Matrix type (only if square) -- at most one of the following
 % mutually-exclusive type:
-%   DIAGONAL, BAND(N) where n is a positive integer,
+%   DIAGONAL,
+%   BAND=N or BAND, where n is a positive integer that defaults to 3,
 %   UPPER, LOWER,
 %   SYMMETRIC, ANTI/SKEW_SYMMETRIC,
 %   HERMITIAN, ANTI/SKEW_HERMITIAN
@@ -71,12 +72,11 @@ put('sparse_random_matrix, 'rtypefn, 'quotesparse!-matrix);
 put('sparse_random_matrix, 'formfn, 'form_sparse_random_matrix);
 
 symbolic procedure form_sparse_random_matrix(u, vars, mode);
-   % Allow symmetric as an argument (even though it is a keyword).
-   begin scalar args := cadr u . caddr u .
-      for each arg in cdddr u collect
-         if eqcar(arg, 'symmetric) then ''symmetric
-         else if eqcar(arg, 'limit) then mkquote mkquote arg
-         else arg;
+   % Allow symmetric as an argument (even though it is a REDUCE
+   % keyword).
+   begin scalar args := cadr u .
+      for each arg in cddr u collect
+         if eqcar(arg, 'symmetric) then ''symmetric else arg;
       return form1('eval_sparse_random_matrix . args, vars, mode);
    end;
 
@@ -84,11 +84,10 @@ put('eval_sparse_random_matrix, 'psopfn, 'eval_sparse_random_matrix);
 
 fluid '(diagonal upper lower symm anti_symm herm anti_herm);
 global '(sparse_random_matrix_types);
-sparse_random_matrix_types := {('diagonal . 'diagonal), ('upper . 'upper),
-   ('lower . 'lower), ('symmetric . 'symm),
-   ('anti_symmetric . 'anti_symm), ('skew_symmetric . 'anti_symm),
-   ('hermitian . 'herm), ('anti_hermitian . 'anti_herm),
-   ('skew_hermitian . 'anti_herm)};
+sparse_random_matrix_types := {'(diagonal), '(upper), '(lower),
+   '(symmetric . symm), '(hermitian . herm),
+   '(anti_symmetric . anti_symm), '(anti_hermitian . anti_herm),
+   '(skew_symmetric . anti_symm), '(skew_hermitian . anti_herm)};
 
 symbolic procedure eval_sparse_random_matrix u; % (m n types)
    % M must evaluate to a positive integer.  N is optional and if
@@ -111,25 +110,25 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
          if fixp n and n > 0 then u := cdr u else n := m;
       >>;
       hash := mk!-sparse!-matrix!-hash();
+
       % Process types:
       for each type in u do
-         if pairp type then             % functional type form
-         begin scalar fn := car type;
-            if fn eq 'limit then <<
+         if eqcar(type, '!*interval!*) then << % INTERVAL element type
+            if element_type then
+               rederr "Element type already set";
+            if not (fixp(lo := cadr type) and fixp(hi := caddr type)
+               and lo < hi) then
+                  typerr(type, "sparse random matrix element range");
+            element_type := 'numeric;
+         >> else if eqcar(type, 'equal) then << % equational type form
+            if (tp := cadr type) eq 'limit then << % LIMIT element type
                if element_type then
                   rederr "Element type already set";
-               if not (fixp(hi := cadr type) and hi > 0) then
+               if not (fixp(hi := caddr type) and hi > 0) then
                   typerr(type, "sparse random matrix element limit");
                lo := -hi; element_type := 'numeric;
-            >> else if fn eq '!*interval!* then <<
-               if element_type then
-                  rederr "Element type already set";
-               if not (fixp(lo := cadr type) and fixp(hi := caddr type)
-                  and lo < hi) then
-                     typerr(type, "sparse random matrix element range");
-               element_type := 'numeric;
-            >> else if fn eq 'density then <<
-               density := cadr type;
+            >> else if tp eq 'density then << % DENSITY
+               density := caddr type;
                if fixp density and      % percentage
                   0 < density and density <= 100 then
                      density := {'quotient, density, 100}
@@ -138,33 +137,37 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                      density := {'quotient, cadr density, 10^(-cddr density)}
                else if not eqcar(density, 'quotient) % fraction
                then typerr(type, "sparse random matrix density");
-            >> else if fn eq 'band then << % band matrix type
+            >> else if tp eq 'band then << % BAND matrix type
                if matrix_type then
                   rederr "Matrix type already set";
-               if not (fixp(band := cadr type) and band > 0) then
+               if not (fixp(band := caddr type) and band > 0) then
                   typerr(type, "sparse random matrix band type");
                matrix_type := t;
             >> else typerr(type, "sparse random matrix type");
-         end else if idp type then <<   % keyword type form
-            if type eq 'rational then <<
+         >> else if idp type then <<   % keyword type form
+            if type eq 'rational then << % RATIONAL element type
                if element_type eq 'symbolic then
                   rederr "Element type already set";
                rational := t;
                element_type := 'numeric;
-            >> else if type eq 'complex then <<
+            >> else if type eq 'complex then << % COMPLEX element type
                if element_type eq 'symbolic then
                   rederr "Element type already set";
                complex := t;
                element_type := 'numeric;
-            >> else if type eq 'symbol then <<
+            >> else if type eq 'symbol then << % SYMBOL element type
                if element_type eq 'numeric then
                   rederr "Element type already set";
                symbol := t;
                element_type := 'symbolic;
+            >> else if type eq 'band then << % default BAND matrix type
+               if matrix_type then rederr "Matrix type already set";
+               band := 3;
+               matrix_type := t;
             >> else if tp := assoc(type, sparse_random_matrix_types) then <<
                if m neq n then rederr "Matrix must be square";
                if matrix_type then rederr "Matrix type already set";
-               set(cdr tp, t);
+               set(if cdr tp then cdr tp else type, t);
                matrix_type := t;
             >> else if type eq 'invertible then <<
                if m neq n then rederr "Matrix must be square";
@@ -183,8 +186,8 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
       else
          (lambda(); num!-value(lo, hi));
       value := if complex or herm or anti_herm then
-            (lambda (); {'plus, apply(realvalue, nil),
-               {'times, 'i, apply(realvalue, nil)}})
+         (lambda (); {'plus, apply(realvalue, nil),
+            {'times, 'i, apply(realvalue, nil)}})
       else realvalue;
       % Assign random values to random elements:
       if band then <<
