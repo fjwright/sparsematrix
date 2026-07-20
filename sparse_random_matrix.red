@@ -84,7 +84,8 @@ symbolic procedure form_sparse_random_matrix(u, vars, mode);
 
 put('eval_sparse_random_matrix, 'psopfn, 'eval_sparse_random_matrix);
 
-fluid '(rational complex diagonal upper lower symm anti_symm herm anti_herm);
+fluid '(rational!* complex!* symbol!*
+   diagonal upper lower symm anti_symm herm anti_herm);
 global '(sparse_random_matrix_types);
 sparse_random_matrix_types := {'(diagonal), '(upper), '(lower),
    '(symmetric . symm), '(hermitian . herm),
@@ -101,7 +102,7 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
       rederr "Wrong number of arguments to sparse_random_matrix"
    else
    begin scalar m, n, hash, element_type, matrix_type, tp,
-         lo := -1000, hi := 1000, density, rational, complex, symbol,
+         lo := -1000, hi := 1000, density, rational!*, complex!*, symbol!*,
          diagonal, band, upper, lower,
          symm, anti_symm, herm, anti_herm, invertible,
          maxcount, bandspread;
@@ -150,17 +151,17 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
             if type eq 'rational then << % RATIONAL element type
                if element_type eq 'symbolic then
                   rederr "Element type already set";
-               rational := t;
+               rational!* := t;
                element_type := 'numeric;
             >> else if type eq 'complex then << % COMPLEX element type
                if element_type eq 'symbolic then
                   rederr "Element type already set";
-               complex := t;
+               complex!* := t;
                element_type := 'numeric;
             >> else if type eq 'symbol then << % SYMBOL element type
                if element_type eq 'numeric then
                   rederr "Element type already set";
-               symbol := t;
+               symbol!* := t;
                element_type := 'symbolic;
             >> else if type eq 'band then << % default BAND matrix type
                if matrix_type then rederr "Matrix type already set";
@@ -170,7 +171,7 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                if m neq n then rederr "Matrix must be square";
                if matrix_type then rederr "Matrix type already set";
                set(if cdr tp then cdr tp else type, t);
-               if herm or anti_herm then complex := t;
+               if herm or anti_herm then complex!* := t;
                matrix_type := t;
             >> else if type eq 'invertible then <<
                if m neq n then rederr "Matrix must be square";
@@ -227,21 +228,22 @@ symbolic procedure posint!-value limit;
 
 symbolic procedure realvalue(lo, hi);
    % Return a random rational or integer value.
-   if rational then
+   if rational!* then
       {'quotient, integer!-value(lo, hi), posint!-value hi}
    else
       integer!-value(lo, hi);
 
 symbolic procedure value(lo, hi);
    % Return a random numerical value.
-   if complex then
+   if complex!* then
       {'plus, realvalue(lo, hi),
          {'times, 'i, realvalue(lo, hi)}}
    else realvalue(lo, hi);
 
 symbolic procedure nzvalue(lo, hi);
-   % Return a nonzero random numerical value.
-   begin scalar val;
+   % Return a symbol or nonzero random numerical value.
+   if symbol!* then gensym()
+   else begin scalar val;
       % Filter out 0 values:
       repeat val := value(lo, hi)
          until numr simp val;
@@ -254,6 +256,5 @@ end;
 
 % TO DO:
 
-% Fully implement symbol type.
 % Don't apply density to special matrix types, which are already sparse by definition?
 % Dense type that allows random zeros?
