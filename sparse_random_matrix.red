@@ -58,13 +58,15 @@ module sparse_random_matrix;
 
 % Square matrix types -- ignored if the matrix is not square:
 
-%   invertible: assigns 1 to any diagonal elements that would
-%   otherwise be zero.
+%   invertible: not allowed for an anti-symmetric matrix, otherwise
+%   assigns the appropriate unit element to any diagonal element that
+%   would otherwise be zero.
 
 %   band(n): creates a band matrix with n nonzero elements in each row
 %   centred about the main diagonal.
 
 %   upper, lower: create upper and lower triangular matrices.
+%   hermitian, anti/skew_hermitian also set complex element type.
 
 remprop('sparse_random_matrix, 'stat);  % TEMPORARY!
 
@@ -82,7 +84,7 @@ symbolic procedure form_sparse_random_matrix(u, vars, mode);
 
 put('eval_sparse_random_matrix, 'psopfn, 'eval_sparse_random_matrix);
 
-fluid '(diagonal upper lower symm anti_symm herm anti_herm);
+fluid '(rational complex diagonal upper lower symm anti_symm herm anti_herm);
 global '(sparse_random_matrix_types);
 sparse_random_matrix_types := {'(diagonal), '(upper), '(lower),
    '(symmetric . symm), '(hermitian . herm),
@@ -102,7 +104,7 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
          lo := -1000, hi := 1000, density, rational, complex, symbol,
          diagonal, band, upper, lower,
          symm, anti_symm, herm, anti_herm, invertible,
-         maxcount, bandspread, realvalue, value;
+         maxcount, bandspread;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
       if null(u := cdr u) then n := m else <<
@@ -118,7 +120,7 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                rederr "Element type already set";
             if not (fixp(lo := cadr type) and fixp(hi := caddr type)
                and lo < hi) then
-                  typerr(type, "sparse random matrix element range");
+                  typerr(type, "sparse random matrix element interval");
             element_type := 'numeric;
          >> else if eqcar(type, 'equal) then << % equational type form
             if (tp := cadr type) eq 'limit then << % LIMIT element type
@@ -168,6 +170,7 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                if m neq n then rederr "Matrix must be square";
                if matrix_type then rederr "Matrix type already set";
                set(if cdr tp then cdr tp else type, t);
+               if herm or anti_herm then complex := t;
                matrix_type := t;
             >> else if type eq 'invertible then <<
                if m neq n then rederr "Matrix must be square";
@@ -175,41 +178,27 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                invertible := t;
             >> else typerr(type, "sparse random matrix type");
          >> else typerr(type, "sparse random matrix type");
+      if anti_symm and invertible then
+         rederr {"anti/skew_symmetric and invertible together",
+            "is an invalid sparse random matrix type combination"};
 
       maxcount := if density then
          numr simp {'fix, {'times, density, m, n}} or 0
       else (m+n)/2;                     % integer division
 
-      % Set element value function:
-      realvalue := if rational then
-         (lambda(); {'quotient, num!-value(lo, hi), den!-value hi})
-      else
-         (lambda(); num!-value(lo, hi));
-      value := if complex or herm or anti_herm then
-         (lambda (); {'plus, apply(realvalue, nil),
-            {'times, 'i, apply(realvalue, nil)}})
-      else realvalue;
       % Assign random values to random elements:
       if band then <<
          bandspread := (band-1)/2;
          for i := 1 : m do
             for j := i - bandspread : i + bandspread do
                if 1 <= j and j <= n then
-               begin scalar val;
-                  % Filter out 0 values:
-                  repeat val := apply(value, nil)
-                     until numr simp val;
-                  puthash(i.j, hash, val);
-               end
+                  puthash(i.j, hash, nzvalue(lo, hi));
       >> else for count := 1 : maxcount do
-         begin scalar i, j, val;
+         begin scalar i, j, val := nzvalue(lo, hi);
             i := random(m) + 1;
             j := if diagonal then i else random(n) + 1;
             if (upper and j < i) or (lower and j > i) then return;
             if anti_symm and i = j then return;
-            % Filter out 0 values:
-            repeat val := apply(value, nil)
-               until numr simp val;
             puthash(i.j, hash, val);
             if symm then puthash(j.i, hash, val)
             else if anti_symm then puthash(j.i, hash, -val)
@@ -220,7 +209,7 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                if i = j then puthash(j.i, hash, {'times, 'i, {'impart, val}})
                else puthash(j.i, hash, {'minus, {'conj, val}});
          end;
-      if m = n and not anti_symm and invertible then
+      if invertible then                % => square and not anti-symm
          for i := 1 : m do
             if not gethash(i.i, hash) then
                if anti_herm then puthash(i.i, hash, 'i)
@@ -228,13 +217,36 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
       return {'sparse!-mat, hash, m, n}
    end;
 
-symbolic procedure num!-value(lo, hi);
+symbolic procedure integer!-value(lo, hi);
    % Return a random integer r such that lo <= r < hi.
    lo + random(hi - lo);
 
-symbolic procedure den!-value limit;
+symbolic procedure posint!-value limit;
    % Return a random positive integer less than limit.
    1 + random(limit - 1);
+
+symbolic procedure realvalue(lo, hi);
+   % Return a random rational or integer value.
+   if rational then
+      {'quotient, integer!-value(lo, hi), posint!-value hi}
+   else
+      integer!-value(lo, hi);
+
+symbolic procedure value(lo, hi);
+   % Return a random numerical value.
+   if complex then
+      {'plus, realvalue(lo, hi),
+         {'times, 'i, realvalue(lo, hi)}}
+   else realvalue(lo, hi);
+
+symbolic procedure nzvalue(lo, hi);
+   % Return a nonzero random numerical value.
+   begin scalar val;
+      % Filter out 0 values:
+      repeat val := value(lo, hi)
+         until numr simp val;
+      return val;
+   end;
 
 endmodule;
 
