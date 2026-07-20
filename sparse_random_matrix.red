@@ -56,7 +56,7 @@ module sparse_random_matrix;
 %   the same.  The default density assigns values to a number of
 %   elements equal to the mean matrix dimension.
 
-% Square matrix types -- ignored if the matrix is not square:
+% Square matrix types -- invalid if the matrix is not square:
 
 %   invertible: not allowed for an anti-symmetric matrix, otherwise
 %   assigns the appropriate unit element to any diagonal element that
@@ -79,20 +79,20 @@ symbolic procedure form_sparse_random_matrix(u, vars, mode);
    begin scalar args := cadr u .
       for each arg in cddr u collect
          if eqcar(arg, 'symmetric) then ''symmetric else arg;
-      return form1('eval_sparse_random_matrix . args, vars, mode);
+      return form1('sparse!-random!-matrix . args, vars, mode);
    end;
 
-put('eval_sparse_random_matrix, 'psopfn, 'eval_sparse_random_matrix);
+put('sparse!-random!-matrix, 'psopfn, 'sparse!-random!-matrix);
 
 fluid '(rational!* complex!* symbol!*
    diagonal upper lower symm anti_symm herm anti_herm);
-global '(sparse_random_matrix_types);
-sparse_random_matrix_types := {'(diagonal), '(upper), '(lower),
+global '(sparse!-random!-matrix!-types);
+sparse!-random!-matrix!-types := {'(diagonal), '(upper), '(lower),
    '(symmetric . symm), '(hermitian . herm),
    '(anti_symmetric . anti_symm), '(anti_hermitian . anti_herm),
    '(skew_symmetric . anti_symm), '(skew_hermitian . anti_herm)};
 
-symbolic procedure eval_sparse_random_matrix u; % (m n types)
+symbolic procedure sparse!-random!-matrix u; % (m n types)
    % M must evaluate to a positive integer.  N is optional and if
    % specified must evaluate to a positive integer; it defaults to the
    % value of M.  TYPES is an optional sequence of type specifiers.
@@ -167,7 +167,7 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
                if matrix_type then rederr "Matrix type already set";
                band := 3;
                matrix_type := t;
-            >> else if tp := assoc(type, sparse_random_matrix_types) then <<
+            >> else if tp := assoc(type, sparse!-random!-matrix!-types) then <<
                if m neq n then rederr "Matrix must be square";
                if matrix_type then rederr "Matrix type already set";
                set(if cdr tp then cdr tp else type, t);
@@ -193,9 +193,9 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
          for i := 1 : m do
             for j := i - bandspread : i + bandspread do
                if 1 <= j and j <= n then
-                  puthash(i.j, hash, nzvalue(lo, hi));
+                  puthash(i.j, hash, srm!-nonzero!-value(lo, hi));
       >> else for count := 1 : maxcount do
-         begin scalar i, j, val := nzvalue(lo, hi);
+         begin scalar i, j, val := srm!-nonzero!-value(lo, hi);
             i := random(m) + 1;
             j := if diagonal then i else random(n) + 1;
             if (upper and j < i) or (lower and j > i) then return;
@@ -218,34 +218,34 @@ symbolic procedure eval_sparse_random_matrix u; % (m n types)
       return {'sparse!-mat, hash, m, n}
    end;
 
-symbolic procedure integer!-value(lo, hi);
+symbolic procedure srm!-integer!-value(lo, hi);
    % Return a random integer r such that lo <= r < hi.
    lo + random(hi - lo);
 
-symbolic procedure posint!-value limit;
+symbolic procedure srm!-posint!-value limit;
    % Return a random positive integer less than limit.
    1 + random(limit - 1);
 
-symbolic procedure realvalue(lo, hi);
+symbolic procedure srm!-real!-value(lo, hi);
    % Return a random rational or integer value.
    if rational!* then
-      {'quotient, integer!-value(lo, hi), posint!-value hi}
+      {'quotient, srm!-integer!-value(lo, hi), srm!-posint!-value hi}
    else
-      integer!-value(lo, hi);
+      srm!-integer!-value(lo, hi);
 
-symbolic procedure value(lo, hi);
+symbolic procedure srm!-value(lo, hi);
    % Return a random numerical value.
    if complex!* then
-      {'plus, realvalue(lo, hi),
-         {'times, 'i, realvalue(lo, hi)}}
-   else realvalue(lo, hi);
+      {'plus, srm!-real!-value(lo, hi),
+         {'times, 'i, srm!-real!-value(lo, hi)}}
+   else srm!-real!-value(lo, hi);
 
-symbolic procedure nzvalue(lo, hi);
+symbolic procedure srm!-nonzero!-value(lo, hi);
    % Return a symbol or nonzero random numerical value.
    if symbol!* then gensym()
    else begin scalar val;
       % Filter out 0 values:
-      repeat val := value(lo, hi)
+      repeat val := srm!-value(lo, hi)
          until numr simp val;
       return val;
    end;
