@@ -1,7 +1,7 @@
 module sparsematrix;   % Header for sparse matrices using hash-tables.
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-06-25 16:15:08 franc>
+% Time-stamp: <2026-07-20 18:30:55 franc>
 % Created: April 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -389,38 +389,6 @@ symbolic procedure sparse!-matpri u;
       end;
 
 
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Generate sparse random matrices (for testing)
-% %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-symbolic procedure sparse_random_matrix u;
-   % U must evaluate to a list of elements of the form (s m n).
-   % S must be an identifier.  Generate an M*N sparse matrix S
-   % containing (M+N)/2 random positive integers.
-   for each v in u do
-   begin scalar m, n, i, j, hash;
-      % Essentially, sparse_matrix s(m, n):
-      if (m := gettype car v) and not (m eq 'sparse!-matrix)
-      then typerr({m, car v}, "sparse matrix");
-      if length v neq 3 then typerr(v, 'sparse!-matrix);
-      m := reval_without_mod cadr v;
-      if not fixp m or m <= 0 then typerr(m, "positive integer");
-      n := reval_without_mod caddr v;
-      if not fixp n or n <= 0 then typerr(n, "positive integer");
-      put(car v, 'rtype, 'sparse!-matrix);
-      hash := mk!-sparse!-matrix!-hash();
-      put(car v, 'avalue, {'sparse!-matrix,
-         {'sparse!-mat, hash, m, n}});
-      % Now assign some elements of S:
-      for count := 1 : fix((m+n)/2) do <<
-         i := random(m) + 1;
-         j := random(n) + 1;
-         puthash(i.j, hash, random(1000));
-      >>;
-   end;
-
-rlistat '(sparse_random_matrix);
-
 % %%%%%%%%%%%%%%%%%%%
 % Density of a matrix
 % %%%%%%%%%%%%%%%%%%%

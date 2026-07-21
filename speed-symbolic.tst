@@ -3,7 +3,7 @@ load_package sparse;
 size := 500$
 % Make an invertible random sparse matrix SM
 % (with some symbolic entries):
-sparse_random_matrix sm(size,size);
+sm := sparse_random_matrix(size);
 for i := 1:size do sm(i,i) := x^i;
 % Make a dense matrix copy M:
 m := densify sm$

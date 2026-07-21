@@ -34,7 +34,7 @@ df(s,x);
 % Substitution:
 sub(a=aa,s);
 
-sparse_random_matrix sr(5,5);
+sr := sparse_random_matrix(5);
 matrix_density sr;
 
 % Trace:
@@ -183,7 +183,7 @@ nullspace mat2list m;
 sparse_nullspace s;
 nullspace s;
 
-sparse_random_matrix s(5,10);
+s := sparse_random_matrix(5,10);
 matrix_density s;
 m := densify s;
 matrix_density m;

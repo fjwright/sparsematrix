@@ -1,11 +1,41 @@
-module sparse_random_matrix;
-% cf. LINALG sparse_random_matrix
+module sparserandmat;                   % cf. LINALG random_matrix
 
-% A sparse analogue of the LINALG random_matrix operator but with more
-% flexibility without using switches.
+% Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
+% Time-stamp: <2026-07-21 15:52:24 franc>
+% Created: June 2026
 
-% sparse_random_matrix(m, n, types), where n is optional and types can
-% be zero or more of the following.
+% Redistribution and use in source and binary forms, with or without
+% modification, are permitted provided that the following conditions
+% are met:
+%
+%  * Redistributions of source code must retain the relevant copyright
+%    notice, this list of conditions and the following disclaimer.
+%
+%  * Redistributions in binary form must reproduce the relevant
+%    copyright notice, this list of conditions and the following
+%    disclaimer in the documentation and/or other materials provided
+%    with the distribution.
+%
+% THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+% "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+% LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS
+% FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE
+% COPYRIGHT OWNERS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+% INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING,
+% BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+% LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+% CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+% LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN
+% ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+% POSSIBILITY OF SUCH DAMAGE.
+
+% $Id$
+
+% A sparse-matrix analogue of the LINALG random_matrix operator with
+% more flexibility but without using switches.
+
+% sparse_random_matrix(m, n, types) returns a random sparse-matrix,
+% where n is optional and types can be zero or more of the following.
 
 % Allowed types -- at most one of each of the following
 % mutually-exclusive type classes, where the actual input is shown in
@@ -15,18 +45,17 @@ module sparse_random_matrix;
 %   either numeric: default, or specified by
 %     range: LIMIT=N where n is a positive integer or LO .. HI where
 %     lo, hi are integers and lo < hi
-%     RATIONAL: keyword
-%     COMPLEX: keyword
-%   or SYMBOL: keyword
+%     RATIONAL
+%     COMPLEX
+%   or SYMBOL
 
 % Density:
 %   DENSITY=N, where n is a positive integer, rational or float
 
 % Matrix type (only if square) -- at most one of the following
 % mutually-exclusive type:
-%   DIAGONAL,
-%   BAND=N or BAND, where n is a positive integer that defaults to 3,
-%   UPPER, LOWER,
+%   DIAGONAL, UPPER, LOWER,
+%   BAND or BAND=N, where n is a positive integer that defaults to 3,
 %   SYMMETRIC, ANTI/SKEW_SYMMETRIC,
 %   HERMITIAN, ANTI/SKEW_HERMITIAN
 
@@ -35,9 +64,9 @@ module sparse_random_matrix;
 % Number type:
 
 %   By default, a random integer r is generated in the range lo <= r <
-%   hi, where lo = -lim, hi = lim, and lim = 1000.
+%   hi, where lo = -limit, hi = limit, and limit = 1000.
 
-%   To obtain positive matrix elements use lo = 1; it doesn't makes
+%   To obtain positive matrix elements use lo = 1; it doesn't make
 %   sense to use lo = 0 in a sparse matrix because 0 elements will be
 %   essentially ignored!
 
@@ -47,14 +76,15 @@ module sparse_random_matrix;
 %   A random rational number is a quotient of a random integer num in
 %   the range lo <= num < hi and a random integer den in the range 0 <
 %   den < hi.  A random complex number has real and imaginary parts
-%   that are random integer or rational numbers.
+%   that are random integer or rational numbers.  With ON ROUNDED, all
+%   numerical elements will appear as floats.
 
 % Matrix density:
 
 %   An integer is interpreted as a percentage, whereas a rational or
 %   float is interpreted as a fraction, so 100, 1/1 and 1.0 all mean
-%   the same.  The default density assigns values to a number of
-%   elements equal to the mean matrix dimension.
+%   the same.  The default density assigns nonzero values to a number
+%   of elements equal to the mean matrix dimension.
 
 % Square matrix types -- invalid if the matrix is not square:
 
@@ -62,18 +92,16 @@ module sparse_random_matrix;
 %   assigns the appropriate unit element to any diagonal element that
 %   would otherwise be zero.
 
-%   band(n): creates a band matrix with n nonzero elements in each row
-%   centred about the main diagonal.
+%   band=n: creates a band matrix with n nonzero elements in each row
+%   centred (approximately) about the main diagonal.
 
 %   upper, lower: create upper and lower triangular matrices.
 %   hermitian, anti/skew_hermitian also set complex element type.
 
-remprop('sparse_random_matrix, 'stat);  % TEMPORARY!
-
 put('sparse_random_matrix, 'rtypefn, 'quotesparse!-matrix);
-put('sparse_random_matrix, 'formfn, 'form_sparse_random_matrix);
+put('sparse_random_matrix, 'formfn, 'form!-sparse!-random!-matrix);
 
-symbolic procedure form_sparse_random_matrix(u, vars, mode);
+symbolic procedure form!-sparse!-random!-matrix(u, vars, mode);
    % Allow symmetric as an argument (even though it is a REDUCE
    % keyword).
    begin scalar args := cadr u .
@@ -256,5 +284,6 @@ end;
 
 % TO DO:
 
+% More testing!
 % Don't apply density to special matrix types, which are already sparse by definition?
 % Dense type that allows random zeros?

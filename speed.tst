@@ -2,8 +2,7 @@ load_package sparse;
 
 size := 500$
 % Make an invertible random sparse matrix SM:
-sparse_random_matrix sm(size,size);
-for i := 1:size do sm(i,i) := 1;
+sm := sparse_random_matrix(size, invertible);
 % Make a dense matrix copy M:
 m := densify sm$
 % Make a sparse copy S:
