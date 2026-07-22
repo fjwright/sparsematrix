@@ -1,7 +1,7 @@
 module sparserandmat;                   % cf. LINALG random_matrix
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-07-21 15:52:24 franc>
+% Time-stamp: <2026-07-22 11:59:08 franc>
 % Created: June 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -84,7 +84,10 @@ module sparserandmat;                   % cf. LINALG random_matrix
 %   An integer is interpreted as a percentage, whereas a rational or
 %   float is interpreted as a fraction, so 100, 1/1 and 1.0 all mean
 %   the same.  The default density assigns nonzero values to a number
-%   of elements equal to the mean matrix dimension.
+%   of elements equal to the mean matrix dimension, except that for
+%   specified matrix types (not including invertible) the default
+%   density is 100% (on the grounds that such a matrix is sparse by
+%   definition).
 
 % Square matrix types -- invalid if the matrix is not square:
 
@@ -210,6 +213,7 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
       if anti_symm and invertible then
          rederr {"anti/skew_symmetric and invertible together",
             "is an invalid sparse random matrix type combination"};
+      if matrix_type and not density then density := '(quotient 1 1);
 
       maxcount := if density then
          numr simp {'fix, {'times, density, m, n}} or 0
@@ -285,5 +289,4 @@ end;
 % TO DO:
 
 % More testing!
-% Don't apply density to special matrix types, which are already sparse by definition?
 % Dense type that allows random zeros?
