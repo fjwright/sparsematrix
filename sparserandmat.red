@@ -1,7 +1,7 @@
 module sparserandmat;                   % cf. LINALG random_matrix
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-07-23 16:00:09 franc>
+% Time-stamp: <2026-07-23 17:39:19 franc>
 % Created: June 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -115,13 +115,15 @@ symbolic procedure form!-sparse!-random!-matrix(u, vars, mode);
 
 put('sparse!-random!-matrix, 'psopfn, 'sparse!-random!-matrix);
 
-fluid '(rational!* complex!* symbol!* matrix_type
-   diagonal upper lower symm anti_symm herm anti_herm);
+fluid '(element!-type matrix!-type rational!* complex!* symbol!*
+   diagonal upper lower symm anti!-symm herm anti!-herm);
+
 global '(sparse!-random!-matrix!-types);
+
 sparse!-random!-matrix!-types := {'(diagonal), '(upper), '(lower),
    '(symmetric . symm), '(hermitian . herm),
-   '(anti_symmetric . anti_symm), '(anti_hermitian . anti_herm),
-   '(skew_symmetric . anti_symm), '(skew_hermitian . anti_herm)};
+   '(anti_symmetric . anti!-symm), '(anti_hermitian . anti!-herm),
+   '(skew_symmetric . anti!-symm), '(skew_hermitian . anti!-herm)};
 
 symbolic procedure sparse!-random!-matrix u; % (m n types)
    % M must evaluate to a positive integer.  N is optional and if
@@ -130,13 +132,13 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
    % Return an M*N sparse matrix containing by default (M+N)/2 random
    % positive integers.
    if null u then
-      rederr "Wrong number of arguments to sparse_random_matrix"
+      rederr "wrong number of arguments to sparse_random_matrix"
    else
-   begin scalar m, n, hash, element_type, matrix_type, tp,
+   begin scalar m, n, hash, element!-type, matrix!-type, tp,
          lo := -1000, hi := 1000, density,
          rational!*, complex!*, symbol!*,
          diagonal, band, upper, lower,
-         symm, anti_symm, herm, anti_herm, invertible,
+         symm, anti!-symm, herm, anti!-herm, invertible,
          bandspread;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
@@ -149,19 +151,16 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
       % Process types:
       for each type in u do
          if eqcar(type, '!*interval!*) then << % INTERVAL element type
-            if element_type then
-               rederr "Element type already set";
+            srm!-element!-type!-check 'numeric;
             if not (fixp(lo := cadr type) and fixp(hi := caddr type)
                and lo < hi) then
                   typerr(type, "sparse random matrix element interval");
-            element_type := 'numeric;
          >> else if eqcar(type, 'equal) then << % equational type form
             if (tp := cadr type) eq 'limit then << % LIMIT element type
-               if element_type then
-                  rederr "Element type already set";
+               srm!-element!-type!-check 'numeric;
                if not (fixp(hi := caddr type) and hi > 0) then
                   typerr(type, "sparse random matrix element limit");
-               lo := -hi; element_type := 'numeric;
+               lo := -hi;
             >> else if tp eq 'density then << % DENSITY
                density := caddr type;
                density := if fixp density then     % percentage
@@ -172,51 +171,39 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
                   float cadr density / float caddr density
                else typerr(type, "sparse random matrix density");
                if not (0 < density and density <= 1.0) then
-               typerr(type, "sparse random matrix density");
+                  typerr(type, "sparse random matrix density");
             >> else if tp eq 'band then << % BAND matrix type
-               if matrix_type then
-                  rederr "Matrix type already set";
+               srm!-matrix!-type!-check(m, n, 'band);
                if not (fixp(band := caddr type) and band > 0) then
                   typerr(type, "sparse random matrix band type");
-               matrix_type := t;
             >> else typerr(type, "sparse random matrix type");
          >> else if idp type then <<   % keyword type form
             if type eq 'rational then << % RATIONAL element type
-               if element_type eq 'symbolic then
-                  rederr "Element type already set";
+               srm!-element!-type!-check 'numeric;
                rational!* := t;
-               element_type := 'numeric;
             >> else if type eq 'complex then << % COMPLEX element type
-               if element_type eq 'symbolic then
-                  rederr "Element type already set";
+               srm!-element!-type!-check 'numeric;
                complex!* := t;
-               element_type := 'numeric;
             >> else if type eq 'symbol then << % SYMBOL element type
-               if element_type eq 'numeric then
-                  rederr "Element type already set";
+               srm!-element!-type!-check 'symbolic;
                symbol!* := t;
-               element_type := 'symbolic;
             >> else if type eq 'band then << % default BAND matrix type
-               if matrix_type then rederr "Matrix type already set";
+               srm!-matrix!-type!-check(m, n, 'band);
                band := 3;
-               matrix_type := t;
             >> else if tp := assoc(type, sparse!-random!-matrix!-types) then <<
-               if m neq n then rederr "Matrix must be square";
-               if matrix_type then rederr "Matrix type already set";
+               srm!-matrix!-type!-check(m, n, type);
                set(if cdr tp then cdr tp else type, t);
-               if herm or anti_herm then complex!* := t;
-               matrix_type := t;
+               if herm or anti!-herm then complex!* := t;
             >> else if type eq 'invertible then <<
-               if m neq n then rederr "Matrix must be square";
-               if invertible then rederr "Matrix type already set";
+               if m neq n then rederr "invertible matrix must be square";
+               if invertible then rederr "invertible already set";
                invertible := t;
             >> else typerr(type, "sparse random matrix type");
          >> else typerr(type, "sparse random matrix type");
-      if anti_symm and invertible then
-         rederr {"anti/skew_symmetric and invertible together",
-            "is an invalid sparse random matrix type combination"};
+      if anti!-symm and invertible then
+         rederr "invalid matrix type combination";
       if not density then               % set default density
-         density := if matrix_type then 1.0 else (m+n)/(2.0*m*n);
+         density := if matrix!-type then 1.0 else (m+n)/(2.0*m*n);
 
       % Assign random values to random matrix elements:
       if diagonal then
@@ -232,9 +219,9 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
          for i := 1 : m do
             for j := 1 : i do
                srm!-set!-el!-maybe(i, j, hash, density, lo, hi)
-      else if matrix_type then   % => upper, {anti-}{symm, hermitian}
+      else if matrix!-type then   % => upper, {anti-}{symm, hermitian}
          for i := 1 : m do <<
-            if not anti_symm then
+            if not anti!-symm then
                srm!-set!-el!-maybe(i, i, hash, density, lo, hi);
             for j := i+1 : m do
                srm!-set!-el!-maybe(i, j, hash, density, lo, hi);
@@ -247,9 +234,23 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
       if invertible then                % => square and not anti-symm
          for i := 1 : m do
             if not gethash(i.i, hash) then
-               puthash(i.i, hash, if anti_herm then 'i else 1);
+               puthash(i.i, hash, if anti!-herm then 'i else 1);
       return {'sparse!-mat, hash, m, n}
    end;
+
+symbolic procedure srm!-element!-type!-check type;
+   if element!-type and not (element!-type eq type) then
+      rederr "invalid element type combination"
+   else
+      element!-type := type;
+
+symbolic procedure srm!-matrix!-type!-check(m, n, type);
+   if m neq n then
+      rederr {type, "matrix must be square"}
+   else if matrix!-type then
+      rederr "invalid matrix type combination"
+   else
+      matrix!-type := t;
 
 symbolic procedure srm!-set!-el!-maybe(i, j, hash, density, lo, hi);
    % Set the (I,J)-element in hash-table HASH with probability equal
@@ -259,7 +260,7 @@ symbolic procedure srm!-set!-el!-maybe(i, j, hash, density, lo, hi);
       if symm then <<                   % only called with i <= j
          puthash(i.j, hash, val);
          if i neq j then puthash(j.i, hash, val);
-      >> else if anti_symm then <<      % only called with i < j
+      >> else if anti!-symm then <<     % only called with i < j
          puthash(i.j, hash, val);
          puthash(j.i, hash, -val);
       >> else if herm then              % only called with i <= j
@@ -269,7 +270,7 @@ symbolic procedure srm!-set!-el!-maybe(i, j, hash, density, lo, hi);
             puthash(i.j, hash, val);
             puthash(j.i, hash, {'conj, val});
          >>
-      else if anti_herm then            % only called with i <= j
+      else if anti!-herm then           % only called with i <= j
          if i = j then
             puthash(i.i, hash, {'times, 'i, {'impart, val}})
          else <<
