@@ -1,7 +1,7 @@
 module sparserandmat;                   % cf. LINALG random_matrix
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-07-23 17:39:19 franc>
+% Time-stamp: <2026-07-23 18:13:28 franc>
 % Created: June 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -115,15 +115,15 @@ symbolic procedure form!-sparse!-random!-matrix(u, vars, mode);
 
 put('sparse!-random!-matrix, 'psopfn, 'sparse!-random!-matrix);
 
-fluid '(element!-type matrix!-type rational!* complex!* symbol!*
-   diagonal upper lower symm anti!-symm herm anti!-herm);
+fluid '(element!-type!* matrix!-type!* rational!* complex!* symbol!*
+   diagonal upper lower symm!* anti!-symm!* herm!* anti!-herm!*);
 
-global '(sparse!-random!-matrix!-types);
+global '(sparse!-random!-matrix!-types!*);
 
-sparse!-random!-matrix!-types := {'(diagonal), '(upper), '(lower),
-   '(symmetric . symm), '(hermitian . herm),
-   '(anti_symmetric . anti!-symm), '(anti_hermitian . anti!-herm),
-   '(skew_symmetric . anti!-symm), '(skew_hermitian . anti!-herm)};
+sparse!-random!-matrix!-types!* := {'(diagonal), '(upper), '(lower),
+   '(symmetric . symm!*), '(hermitian . herm!*),
+   '(anti_symmetric . anti!-symm!*), '(anti_hermitian . anti!-herm!*),
+   '(skew_symmetric . anti!-symm!*), '(skew_hermitian . anti!-herm!*)};
 
 symbolic procedure sparse!-random!-matrix u; % (m n types)
    % M must evaluate to a positive integer.  N is optional and if
@@ -134,11 +134,11 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
    if null u then
       rederr "wrong number of arguments to sparse_random_matrix"
    else
-   begin scalar m, n, hash, element!-type, matrix!-type, tp,
+   begin scalar m, n, hash, element!-type!*, matrix!-type!*, tp,
          lo := -1000, hi := 1000, density,
          rational!*, complex!*, symbol!*,
          diagonal, band, upper, lower,
-         symm, anti!-symm, herm, anti!-herm, invertible,
+         symm!*, anti!-symm!*, herm!*, anti!-herm!*, invertible,
          bandspread;
       m := reval_without_mod car u;
       if not fixp m or m <= 0 then typerr(m, "positive integer");
@@ -190,20 +190,20 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
             >> else if type eq 'band then << % default BAND matrix type
                srm!-matrix!-type!-check(m, n, 'band);
                band := 3;
-            >> else if tp := assoc(type, sparse!-random!-matrix!-types) then <<
+            >> else if tp := assoc(type, sparse!-random!-matrix!-types!*) then <<
                srm!-matrix!-type!-check(m, n, type);
                set(if cdr tp then cdr tp else type, t);
-               if herm or anti!-herm then complex!* := t;
+               if herm!* or anti!-herm!* then complex!* := t;
             >> else if type eq 'invertible then <<
                if m neq n then rederr "invertible matrix must be square";
                if invertible then rederr "invertible already set";
                invertible := t;
             >> else typerr(type, "sparse random matrix type");
          >> else typerr(type, "sparse random matrix type");
-      if anti!-symm and invertible then
+      if anti!-symm!* and invertible then
          rederr "invalid matrix type combination";
       if not density then               % set default density
-         density := if matrix!-type then 1.0 else (m+n)/(2.0*m*n);
+         density := if matrix!-type!* then 1.0 else (m+n)/(2.0*m*n);
 
       % Assign random values to random matrix elements:
       if diagonal then
@@ -219,9 +219,9 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
          for i := 1 : m do
             for j := 1 : i do
                srm!-set!-el!-maybe(i, j, hash, density, lo, hi)
-      else if matrix!-type then   % => upper, {anti-}{symm, hermitian}
+      else if matrix!-type!* then   % => upper, {anti-}{symm, herm}
          for i := 1 : m do <<
-            if not anti!-symm then
+            if not anti!-symm!* then
                srm!-set!-el!-maybe(i, i, hash, density, lo, hi);
             for j := i+1 : m do
                srm!-set!-el!-maybe(i, j, hash, density, lo, hi);
@@ -234,43 +234,43 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
       if invertible then                % => square and not anti-symm
          for i := 1 : m do
             if not gethash(i.i, hash) then
-               puthash(i.i, hash, if anti!-herm then 'i else 1);
+               puthash(i.i, hash, if anti!-herm!* then 'i else 1);
       return {'sparse!-mat, hash, m, n}
    end;
 
 symbolic procedure srm!-element!-type!-check type;
-   if element!-type and not (element!-type eq type) then
+   if element!-type!* and not (element!-type!* eq type) then
       rederr "invalid element type combination"
    else
-      element!-type := type;
+      element!-type!* := type;
 
 symbolic procedure srm!-matrix!-type!-check(m, n, type);
    if m neq n then
       rederr {type, "matrix must be square"}
-   else if matrix!-type then
+   else if matrix!-type!* then
       rederr "invalid matrix type combination"
    else
-      matrix!-type := t;
+      matrix!-type!* := t;
 
 symbolic procedure srm!-set!-el!-maybe(i, j, hash, density, lo, hi);
    % Set the (I,J)-element in hash-table HASH with probability equal
    % to DENSITY.  Also, set any elements related by the matrix type.
    if density = 1.0 or random(1.0) <= density then
    begin scalar val := srm!-nonzero!-value(lo, hi);
-      if symm then <<                   % only called with i <= j
+      if symm!* then <<                 % only called with i <= j
          puthash(i.j, hash, val);
          if i neq j then puthash(j.i, hash, val);
-      >> else if anti!-symm then <<     % only called with i < j
+      >> else if anti!-symm!* then <<   % only called with i < j
          puthash(i.j, hash, val);
          puthash(j.i, hash, -val);
-      >> else if herm then              % only called with i <= j
+      >> else if herm!* then            % only called with i <= j
          if i = j then
             puthash(i.i, hash, {'repart, val})
          else <<
             puthash(i.j, hash, val);
             puthash(j.i, hash, {'conj, val});
          >>
-      else if anti!-herm then           % only called with i <= j
+      else if anti!-herm!* then         % only called with i <= j
          if i = j then
             puthash(i.i, hash, {'times, 'i, {'impart, val}})
          else <<
