@@ -1,7 +1,7 @@
 module sparserandmat;                   % cf. LINALG random_matrix
 
 % Author: Francis J. Wright <https://sourceforge.net/u/fjwright>
-% Time-stamp: <2026-07-22 17:32:04 franc>
+% Time-stamp: <2026-07-23 16:00:09 franc>
 % Created: June 2026
 
 % Redistribution and use in source and binary forms, with or without
@@ -164,10 +164,10 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
                lo := -hi; element_type := 'numeric;
             >> else if tp eq 'density then << % DENSITY
                density := caddr type;
-               if fixp density then     % percentage
-                  density := float density / 100.0
+               density := if fixp density then     % percentage
+                  float density / 100.0
                else if eqcar(density, '!:dn!:) then % float
-                  density := float cadr density * 10.0^cddr density
+                  float cadr density * 10.0^cddr density
                else if eqcar(density, 'quotient) then % fraction
                   float cadr density / float caddr density
                else typerr(type, "sparse random matrix density");
@@ -254,28 +254,29 @@ symbolic procedure sparse!-random!-matrix u; % (m n types)
 symbolic procedure srm!-set!-el!-maybe(i, j, hash, density, lo, hi);
    % Set the (I,J)-element in hash-table HASH with probability equal
    % to DENSITY.  Also, set any elements related by the matrix type.
-   if random(1.0) <= density then
+   if density = 1.0 or random(1.0) <= density then
    begin scalar val := srm!-nonzero!-value(lo, hi);
-      if not matrix_type then          % general matrix
-         puthash(i.j, hash, val)
-      else if symm then <<              % only called with i <= j
+      if symm then <<                   % only called with i <= j
          puthash(i.j, hash, val);
          if i neq j then puthash(j.i, hash, val);
       >> else if anti_symm then <<      % only called with i < j
          puthash(i.j, hash, val);
-         puthash(j.i, hash, -val)
+         puthash(j.i, hash, -val);
       >> else if herm then              % only called with i <= j
-         if i = j then puthash(i.i, hash, {'repart, val})
+         if i = j then
+            puthash(i.i, hash, {'repart, val})
          else <<
             puthash(i.j, hash, val);
             puthash(j.i, hash, {'conj, val});
          >>
       else if anti_herm then            % only called with i <= j
-         if i = j then puthash(i.i, hash, {'times, 'i, {'impart, val}})
+         if i = j then
+            puthash(i.i, hash, {'times, 'i, {'impart, val}})
          else <<
             puthash(i.j, hash, val);
             puthash(j.i, hash, {'minus, {'conj, val}});
-         >>;
+         >>
+      else puthash(i.j, hash, val);
    end;
 
 symbolic procedure srm!-integer!-value(lo, hi);

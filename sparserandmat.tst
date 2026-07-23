@@ -13,13 +13,13 @@ sparse_random_matrix(3, 5, limit=10, symbol); % error
 sparse_random_matrix(3, 5, rational, symbol); % error
 sparse_random_matrix(3, 5, limit=10, rational, complex);
 sparse_random_matrix(3, 5, limit=10, density);     % error
-sparse_random_matrix(3, 5, limit=10, density=100); % WRONG?
+sparse_random_matrix(3, 5, limit=10, density=100);
 sparse_random_matrix(3, 5, limit=10, density=1.0);
 sparse_random_matrix(3, 5, limit=10, density=0.5);
 sparse_random_matrix(3, 5, limit=10, density=1/2);
 sparse_random_matrix(3, 5, limit=10, diagonal); % error
-sparse_random_matrix(5, limit=10, diagonal);    % ???
-sparse_random_matrix(5, limit=10, diagonal, density=1.00);
+sparse_random_matrix(5, limit=10, diagonal);
+sparse_random_matrix(5, limit=10, diagonal, density=0.5);
 sparse_random_matrix(5, limit=10, band); % => band=3
 sparse_random_matrix(5, limit=10, band=3);
 sparse_random_matrix(5, limit=10, upper);
